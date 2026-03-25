@@ -8,4 +8,5 @@ import { RouterLink, RouterView } from 'vue-router'
 
 <style scoped>
 /* Recomendo usar grid para a criação dos layouts - William */
+
 </style>
