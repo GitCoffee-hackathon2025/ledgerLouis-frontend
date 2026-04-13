@@ -1,0 +1,32 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+ 
+:root {
+  --color-primary: #1dcd6c;
+  --color-primary-hover: #17b85e;
+  --color-primary-glow: rgba(29, 205, 108, 0.28);
+ 
+  --color-bg: #dfe2ea;
+  --color-card: #bcbec3;
+  --color-input-bg: #21242f;
+  --color-input-focus-bg: #252938;
+  --color-hover-bg: #2a2d38;
+  --color-divider: rgba(255,255,255,0.07);
+ 
+  --color-text: #000000;
+  --color-placeholder: #5a6070;
+  --color-icon: #5a6070;
+ 
+  --font-display: 'Sora', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+ 
+  --radius-input: 12px;
+}
+ 
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-body);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+}
+ 

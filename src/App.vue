@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
+import {} from 'vue-router'
+import RegisterView from './views/RegisterView.vue';
 </script>
 
 <template>
-  <RouterView />
+  <RegisterView/>
 </template>
 
 <style scoped>
