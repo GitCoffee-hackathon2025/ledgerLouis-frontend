@@ -29,6 +29,7 @@ const activeTab = ref('register');
   background-color: var(--color-primary); 
   width: 100%;
   height: 60px;
+  border-radius: 20px 20px 0 0;
   overflow: hidden;
 }
 
@@ -43,7 +44,7 @@ const activeTab = ref('register');
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 1rem;
-  color: #000;
+  color: #dbd8d8;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -51,7 +52,7 @@ const activeTab = ref('register');
 
 .nav-item.active {
   background-color: #fff;
-  color: #000;
+  color: #14c457;
 }
 .nav-item:first-child.active {
   border-radius: 0 40px 0 0;

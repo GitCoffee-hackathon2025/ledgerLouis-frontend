@@ -43,9 +43,9 @@ label {
 .custom-input {
   width: 100%;
   padding: 14px 20px;
-  border-radius: var(--radius-input); /* 12px ou 30px para pílula */
+  border-radius: var(--radius-input);
   border: 2px solid transparent;
-  background-color: var(--color-card); /* Aquele cinza que você definiu */
+  background-color: var(--color-bg); 
   font-family: var(--font-body);
   font-size: 1rem;
   transition: all 0.3s ease;

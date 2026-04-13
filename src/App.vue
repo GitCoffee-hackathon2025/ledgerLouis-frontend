@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import {} from 'vue-router'
-import RegisterView from './views/RegisterView.vue';
+
+import FormView from './views/FormView.vue';
 </script>
 
 <template>
-  <RegisterView/>
+  <FormView/>
 </template>
 
 <style scoped>

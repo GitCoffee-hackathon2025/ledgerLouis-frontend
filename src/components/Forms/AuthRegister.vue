@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
 import BaseInput from '../inputs/BaseInput.vue';
-import NavAuth from './NavAuth.vue';
+
 import PrimaryButton from '../inputs/PrimaryButton.vue';
 
 const formData = reactive({
@@ -18,7 +18,6 @@ const handleRegister = () => {
 </script>
 <template>
   <div class="register-card">
-    <NavAuth />
     
     <form @submit.prevent="handleRegister" class="form-content">
       <BaseInput 
@@ -60,7 +59,7 @@ const handleRegister = () => {
   background-color: #ffffff;
   width: 100%;
   max-width: 400px;
-  border-radius: 20px;
+  border-radius: 0 0 20px 20px;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
