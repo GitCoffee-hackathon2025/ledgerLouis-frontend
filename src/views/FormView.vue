@@ -17,7 +17,6 @@ const toggleTab = (tab: string) => {
   <div class="main-container">
       <div class="auth-wrapper">
             <NavAuth :active-tab="activeTab" @change-tab="toggleTab" />
-            
             <AuthRegister v-if="activeTab === 'register'" />
             <AuthLogin v-else />
       </div>

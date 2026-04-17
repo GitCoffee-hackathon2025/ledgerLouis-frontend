@@ -2,23 +2,59 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
 import BaseInput from '../inputs/BaseInput.vue';
-
 import PrimaryButton from '../inputs/PrimaryButton.vue';
+import UserService from '../../services/userService';
+import ResponsePopUp from './ResponsePopUp.vue';
+import type { userRegisterType } from '@/types/UserTypes';
 
-const formData = reactive({
+const userService = new UserService();
+
+const formData = reactive<userRegisterType>({
   name: '',
-  identity: '',
+  email: '',
   password: '',
-  confirmPassword: ''
+  passwordConfirmation: ''
 });
 
-const handleRegister = () => {
-  console.log('Dados enviados:', formData);
+const response = reactive({
+  status: '',
+  message: '',
+  show: false
+});
+
+const handleRegister = async () => {
+  try {
+    if(formData.password !== formData.passwordConfirmation) {
+      response.status = 'error';
+      response.message = 'As senhas não coincidem';
+      response.show = true;
+      return;
+    }
+    if(!formData.name || !formData.email || !formData.password) {
+      response.status = 'error';
+      response.message = 'Preencha todos os campos';
+      response.show = true;
+      return;
+    }
+    await userService.register(formData);
+
+    response.status = 'success';
+    response.message = 'Cadastro realizado com sucesso!';
+    response.show = true;
+
+  } catch (error: any) {
+    response.status = 'error';
+    response.message = error?.response?.data?.message || 'Erro ao cadastrar usuário';
+    response.show = true;
+  }
+  setTimeout(() => {
+    response.show = false;
+  }, 3000);
 };
 </script>
 <template>
   <div class="register-card">
-    
+    <ResponsePopUp :status="response.status" :message="response.message" :show="response.show"  @close="response.show = false"/>
     <form @submit.prevent="handleRegister" class="form-content">
       <BaseInput 
         label="Nome da Empresa"
@@ -29,7 +65,7 @@ const handleRegister = () => {
       <BaseInput 
         label="E-mail ou CNPJ"
         placeholder="exemplo@email.com"
-        v-model="formData.identity"
+        v-model="formData.email"
       />
       
       <BaseInput 
@@ -43,7 +79,7 @@ const handleRegister = () => {
         label="Confirmar Senha"
         type="password"
         placeholder="••••••••"
-        v-model="formData.confirmPassword"
+        v-model="formData.passwordConfirmation"
       />
 
       <div class="actions">

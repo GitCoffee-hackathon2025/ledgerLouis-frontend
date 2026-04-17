@@ -2,26 +2,56 @@
 import { reactive } from 'vue';
 import BaseInput from '../inputs/BaseInput.vue';
 import PrimaryButton from '../inputs/PrimaryButton.vue';
+import  UserService  from '../../services/userService';
+import type { userLoginType} from '../../types/UserTypes';
+import ResponsePopUp from './ResponsePopUp.vue';
 
-const loginData = reactive({
-  identity: '',
+const userService = new UserService();
+const loginData = reactive<userLoginType>({
+  email: '',
   password: '',
   rememberMe: false
 });
+const response = reactive({
+  status: '',
+  message: '',
+  show: false
+});
 
-const handleLogin = () => {
-  console.log('Tentativa de login:', loginData);
+const handleLogin = async () => {
+  try {
+    if(!loginData.email || !loginData.password) {
+      response.status = 'error';
+      response.message = 'Preencha todos os campos';
+      response.show = true;
+      return;
+    }
+    if(loginData.rememberMe) {
+      localStorage.setItem('rememberMe', 'true');
+    } else {
+      localStorage.removeItem('rememberMe');
+    }
+    await userService.login(loginData);
+    response.status = 'success';
+    response.message = 'Login realizado com sucesso!';
+    response.show = true;
+  } catch (error: any) {
+    response.status = 'error';
+    response.message = error?.response?.data?.message || 'Erro ao fazer login';
+    response.show = true;
+  }
 };
 </script>
 
 <template>
+  <ResponsePopUp :status="response.status" :message="response.message" :show="response.show" @close="response.show = false" />
   <div class="login-card">
     <form @submit.prevent="handleLogin" class="form-content">
       
       <BaseInput 
         label="E-mail ou CNPJ"
         placeholder="Digite seu acesso"
-        v-model="loginData.identity"
+        v-model="loginData.email"
       />
       
       <BaseInput 

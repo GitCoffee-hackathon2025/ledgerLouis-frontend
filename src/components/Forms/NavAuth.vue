@@ -1,27 +1,28 @@
+<script setup lang="ts">
+const props = defineProps<{
+  activeTab: string;
+}>();
+
+const emit = defineEmits(['change-tab']);
+</script>
+
 <template>
   <nav class="auth-nav">
     <button 
-      :class="['nav-item', { active: activeTab === 'login' }]" 
-      @click="activeTab = 'login'"
+      :class="['nav-item', { active: props.activeTab === 'login' }]" 
+      @click="emit('change-tab', 'login')"
     >
-      <i class="icon-entrar"></i>
       Entrar
     </button>
     
     <button 
-      :class="['nav-item', { active: activeTab === 'register' }]" 
-      @click="activeTab = 'register'"
+      :class="['nav-item', { active: props.activeTab === 'register' }]" 
+      @click="emit('change-tab', 'register')"
     >
       Registrar-se
-      <i class="icon-user-plus"></i>
     </button>
   </nav>
 </template>
-
-<script setup lang="ts">
-import { ref } from 'vue';
-const activeTab = ref('register');
-</script>
 
 <style scoped>
 .auth-nav {
