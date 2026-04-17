@@ -5,13 +5,11 @@ import PrimaryButton from '../inputs/PrimaryButton.vue';
 import  UserService  from '../../services/userService';
 import type { userLoginType} from '../../types/UserTypes';
 import ResponsePopUp from './ResponsePopUp.vue';
-
+import { useUserStore } from '@/stores/userStore';
+const userStore = useUserStore();
+const loginData = userStore.userLoginData as userLoginType;
 const userService = new UserService();
-const loginData = reactive<userLoginType>({
-  email: '',
-  password: '',
-  rememberMe: false
-});
+
 const response = reactive({
   status: '',
   message: '',
