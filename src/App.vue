@@ -20,9 +20,10 @@
 </template>
 
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import { RouterLink, RouterView } from 'vue-router'
+import BottomNav from './components/BottomNav.vue'
+import FooterSection from './components/FooterSection.vue';
 import TopNav from './components/TopNav.vue';
-import BottomNav from './components/BottomNav.vue';
 </script>
 
 <style>
