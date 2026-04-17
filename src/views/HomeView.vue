@@ -32,6 +32,12 @@
       </div>
     </section>
 
+    <CompanyTestimonials />
+
+    <CalltoAction @signup="handleSignup" />
+
+    <FooterSection />
+
     <div class="bottom-spacer"></div>
   </main>
 </template>
@@ -39,7 +45,9 @@
 <script setup lang="ts">
 import HeroSection from '@/components/HeroSection.vue';
 import FeatureItem from '@/components/FeatureItem.vue';
-
+import CompanyTestimonials from '@/components/CompanyTestimonials.vue';
+import FooterSection from '@/components/FooterSection.vue';
+import CalltoAction from '@/components/CalltoAction.vue';
 const handleSignup = () => {
   console.log("Navegar para cadastro...");
 };
@@ -52,13 +60,15 @@ const handleSignup = () => {
 }
 
 .features-section {
-  padding: 30px 25px;
+  /* Reduzi de 30px para 10px no topo */
+  padding: 10px 25px 30px 25px; 
 }
 
 .section-title {
   font-size: 22px;
   color: #065f46;
-  margin-bottom: 40px;
+  /* Reduzi de 40px para 20px */
+  margin-bottom: 20px; 
   font-weight: 600;
 }
 
