@@ -1,97 +1,162 @@
 <template>
+  <Transition name="fade">
+    <div v-if="isMenuOpen" class="nav-overlay" @click="isMenuOpen = false"></div>
+  </Transition>
+
+  <div :class="['floating-menu', { 'is-open': isMenuOpen }]">
+    <button class="btn-action btn-income" @click="handleNavigate('/add/income')">
+      Entrada
+      <ArrowUp :size="20" />
+    </button>
+
+    <button class="btn-action btn-expense" @click="handleNavigate('/add/expense')">
+      Saída
+      <ArrowDown :size="20" />
+    </button>
+  </div>
+
   <nav class="bottom-nav">
-    <router-link
-      v-for="item in navItems"
-      :key="item.name"
-      :to="item.route"
-      class="nav-item"
-      active-class="nav-item--active"
-      exact-active-class="nav-item--active"
+    <button 
+      class="nav-item" 
+      :class="{ 'active': route.path === '/' }" 
+      @click="handleNavigate('/')"
     >
-      <span class="nav-icon" v-html="item.icon"></span>
-      <span class="nav-label">{{ item.label }}</span>
-    </router-link>
+      <div class="icon-wrapper"><Home :size="24" /></div>
+      <span>Início</span>
+    </button>
+
+    <button 
+      class="nav-item" 
+      :class="{ 'active': route.path === '/management' }" 
+      @click="handleNavigate('/management')"
+    >
+      <div class="icon-wrapper"><Layers :size="24" /></div>
+      <span>Gerenciamento</span>
+    </button>
+
+    <button 
+      class="nav-item btn-add-wrapper" 
+      @click="isMenuOpen = !isMenuOpen"
+    >
+      <div :class="['plus-icon', { 'rotated': isMenuOpen }]">
+        <Plus :size="28" />
+      </div>
+      <span :class="{ 'label-active': isMenuOpen }">Adicionar</span>
+    </button>
+
+    <button 
+      class="nav-item" 
+      :class="{ 'active': route.path === '/reports' }" 
+      @click="handleNavigate('/reports')"
+    >
+      <div class="icon-wrapper"><PieChart :size="24" /></div>
+      <span>Relatórios</span>
+    </button>
+
+    <button 
+      class="nav-item" 
+      :class="{ 'active': route.path === '/settings' }" 
+      @click="handleNavigate('/settings')"
+    >
+      <div class="icon-wrapper"><Settings :size="24" /></div>
+      <span>Configurações</span>
+    </button>
   </nav>
 </template>
 
-<script setup>
-const navItems = [
-  {
-    name: 'home',
-    label: 'Home',
-    route: '/',
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
-      <polyline points="9 21 9 12 15 12 15 21"/>
-    </svg>`,
-  },
-  {
-    name: 'funcionarios',
-    label: 'Funcionários',
-    route: '/funcionarios',
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="9" cy="7" r="3"/>
-      <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
-      <circle cx="17" cy="7" r="3"/>
-      <path d="M21 21v-2a4 4 0 0 0-3-3.87"/>
-    </svg>`,
-  },
-  {
-    name: 'adicionar',
-    label: 'Adicionar',
-    route: '/adicionar',
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <line x1="12" y1="5" x2="12" y2="19"/>
-      <line x1="5" y1="12" x2="19" y2="12"/>
-    </svg>`,
-  },
-  {
-    name: 'relatorio',
-    label: 'Relatório',
-    route: '/relatorio',
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="9"/>
-      <path d="M12 12 L12 3"/>
-      <path d="M12 12 L18.5 8.5"/>
-      <path d="M12 12 L16 17"/>
-    </svg>`,
-  },
-  {
-    name: 'configuracoes',
-    label: 'Configurações',
-    route: '/configuracoes',
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="3"/>
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33
-        1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06
-        a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09
-        A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06
-        A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51
-        a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9
-        a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-    </svg>`,
-  },
-]
+<script setup lang="ts">
+import { ref } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { Home, Layers, Plus, PieChart, Settings, ArrowUp, ArrowDown } from 'lucide-vue-next';
+
+const isMenuOpen = ref(false);
+const router = useRouter();
+const route = useRoute();
+
+const handleNavigate = (path: string) => {
+  router.push(path);
+  isMenuOpen.value = false;
+};
 </script>
 
 <style scoped>
+/* Mantive os mesmos estilos de alta qualidade que definimos antes */
+.nav-item, .btn-action {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  border: none;
+  outline: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(3px);
+  z-index: 998;
+}
+
+.floating-menu {
+  position: fixed;
+  bottom: 105px; 
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 220px;
+  z-index: 999;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.floating-menu.is-open {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+.btn-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 50px;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+}
+
+.btn-income { 
+  background: linear-gradient(135deg, #27B969 0%, #1DE276 100%); 
+}
+.btn-expense { 
+  background: linear-gradient(135deg, #E52124 0%, #FF585A 100%); 
+}
+
 .bottom-nav {
   position: fixed;
   bottom: 0;
   left: 0;
-  right: 0;
-  z-index: 100;
-
+  width: 100%;
+  z-index: 1000;
+  background-color: white;
+  padding: 8px 5px 25px 5px;
   display: flex;
-  align-items: center;
   justify-content: space-around;
-
-  background: #ffffff;
-  border-radius: 20px 20px 0 0;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
-
-  padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
-  height: calc(68px + env(safe-area-inset-bottom));
+  align-items: flex-end;
+  border-radius: 30px 30px 0 0;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
 }
 
 .nav-item {
@@ -99,54 +164,70 @@ const navItems = [
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-
   flex: 1;
-  min-width: 0;
-  padding: 6px 4px;
-  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 60px;
+}
 
+.nav-item span {
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 5px;
   color: #9ca3af;
-  text-decoration: none;
-  transition: color 0.25s ease, transform 0.15s ease;
+  transition: color 0.3s;
+}
 
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
+.icon-wrapper {
+  padding: 6px 18px;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+}
+
+.nav-item.active .icon-wrapper {
+  background-color: #f3f4f6;
+  color: #27B969;
+}
+
+.nav-item.active span {
+  color: #111827;
+}
+
+.plus-icon {
+  background: #f9fafb;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  color: #111827;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.plus-icon.rotated {
+  transform: rotate(45deg);
+  background-color: #fef2f2;
+  color: #E52124;
+}
+
+.label-active {
+  color: #E52124 !important;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 
 .nav-item:active {
   transform: scale(0.92);
-}
-
-.nav-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 34px;
-  border-radius: 10px;
-  transition:
-    background 0.25s ease,
-    transform 0.25s ease,
-    box-shadow 0.25s ease;
-}
-
-.nav-label {
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 64px;
-  text-align: center;
-  transition: color 0.25s ease;
-
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-.nav-item--active .nav-label {
-  color: #06514C;
-  font-weight: 600;
 }
 </style>
