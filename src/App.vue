@@ -20,6 +20,7 @@
 </template>
 
 <script setup lang="ts">
+import { RouterView } from 'vue-router'
 import TopNav from './components/TopNav.vue';
 import BottomNav from './components/BottomNav.vue';
 </script>
@@ -32,6 +33,8 @@ body, html {
   overflow-x: hidden;
 }
 
+<style scoped>
+/* Recomendo usar grid para a criação dos layouts - William */
 .app-layout {
   display: flex;
   flex-direction: column;
