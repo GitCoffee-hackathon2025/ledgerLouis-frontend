@@ -20,9 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
-import BottomNav from './components/BottomNav.vue'
-import FooterSection from './components/FooterSection.vue';
+import BottomNav from './components/BottomNav.vue';
 import TopNav from './components/TopNav.vue';
 </script>
 
@@ -33,6 +31,7 @@ body, html {
   padding: 0;
   overflow-x: hidden;
 }
+</style>
 
 <style scoped>
 /* Recomendo usar grid para a criação dos layouts - William */

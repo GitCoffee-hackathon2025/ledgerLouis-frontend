@@ -17,7 +17,7 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 
 const goToProfile = () => {
-  router.push('/settings');
+  router.push('/entrar');
 };
 </script>
 

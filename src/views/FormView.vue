@@ -1,16 +1,25 @@
 <script setup lang="ts">
-import { ref } from 'vue'; 
+import { ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import AuthLogin from '@/components/Forms/AuthLogin.vue';
 import AuthRegister from '@/components/Forms/AuthRegister.vue';
 import NavAuth from '@/components/Forms/NavAuth.vue';
 
-
-const activeTab = ref('register'); 
-
+const route = useRoute();
+const router = useRouter();
+const activeTab = ref(route.meta.tab === 'login' ? 'login' : 'register');
 
 const toggleTab = (tab: string) => {
   activeTab.value = tab;
+  router.replace({ name: tab === 'login' ? 'entrar' : 'cadastro' });
 };
+
+watch(
+  () => route.meta.tab,
+  (tab) => {
+    activeTab.value = tab === 'login' ? 'login' : 'register';
+  }
+);
 </script>
 
 <template>
