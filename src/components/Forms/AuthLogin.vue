@@ -2,12 +2,12 @@
 import { reactive } from 'vue';
 import BaseInput from '../inputs/BaseInput.vue';
 import PrimaryButton from '../inputs/PrimaryButton.vue';
-import  UserService  from '../../services/userService';
-import type { userLoginType} from '../../types/UserTypes';
+import UserService from '../../services/userService';
 import ResponsePopUp from './ResponsePopUp.vue';
 import { useUserStore } from '@/stores/userStore';
+
 const userStore = useUserStore();
-const loginData = userStore.userLoginData as userLoginType;
+const loginData = userStore.userLoginData;
 const userService = new UserService();
 
 const response = reactive({

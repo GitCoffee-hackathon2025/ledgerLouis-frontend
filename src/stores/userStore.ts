@@ -1,24 +1,40 @@
-import { defineStore } from "pinia";
-import { ref } from "vue";
-import type { userLoginType, userRegisterType } from "@/types/UserTypes";
-
+import { defineStore } from 'pinia';
+import { reactive } from 'vue';
+import type { userLoginType, userRegisterType } from '@/types/UserTypes';
 
 export const useUserStore = defineStore('user', () => {
-    
-  const userRegisterData = ref<userRegisterType | null>(null);
-  const userLoginData = ref<userLoginType | null>(null);
+  const userRegisterData = reactive<userRegisterType>({
+    name: '',
+    email: '',
+    password: '',
+    // passwordConfirmation: ''
+  });
+  const userLoginData = reactive<userLoginType>({
+    email: '',
+    password: '',
+    // rememberMe: false
+  });
 
   const setUserRegister = (userData: userRegisterType) => {
-    userRegisterData.value = userData;
+    Object.assign(userRegisterData, userData);
   };
 
   const setUserLogin = (userData: userLoginType) => {
-    userLoginData.value = userData;
+    Object.assign(userLoginData, userData);
   };
 
   const clearUser = () => {
-    userRegisterData.value = null;
-    userLoginData.value = null;
+    Object.assign(userRegisterData, {
+      name: '',
+      email: '',
+      password: '',
+      // passwordConfirmation: ''
+    });
+    Object.assign(userLoginData, {
+      email: '',
+      password: '',
+      rememberMe: false
+    });
   };
 
   return {
