@@ -13,7 +13,7 @@ const formData = reactive<userRegisterType>({
   name: '',
   email: '',
   password: '',
-  passwordConfirmation: ''
+  // passwordConfirmation: ''
 });
 
 const response = reactive({
@@ -24,12 +24,12 @@ const response = reactive({
 
 const handleRegister = async () => {
   try {
-    if(formData.password !== formData.passwordConfirmation) {
-      response.status = 'error';
-      response.message = 'As senhas não coincidem';
-      response.show = true;
-      return;
-    }
+    // if(formData.password !== formData.passwordConfirmation) {
+    //   response.status = 'error';
+    //   response.message = 'As senhas não coincidem';
+    //   response.show = true;
+    //   return;
+    // }
     if(!formData.name || !formData.email || !formData.password) {
       response.status = 'error';
       response.message = 'Preencha todos os campos';
@@ -57,13 +57,13 @@ const handleRegister = async () => {
     <ResponsePopUp :status="response.status" :message="response.message" :show="response.show"  @close="response.show = false"/>
     <form @submit.prevent="handleRegister" class="form-content">
       <BaseInput 
-        label="Nome da Empresa"
+        label="Nome de Usuário"
         placeholder="Digite o nome"
         v-model="formData.name"
       />
       
       <BaseInput 
-        label="E-mail ou CNPJ"
+        label="E-mail"
         placeholder="exemplo@email.com"
         v-model="formData.email"
       />
@@ -75,12 +75,12 @@ const handleRegister = async () => {
         v-model="formData.password"
       />
       
-      <BaseInput 
+      <!-- <BaseInput 
         label="Confirmar Senha"
         type="password"
         placeholder="••••••••"
         v-model="formData.passwordConfirmation"
-      />
+      /> -->
 
       <div class="actions">
         <PrimaryButton type="submit" label="Cadastrar" >Cadastrar</PrimaryButton>

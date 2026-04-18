@@ -7,12 +7,12 @@ export const useUserStore = defineStore('user', () => {
     name: '',
     email: '',
     password: '',
-    passwordConfirmation: ''
+    // passwordConfirmation: ''
   });
   const userLoginData = reactive<userLoginType>({
     email: '',
     password: '',
-    rememberMe: false
+    // rememberMe: false
   });
 
   const setUserRegister = (userData: userRegisterType) => {
@@ -28,7 +28,7 @@ export const useUserStore = defineStore('user', () => {
       name: '',
       email: '',
       password: '',
-      passwordConfirmation: ''
+      // passwordConfirmation: ''
     });
     Object.assign(userLoginData, {
       email: '',
