@@ -76,7 +76,7 @@ const handleLogin = async () => {
 
 <style scoped>
 .login-card {
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   width: 100%;
   max-width: 400px;
   border-radius: 0 0 20px 20px; 
@@ -100,7 +100,7 @@ const handleLogin = async () => {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--color-placeholder);
+  color: var(--color-text-secondary);
   cursor: pointer;
 }
 

@@ -59,7 +59,7 @@ const handleSignup = () => {
 
 <style scoped>
 .home-container {
-  background-color: #f9fafb; 
+  background-color: var(--color-surface-soft);
   min-height: 100vh;
 }
 
@@ -70,7 +70,7 @@ const handleSignup = () => {
 
 .section-title {
   font-size: 22px;
-  color: #065f46;
+  color: var(--color-success-dark);
   /* Reduzi de 40px para 20px */
   margin-bottom: 20px; 
   font-weight: 600;

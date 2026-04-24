@@ -34,7 +34,7 @@ const description = computed(() => {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background-color: #f8fafc;
+  background-color: var(--color-surface-alt);
 }
 
 .placeholder-card {
@@ -42,19 +42,19 @@ const description = computed(() => {
   max-width: 520px;
   padding: 32px;
   border-radius: 24px;
-  background: white;
+  background: var(--color-surface);
   box-shadow: 0 18px 60px rgba(15, 23, 42, 0.08);
   text-align: center;
 }
 
 h1 {
   font-size: 28px;
-  color: #064e3b;
+  color: var(--color-success-dark);
   margin-bottom: 14px;
 }
 
 p {
-  color: #475569;
+  color: var(--color-text-secondary);
   line-height: 1.75;
   margin-bottom: 24px;
 }
@@ -63,8 +63,8 @@ p {
   display: inline-block;
   padding: 12px 24px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #27B969 0%, #1DE276 100%);
-  color: white;
+  background: var(--color-success-gradient);
+  color: var(--color-surface);
   font-weight: 600;
   text-decoration: none;
 }

@@ -5,15 +5,27 @@
   --color-primary: #1dcd6c;
   --color-primary-hover: #17b85e;
   --color-primary-glow: rgba(29, 205, 108, 0.28);
- 
-  --color-bg: #dfe2ea;
-  --color-card: #bcbec3;
-  --color-input-bg: #21242f;
-  --color-input-focus-bg: #252938;
-  --color-hover-bg: #2a2d38;
+  --color-success: #1dcd6c;
+  --color-success-dark: #065f46;
+  --color-success-alt: #27B969;
+  --color-success-gradient: linear-gradient(135deg, #27B969 0%, #1DE276 100%);
+
+  --color-danger: #E52124;
+  --color-danger-soft: #fef2f2;
+  --color-danger-gradient: linear-gradient(135deg, #E52124 0%, #FF585A 100%);
+
+  --color-background: #dfe2ea;
+  --color-bg: var(--color-background);
+  --color-surface: #ffffff;
+  --color-surface-rgb: 255, 255, 255;
+  --color-surface-soft: #f9fafb;
+  --color-surface-alt: #f8fafc;
+  --color-border: #f3f4f6;
   --color-divider: rgba(255,255,255,0.07);
- 
-  --color-text: #000000;
+
+  --color-text: #111827;
+  --color-text-secondary: #6b7280;
+  --color-text-tertiary: #9ca3af;
   --color-placeholder: #5a6070;
   --color-icon: #5a6070;
  

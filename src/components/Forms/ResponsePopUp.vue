@@ -43,7 +43,7 @@ const handleClose = () => {
 }
 
 .popup {
-  background: white;
+  background: var(--color-surface);
   border-radius: 16px;
   padding: 2rem;
   width: 100%;
@@ -71,7 +71,7 @@ const handleClose = () => {
 }
 
 .icon.error {
-  background: #ff4d4f;
+  background: var(--color-danger);
 }
 
 .title {
@@ -82,7 +82,7 @@ const handleClose = () => {
 
 .message {
   font-size: 14px;
-  color: #555;
+  color: var(--color-text-secondary);
 }
 
 /* animação */

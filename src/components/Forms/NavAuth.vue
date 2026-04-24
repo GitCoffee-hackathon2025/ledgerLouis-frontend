@@ -27,7 +27,7 @@ const emit = defineEmits(['change-tab']);
 <style scoped>
 .auth-nav {
   display: flex;
-  background-color: var(--color-primary); 
+  background-color: var(--color-primary);
   width: 100%;
   height: 60px;
   border-radius: 20px 20px 0 0;
@@ -45,15 +45,15 @@ const emit = defineEmits(['change-tab']);
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 1rem;
-  color: #dbd8d8;
+  color: rgba(var(--color-surface-rgb), 0.85);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 
 .nav-item.active {
-  background-color: #fff;
-  color: #14c457;
+  background-color: var(--color-surface);
+  color: var(--color-success);
 }
 .nav-item:first-child.active {
   border-radius: 0 40px 0 0;

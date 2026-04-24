@@ -137,10 +137,10 @@ const handleNavigate = (path: string) => {
 }
 
 .btn-income { 
-  background: linear-gradient(135deg, #27B969 0%, #1DE276 100%); 
+  background: var(--color-success-gradient);
 }
 .btn-expense { 
-  background: linear-gradient(135deg, #E52124 0%, #FF585A 100%); 
+  background: var(--color-danger-gradient);
 }
 
 .bottom-nav {
@@ -149,7 +149,7 @@ const handleNavigate = (path: string) => {
   left: 0;
   width: 100%;
   z-index: 1000;
-  background-color: white;
+  background-color: var(--color-surface);
   padding: 8px 5px 25px 5px;
   display: flex;
   justify-content: space-around;
@@ -174,7 +174,7 @@ const handleNavigate = (path: string) => {
   font-size: 10px;
   font-weight: 700;
   margin-top: 5px;
-  color: #9ca3af;
+  color: var(--color-text-tertiary);
   transition: color 0.3s;
 }
 
@@ -185,20 +185,20 @@ const handleNavigate = (path: string) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #374151;
+  color: var(--color-text);
 }
 
 .nav-item.active .icon-wrapper {
-  background-color: #f3f4f6;
-  color: #27B969;
+  background-color: var(--color-border);
+  color: var(--color-success-alt);
 }
 
 .nav-item.active span {
-  color: #111827;
+  color: var(--color-text);
 }
 
 .plus-icon {
-  background: #f9fafb;
+  background: var(--color-surface-soft);
   width: 44px;
   height: 44px;
   display: flex;
@@ -206,18 +206,18 @@ const handleNavigate = (path: string) => {
   justify-content: center;
   border-radius: 50%;
   transition: all 0.3s ease;
-  color: #111827;
+  color: var(--color-text);
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .plus-icon.rotated {
   transform: rotate(45deg);
-  background-color: #fef2f2;
-  color: #E52124;
+  background-color: var(--color-danger-soft);
+  color: var(--color-danger);
 }
 
 .label-active {
-  color: #E52124 !important;
+  color: var(--color-danger) !important;
 }
 
 .fade-enter-active, .fade-leave-active {

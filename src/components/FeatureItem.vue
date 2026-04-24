@@ -29,23 +29,23 @@ defineProps<{
 .feature-number {
   font-size: 28px;
   font-weight: 800;
-  color: #111827;
+  color: var(--color-text);
   line-height: 1;
   min-width: 25px;
-  border-left: 3px solid #1de276; /* A barrinha verde ao lado do número */
+  border-left: 3px solid var(--color-success-alt); 
   padding-left: 12px;
 }
 
 .feature-text h3 {
   font-size: 17px;
-  color: #111827;
+  color: var(--color-text);
   margin: 0 0 6px 0;
   font-weight: 700;
 }
 
 .feature-text p {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   line-height: 1.4;
   margin: 0;
 }
