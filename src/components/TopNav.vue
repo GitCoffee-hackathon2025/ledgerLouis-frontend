@@ -4,20 +4,20 @@
       <span class="logo-text">LEDGER</span>
     </div>
 
-    <button class="profile-button" @click="goToProfile">
-      <User :size="28" stroke-width="2.5" />
+    <button class="profile-button" @click="goToCompany">
+      <Building :size="28" stroke-width="2.5" />
     </button>
   </header>
 </template>
 
 <script setup lang="ts">
-import { User } from 'lucide-vue-next';
+import { Building } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
-const goToProfile = () => {
-  router.push('/entrar');
+const goToCompany = () => {
+  router.push({ name: 'company' });
 };
 </script>
 
