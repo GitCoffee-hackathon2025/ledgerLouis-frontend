@@ -19,7 +19,7 @@
 
 <style scoped>
 .hero {
-  background-color: #fff;
+  background-color: var(--color-surface);
   padding-bottom: 2rem;
 }
 
@@ -36,7 +36,7 @@
 
 h1 {
   font-size: 26px;
-  color: #065f46; 
+  color: var(--color-success-dark);
   margin-bottom: 12px;
   line-height: 1.2;
 }
@@ -47,14 +47,14 @@ h1 {
 
 .hero-subtitle {
   font-size: 15px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   line-height: 1.5;
   margin-bottom: 24px;
 }
 
 .btn-signup {
-  background: linear-gradient(135deg, #27B969 0%, #1DE276 100%);
-  color: white;
+  background: var(--color-success-gradient);
+  color: var(--color-surface);
   border: none;
   padding: 12px 35px;
   border-radius: 8px;

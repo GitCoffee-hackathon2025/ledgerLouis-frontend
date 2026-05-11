@@ -112,13 +112,13 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin-bottom: 20px;
 }
 
 .brand-highlight {
   font-size: 23px; /* Reduzido de 26px */
-  color: #065f46;
+  color: var(--color-success-dark);
   text-transform: none;
   display: block;
   margin-top: 4px;
@@ -136,11 +136,11 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
   position: absolute;
   width: 100%;
   height: 175px; /* Reduzido de 190px */
-  background: white;
+  background: var(--color-surface);
   border-radius: 18px; /* Levemente mais arredondado proporcionalmente */
   padding: 18px; /* Reduzido de 22px */
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--color-border);
   transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
   box-sizing: border-box;
   display: flex;
@@ -175,24 +175,24 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
 .logo-box {
   width: 36px; /* Reduzido de 42px */
   height: 36px;
-  background-color: #f0fdf4;
+  background-color: var(--color-surface-soft);
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #27B969;
+  color: var(--color-success-alt);
 }
 
 .header-text h3 {
   font-size: 16px; /* Reduzido de 18px */
   font-weight: 700;
   margin: 0;
-  color: #111827;
+  color: var(--color-text);
 }
 
 .niche {
   font-size: 11px; /* Reduzido de 12px */
-  color: #9ca3af;
+  color: var(--color-text-tertiary);
   margin: 0;
 }
 
@@ -205,14 +205,14 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
   position: absolute;
   left: 0;
   top: 0;
-  color: #27B969;
+  color: var(--color-success-alt);
   opacity: 0.2;
 }
 
 .testimonial-text {
   font-size: 14px; /* Reduzido de 15px */
   line-height: 1.4;
-  color: #4b5563;
+  color: var(--color-text-secondary);
   margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -224,7 +224,7 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
   margin-top: 8px;
   display: flex;
   justify-content: flex-end;
-  border-top: 1px solid #f9fafb;
+  border-top: 1px solid var(--color-surface-soft);
   padding-top: 8px;
 }
 
@@ -234,7 +234,7 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
   gap: 4px;
   font-size: 11px;
   font-weight: 700;
-  color: #27B969;
+  color: var(--color-success-alt);
   text-transform: uppercase;
 }
 

@@ -54,7 +54,7 @@ label {
 
 .custom-input:focus {
   border-color: var(--color-primary);
-  background-color: #fff;
+  background-color: var(--color-surface);
   box-shadow: 0 4px 12px var(--color-primary-glow);
 }
 

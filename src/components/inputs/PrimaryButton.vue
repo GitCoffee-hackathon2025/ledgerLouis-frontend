@@ -15,7 +15,7 @@ defineEmits(['click'])
   width: 60%;
   padding: 15px;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-surface);
   font-family: var(--font-body);
   font-size: 15px;
   font-weight: 700;

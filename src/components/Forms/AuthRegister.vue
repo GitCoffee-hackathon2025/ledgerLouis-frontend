@@ -92,7 +92,7 @@ const handleRegister = async () => {
 
 <style scoped>
 .register-card {
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   width: 100%;
   max-width: 400px;
   border-radius: 0 0 20px 20px;
