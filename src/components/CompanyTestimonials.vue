@@ -17,7 +17,8 @@
           <div class="card-content-wrapper">
             <div class="card-header">
               <div class="logo-box">
-                <component :is="company.icon" :size="20" class="icon" />
+                <img v-if="company.image" :src="company.image" :alt="company.name" class="company-logo" />
+                <component v-else :is="company.icon" :size="20" class="icon" />
               </div>
               <div class="header-text">
                 <h3>{{ company.name }}</h3>
@@ -46,25 +47,31 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { Coffee, Activity, Quote, ChevronRight, Laptop } from 'lucide-vue-next';
+import gitcoffeImg from '@/assets/img/Gitcoffeimg.png';
+import healthupImg from '@/assets/img/healthupimg.png';
+import aquaImg from '@/assets/img/AQUAimg.png';
 
 const companies = ref([
   {
     name: 'GitCoffe',
     niche: 'Empresa de software',
     quote: 'O Ledger Louis trouxe uma clareza financeira que nunca tivemos. Interface muito intuitiva e prática.',
-    icon: Coffee
+    icon: Coffee,
+    image: gitcoffeImg
   },
   {
     name: 'HealthUp',
     niche: 'Saúde e Bem-estar',
     quote: 'Gerenciar os custos fixos ficou muito mais simples. Um benefício real para o nosso dia a dia.',
-    icon: Activity
+    icon: Activity,
+    image: healthupImg
   },
   {
-    name: 'TechFlow',
-    niche: 'Consultoria de TI',
-    quote: 'A melhor ferramenta para controle de fluxo de caixa que já utilizamos nos últimos anos.',
-    icon: Laptop
+    name: 'AQUA',
+    niche: 'dados hidrometeorológicos',
+    quote: 'A melhor ferramenta para controle de fluxo de caixa que já utilizamos nos últimos anos. Ganhamos o Hackton por causa dela',
+    icon: Laptop,
+    image: aquaImg
   }
 ]);
 
@@ -181,6 +188,19 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
   align-items: center;
   justify-content: center;
   color: var(--color-success-alt);
+  overflow: hidden;
+}
+
+.company-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.icon {
+  width: 100%;
+  height: 100%;
 }
 
 .header-text h3 {

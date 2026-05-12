@@ -37,7 +37,6 @@
 
         <div class="company-actions">
           <button class="secondary-button" @click="leaveCompany">Sair da empresa</button>
-          <button class="primary-button" @click="goToEdit">Editar empresa</button>
         </div>
       </div>
     </section>
@@ -54,9 +53,6 @@ const companyStore = useCompanyStore();
 
 const companyName = computed(() => companyStore.company.name || 'Minha Empresa');
 
-const goToEdit = () => {
-  router.push({ name: 'companyCreate' });
-};
 
 const leaveCompany = () => {
   companyStore.clearCompany();
@@ -149,5 +145,54 @@ p {
   border: 1px solid var(--color-success-dark);
   background: transparent;
   color: var(--color-success-dark);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .company-page {
+    padding: 20px 16px;
+  }
+
+  .company-card {
+    padding: 24px 20px;
+  }
+
+  .company-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  h1 {
+    font-size: 24px;
+  }
+
+  .company-avatar {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+  }
+
+  .company-actions {
+    flex-direction: column;
+  }
+
+  .primary-button,
+  .secondary-button {
+    width: 100%;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 20px;
+  }
+
+  .company-avatar {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
 }
 </style>

@@ -5,13 +5,13 @@
     </div>
 
     <button class="profile-button" @click="goToCompany">
-      <Building :size="28" stroke-width="2.5" />
+      <Briefcase :size="28" stroke-width="2.5" />
     </button>
   </header>
 </template>
 
 <script setup lang="ts">
-import { Building } from 'lucide-vue-next';
+import { Briefcase } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();

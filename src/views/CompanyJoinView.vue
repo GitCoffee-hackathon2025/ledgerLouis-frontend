@@ -1,28 +1,27 @@
 <template>
   <main class="company-join-page">
-    <section class="company-join-card">
+    <section class="company-join-container">
       <header class="header-block">
         <p class="eyebrow">Entrar em Empresa</p>
         <h1>Conecte-se a uma empresa existente</h1>
         <p class="description">
-          Por enquanto, você pode usar o nome da empresa para acessar um perfil existente sem autenticação.
+          Digite o código de acesso para entrar em uma empresa.
         </p>
       </header>
 
       <form class="company-form" @submit.prevent="handleJoin">
-        <label>
-          <span>Nome da empresa</span>
-          <input v-model="companyName" type="text" placeholder="Ex: Studio Louis" required />
-        </label>
-
-        <label>
-          <span>Código de acesso (opcional)</span>
-          <input v-model="companyCode" type="text" placeholder="12345" />
-        </label>
+        <BaseInput
+          id="companyCode"
+          label="Código de acesso"
+          type="text"
+          placeholder="12345"
+          v-model="companyCode"
+          required
+        />
 
         <div class="form-actions">
           <button type="button" class="secondary-button" @click="goBack">Voltar</button>
-          <button type="submit" class="primary-button">Entrar</button>
+          <PrimaryButton type="submit" :loading="loading">Entrar</PrimaryButton>
         </div>
       </form>
     </section>
@@ -30,21 +29,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCompanyStore } from '@/stores/CompanyStore';
+import BaseInput from '@/components/inputs/BaseInput.vue';
+import PrimaryButton from '@/components/inputs/PrimaryButton.vue';
 
 const router = useRouter();
 const companyStore = useCompanyStore();
-const companyName = ref('');
 const companyCode = ref('');
+const loading = ref(false);
+
+const errors = reactive({
+  companyCode: false,
+});
 
 const goBack = () => {
   router.back();
 };
 
 const handleJoin = () => {
-  const joinedName = companyName.value.trim() || 'Empresa Conectada';
+  // Limpar erros anteriores
+  errors.companyCode = false;
+
+  // Validar campo obrigatório
+  if (!companyCode.value.trim()) {
+    errors.companyCode = true;
+    return;
+  }
+
+  loading.value = true;
+  const joinedName = `Empresa ${companyCode.value}`;
   companyStore.setCompanyData({
     name: joinedName,
     cnpj: '',
@@ -52,46 +67,44 @@ const handleJoin = () => {
     email: 'contato@empresa.com',
     website: 'https://www.empresa.com',
     phone: '(00) 00000-0000',
-    owner: companyCode.value ? `Código ${companyCode.value}` : 'Usuário Conectado',
+    owner: companyCode.value,
     hasCompany: true,
   });
   router.replace({ name: 'companySettings' });
+  loading.value = false;
 };
 </script>
 
 <style scoped>
 .company-join-page {
   min-height: calc(100vh - 65px);
-  padding: 32px 20px;
-  background-color: var(--color-surface-soft);
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  padding: 0;
+  background-color: var(--color-surface);
+  display: block;
 }
 
-.company-join-card {
+.company-join-container {
   width: 100%;
-  max-width: 700px;
-  padding: 34px;
+  padding: 48px 20px;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 28px;
-  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
 }
 
 .header-block {
-  margin-bottom: 28px;
+  margin-bottom: 40px;
+  padding: 0 0 24px 0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .eyebrow {
   color: var(--color-success-dark);
   font-weight: 700;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  font-size: 14px;
 }
 
 h1 {
-  font-size: 30px;
-  margin: 0 0 12px;
+  font-size: 36px;
+  margin: 0 0 16px;
   color: var(--color-text);
 }
 
@@ -99,11 +112,13 @@ h1 {
   color: var(--color-text-secondary);
   line-height: 1.75;
   max-width: 680px;
+  font-size: 16px;
 }
 
 .company-form {
   display: grid;
-  gap: 20px;
+  gap: 28px;
+  max-width: 600px;
 }
 
 label {
@@ -135,6 +150,54 @@ input:focus {
   gap: 16px;
   flex-wrap: wrap;
   margin-top: 6px;
+}
+
+.form-actions button,
+.form-actions ::v-deep(.primary-btn) {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .company-join-page {
+    padding: 0;
+  }
+
+  .company-join-container {
+    padding: 32px 16px;
+  }
+
+  h1 {
+    font-size: 28px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .primary-button {
+    width: 100%;
+  }
+
+  .secondary-button {
+    width: 100%;
+    order: 2;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 24px;
+  }
+
+  .company-join-container {
+    padding: 24px 16px;
+  }
+
+  .header-block {
+    margin-bottom: 28px;
+  }
 }
 
 .primary-button,
