@@ -16,7 +16,7 @@ export default class UserService {
     async login(userLoginData: userLoginType) {
         try {
             console.log('Dados de login recebidos:', userLoginData);
-            const response = await axiosInstance.post('/users/login', userLoginData)
+            const response = await axiosInstance.post('/auth/login', userLoginData)
             const { token } = response.data
             localStorage.setItem('auth_token', token)
             return response.data
