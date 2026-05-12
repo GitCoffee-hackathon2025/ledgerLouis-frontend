@@ -17,11 +17,26 @@ export default class UserService {
         try {
             console.log('Dados de login recebidos:', userLoginData);
             const response = await axiosInstance.post('/auth/login', userLoginData)
-            const { token } = response.data
-            localStorage.setItem('auth_token', token)
+            const { accessToken, refreshToken } = response.data
+            console.log('Dados de login recebidos:', response.data)
+
+            localStorage.setItem('access_token', accessToken)
+            localStorage.setItem('refresh_token', refreshToken)
+
+            console.log('access_token:', accessToken)
+            
             return response.data
         } catch (error) {
             console.error('Erro ao fazer login:', error)
+            throw error
+        }
+    }
+    async getUserInfo() {
+        try {
+            const response = await axiosInstance.get(`/auth/`)
+            return response.data
+        } catch (error) {
+            console.error('Erro ao buscar usuário:', error)
             throw error
         }
     }
