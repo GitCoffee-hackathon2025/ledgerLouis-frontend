@@ -8,6 +8,7 @@
       :value="modelValue"
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
       class="custom-input"
+      :class="{ 'input-error': error }"
     />
   </div>
 </template>
@@ -18,7 +19,8 @@ defineProps({
   label: String,
   type: { type: String, default: 'text' },
   placeholder: String,
-  modelValue: String
+  modelValue: String,
+  error: { type: Boolean, default: false }
 });
 defineEmits(['update:modelValue']);
 </script>
@@ -61,5 +63,15 @@ label {
 .custom-input::placeholder {
   color: var(--color-placeholder);
   opacity: 0.7;
+}
+
+.custom-input.input-error {
+  border-color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.05);
+}
+
+.custom-input.input-error:focus {
+  border-color: #dc2626;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 </style>

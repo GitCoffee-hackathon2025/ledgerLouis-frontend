@@ -42,6 +42,6 @@ export const useUserStore = defineStore('user', () => {
     userLoginData,
     setUserRegister,
     setUserLogin,
-    clearUser
+    clearUser,
   };
 });
