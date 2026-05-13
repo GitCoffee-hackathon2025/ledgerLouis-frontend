@@ -24,18 +24,31 @@ const response = reactive({
 
 const handleRegister = async () => {
   try {
-    // if(formData.password !== formData.passwordConfirmation) {
-    //   response.status = 'error';
-    //   response.message = 'As senhas não coincidem';
-    //   response.show = true;
-    //   return;
-    // }
-    if(!formData.name || !formData.email || !formData.password) {
+    if (!formData.name || !formData.email || !formData.password) {
       response.status = 'error';
       response.message = 'Preencha todos os campos';
       response.show = true;
       return;
     }
+
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(formData.email)) {
+      response.status = 'error';
+      response.message = 'Digite um e-mail válido';
+      response.show = true;
+      return;
+    }
+
+  
+    if (formData.password.length < 8) {
+      response.status = 'error';
+      response.message = 'A senha deve ter no mínimo 8 caracteres';
+      response.show = true;
+      return;
+    }
+
     await userService.register(formData);
 
     response.status = 'success';
@@ -44,9 +57,11 @@ const handleRegister = async () => {
 
   } catch (error: any) {
     response.status = 'error';
-    response.message = error?.response?.data?.message || 'Erro ao cadastrar usuário';
+    response.message =
+      error?.response?.data?.message || 'Erro ao cadastrar usuário';
     response.show = true;
   }
+
   setTimeout(() => {
     response.show = false;
   }, 3000);
