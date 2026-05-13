@@ -7,5 +7,5 @@ export type userRegisterType = {
 export type userLoginType = {
     email: string,
     password: string
-    // rememberMe?: boolean
+    rememberMe?: boolean
     }

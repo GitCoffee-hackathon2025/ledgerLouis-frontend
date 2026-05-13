@@ -12,7 +12,7 @@ export const useUserStore = defineStore('user', () => {
   const userLoginData = reactive<userLoginType>({
     email: '',
     password: '',
-    // rememberMe: false
+    rememberMe: false,
   });
 
   const setUserRegister = (userData: userRegisterType) => {

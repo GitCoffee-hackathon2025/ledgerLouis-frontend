@@ -24,6 +24,7 @@ const handleLogin = async () => {
       response.show = true;
       return;
     }
+    
     if(loginData.rememberMe) {
       localStorage.setItem('rememberMe', 'true');
     } else {

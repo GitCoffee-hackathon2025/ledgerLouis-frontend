@@ -86,6 +86,12 @@ const router = createRouter({
         description: 'A rota que você tentou acessar não existe. Volte ao início para continuar.',
       },
     },
+    {
+      path: '/userInfo',
+      name: 'userInfo',
+      component: () => import('../views/UserInfoView.vue'),
+      meta: { title: 'Informações do Usuário', description: 'Visualize e edite suas informações pessoais.' },
+    }
   ],
 });
 
