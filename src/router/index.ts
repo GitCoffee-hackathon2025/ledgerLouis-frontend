@@ -68,13 +68,13 @@ const router = createRouter({
     {
       path: '/add/income',
       name: 'addIncome',
-      component: () => import('../views/PlaceholderView.vue'),
+      component: () => import('../views/IncomeView.vue'),
       meta: { title: 'Adicionar Entrada', description: 'Cadastre uma nova entrada financeira.' },
     },
     {
       path: '/add/expense',
       name: 'addExpense',
-      component: () => import('../views/PlaceholderView.vue'),
+      component: () => import('../views/ExpenseView.vue'),
       meta: { title: 'Adicionar Saída', description: 'Cadastre uma nova despesa financeira.' },
     },
     {
