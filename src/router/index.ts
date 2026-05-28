@@ -36,6 +36,11 @@ const router = createRouter({
       component: () => import('../views/HomeView.vue'),
     },
     {
+      path: '/testUploader',
+      name: 'testUploader',
+      component: () => import('@/components/UploaderTest.vue'),
+    },
+    {
       path: '/cadastro',
       name: 'cadastro',
       component: () => import('../views/FormView.vue'),

@@ -27,7 +27,8 @@ export default class UserService {
                 refreshToken
             })
 
-            console.log('✅ Login bem-sucedido. Tokens salvos!')
+
+            localStorage.setItem('token', accessToken)
             
             return response.data
         } catch (error) {
@@ -46,25 +47,37 @@ export default class UserService {
         }
     }
 
-    // ✅ NOVO: Upload de avatar
     async uploadAvatar(file: File) {
-        try {
-            const formData = new FormData()
-            formData.append('file', file)
+  try {
 
-            const response = await axiosInstance.post(
-                '/users/me/profile-image',
-                formData,
-                {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
-                }
-            )
-            return response.data
-        } catch (error) {
-            console.error('Erro ao fazer upload de avatar:', error)
-            throw error
+    const formData = new FormData()
+
+    formData.append(
+      'file',
+      file
+    )
+
+    
+    const response =
+      await axiosInstance.post(
+        '/users/me/profile-image',
+        formData,
+        {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
         }
-    }
+      )
+
+    return response.data
+
+  } catch (error) {
+    console.error(
+      'Erro ao fazer upload de avatar:',
+      error
+    )
+
+    throw error
+  }
+}
 }

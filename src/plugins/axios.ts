@@ -16,6 +16,7 @@ api.interceptors.request.use(
   (config) => {
     // ✅ Pega o accessToken da store (está em memória)
     const userStore = useUserStore()
+    console.log('Interceptando requisição. Access token atual na store:', userStore.accessToken)
     const token = userStore.accessToken
 
     if (token) {
