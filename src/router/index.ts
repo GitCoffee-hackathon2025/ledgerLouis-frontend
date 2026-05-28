@@ -67,7 +67,7 @@ const router = createRouter({
     {
       path: '/settings',
       name: 'settings',
-      component: () => import('../views/PlaceholderView.vue'),
+      component: () => import('../views/UserSettingsView.vue'),
       meta: { title: 'Configurações', description: 'Ajuste seu perfil e preferências do app.' },
     },
     {

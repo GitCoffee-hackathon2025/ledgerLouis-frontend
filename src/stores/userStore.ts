@@ -15,8 +15,9 @@ export const useUserStore = defineStore('user', () => {
     rememberMe: false,
   });
 
-  // ✅ Tokens (accessToken em memória, refreshToken no localStorage)
   const accessToken = ref<string>('')
+
+  const avatarUrl = ref<string>('')
 
   const setUserRegister = (userData: userRegisterType) => {
     Object.assign(userRegisterData, userData);
@@ -26,26 +27,31 @@ export const useUserStore = defineStore('user', () => {
     Object.assign(userLoginData, userData);
   };
 
-  // ✅ NOVO: Guardar tokens após login
+  //Guardar tokens após login
   const setTokens = (tokensData: { accessToken: string; refreshToken: string }) => {
-    // Access token fica em memória (store Pinia)
+    // Access token fica em memória 
     accessToken.value = tokensData.accessToken
     
     console.log('Tokens salvos na store:', {
       accessToken: accessToken.value,
       refreshToken: tokensData.refreshToken
     })
-    // Refresh token fica no localStorage (persiste após reload)
+    // Refresh token fica no localStorage 
     localStorage.setItem('refresh_token', tokensData.refreshToken)
   }
 
-  // ✅ NOVO: Limpar tokens ao deslogar
+  //  Guardar avatar URL na store
+  const setAvatarUrl = (url: string) => {
+    avatarUrl.value = url
+  }
+
+  // Limpar tokens ao deslogar
   const clearTokens = () => {
     accessToken.value = ''
     localStorage.removeItem('refresh_token')
   }
 
-  // ✅ NOVO: Restaurar accessToken da memória ao carregar (se houver)
+  //  Restaurar accessToken da memória ao carregar (se houver)
   const restoreAccessToken = (token: string) => {
     accessToken.value = token
   }
@@ -61,6 +67,7 @@ export const useUserStore = defineStore('user', () => {
       password: '',
       rememberMe: false
     });
+    avatarUrl.value = ''
     clearTokens()
   };
 
@@ -68,9 +75,11 @@ export const useUserStore = defineStore('user', () => {
     userRegisterData,
     userLoginData,
     accessToken,
+    avatarUrl,
     setUserRegister,
     setUserLogin,
     setTokens,
+    setAvatarUrl,
     clearTokens,
     restoreAccessToken,
     clearUser,

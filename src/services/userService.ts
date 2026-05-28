@@ -2,6 +2,21 @@ import type {userLoginType, userRegisterType} from "@/types/UserTypes";
 import axiosInstance from "@/plugins/axios";
 import { useUserStore } from "@/stores/userStore";
 
+export interface UserResponseData {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl?: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface UploadAvatarResponse {
+    success: boolean;
+    message: string;
+    avatarUrl?: string;
+}
+
 export default class UserService {
 
     async register(userData: userRegisterType) {
@@ -27,7 +42,6 @@ export default class UserService {
                 refreshToken
             })
 
-
             localStorage.setItem('token', accessToken)
             
             return response.data
@@ -37,9 +51,9 @@ export default class UserService {
         }
     }
 
-    async getUserInfo() {
+    async getUserInfo(): Promise<UserResponseData> {
         try {
-            const response = await axiosInstance.get(`/users/byID`)
+            const response = await axiosInstance.get<UserResponseData>(`/users/byID`)
             return response.data
         } catch (error) {
             console.error('Erro ao buscar usuário:', error)
@@ -47,37 +61,38 @@ export default class UserService {
         }
     }
 
-    async uploadAvatar(file: File) {
-  try {
+    async uploadAvatar(file: File): Promise<UploadAvatarResponse> {
+        try {
+            const formData = new FormData()
+            formData.append('file', file)
 
-    const formData = new FormData()
+            const response = await axiosInstance.post<UploadAvatarResponse>(
+                '/users/me/profile-image',
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }
+            )
 
-    formData.append(
-      'file',
-      file
-    )
-
-    
-    const response =
-      await axiosInstance.post(
-        '/users/me/profile-image',
-        formData,
-        {
-            headers: {
-                'Content-Type': 'multipart/form-data'
+            // Guardar a URL do avatar na store
+            if (response.data.avatarUrl) {
+                const userStore = useUserStore()
+                userStore.setAvatarUrl(response.data.avatarUrl)
+                console.log('Avatar URL salva na store:', response.data.avatarUrl)
             }
+
+            return response.data
+
+        } catch (error) {
+            console.error(
+                'Erro ao fazer upload de avatar:',
+                error
+            )
+
+            throw error
         }
-      )
-
-    return response.data
-
-  } catch (error) {
-    console.error(
-      'Erro ao fazer upload de avatar:',
-      error
-    )
-
-    throw error
+    }
   }
-}
-}
+
