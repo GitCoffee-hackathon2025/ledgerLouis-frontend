@@ -1,5 +1,6 @@
 
 import axios from 'axios'
+import { useUserStore } from '@/stores/userStore'
 
 
 const api = axios.create({
@@ -13,7 +14,9 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth_token') 
+    // ✅ Pega o accessToken da store (está em memória)
+    const userStore = useUserStore()
+    const token = userStore.accessToken
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
@@ -29,8 +32,9 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       console.warn('Token expirado ou inválido')
-      localStorage.removeItem('auth_token')
-
+      const userStore = useUserStore()
+      userStore.clearTokens()
+      window.location.href = '/entrar'
     }
 
     if (error.response?.status === 500) {
