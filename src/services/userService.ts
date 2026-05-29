@@ -6,7 +6,7 @@ export interface UserResponseData {
     id: string;
     name: string;
     email: string;
-    avatar?: string;
+    avatarUrl?: string;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -14,7 +14,7 @@ export interface UserResponseData {
 export interface UploadAvatarResponse {
     success: boolean;
     message: string;
-    avatar?: string;
+    avatarUrl?: string;
 }
 
 export default class UserService {
@@ -78,12 +78,14 @@ export default class UserService {
                 }
             )
 
+            console.log('Resposta do upload de avatar:', response.data.avatarUrl)
             // Guardar a URL do avatar na store
-            if (response.data.avatar) {
+            if (response.data.avatarUrl) {
                 const userStore = useUserStore()
-                userStore.setavatar(response.data.avatar)
-                console.log('Avatar URL salva na store:', response.data.avatar)
+                userStore.setavatar(response.data.avatarUrl)
+                console.log('Avatar URL salva na store:', userStore.avatar)
             }
+        
 
             return response.data
 
@@ -93,6 +95,19 @@ export default class UserService {
                 error
             )
 
+            throw error
+        }
+    }
+
+    logout() {
+        try {
+            const userStore = useUserStore()
+            userStore.clearUser()
+            localStorage.removeItem('token')
+            console.log('Usuário deslogado com sucesso')
+            return true
+        } catch (error) {
+            console.error('Erro ao deslogar:', error)
             throw error
         }
     }

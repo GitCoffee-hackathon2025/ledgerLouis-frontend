@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
+import { useRouter } from 'vue-router';
 import BaseInput from '../inputs/BaseInput.vue';
 import PrimaryButton from '../inputs/PrimaryButton.vue';
 import UserService from '../../services/userService';
@@ -7,6 +8,7 @@ import ResponsePopUp from './ResponsePopUp.vue';
 import { useUserStore } from '@/stores/userStore';
 
 const userStore = useUserStore();
+const router = useRouter();
 const loginData = userStore.userLoginData;
 const userService = new UserService();
 
@@ -47,12 +49,20 @@ const handleLogin = async () => {
       localStorage.removeItem('rememberMe');
     }
 
+    // Limpar avatar da conta anterior
+    userStore.setavatar('');
+
     await userService.login(loginData);
 
     response.status = 'success';
     response.message = 'Login realizado com sucesso!';
     response.show = true;
+  // Redirecionar para tela inicial após 1 segundo
+    setTimeout(() => {
+      router.push('/');
+    }, 1000);
 
+  
   } catch (error: any) {
     response.status = 'error';
     response.message =

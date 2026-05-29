@@ -81,7 +81,9 @@
                 <div class="info-value">{{ userInfo.email || 'Carregando...' }}</div>
               </div>
 
-
+              <div class="info-item logout-button-container">
+                <button class="btn-logout" @click="handleLogout">Sair da Conta</button>
+              </div>
             </div>
           </div>
         </transition>
@@ -117,6 +119,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { User, ChevronDown, Lock, Bell } from 'lucide-vue-next'
 import UserService from '@/services/userService'
 import { useUserStore } from '@/stores/userStore'
@@ -135,6 +138,7 @@ const uploadSuccess = ref('')
 const fileInput = ref<HTMLInputElement>()
 
 const userStore = useUserStore()
+const router = useRouter()
 
 const userInfo = reactive<UserInfo>({
   id: '',
@@ -150,6 +154,11 @@ const displayAvatarUrl = computed(() => userStore.avatar || userInfo.avatar)
 
 const toggleUserSection = () => {
   isUserExpanded.value = !isUserExpanded.value
+}
+
+const handleLogout = () => {
+  userService.logout()
+  router.push('/entrar')
 }
 
 const loadUserInfo = async () => {
@@ -471,6 +480,29 @@ onMounted(() => {
   font-weight: 600;
   border-color: #1db954;
   background-color: rgba(29, 185, 84, 0.1);
+}
+
+.logout-button-container {
+  grid-column: 1 / -1;
+}
+
+.btn-logout {
+  padding: 12px 20px;
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.btn-logout:hover {
+  background-color: #dd3333;
+  box-shadow: 0 4px 12px rgba(255, 68, 68, 0.3);
+  transform: translateY(-2px);
 }
 
 /* Animations */

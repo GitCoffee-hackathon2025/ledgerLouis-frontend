@@ -33,7 +33,3 @@ import UserInfo from "../components/UserInfo.vue"
       box-shadow: none;
   }
   </style>
-  
-  
-  
-  </style>
