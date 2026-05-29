@@ -6,7 +6,7 @@ export interface UserResponseData {
     id: string;
     name: string;
     email: string;
-    avatarUrl?: string;
+    avatar?: string;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -14,7 +14,7 @@ export interface UserResponseData {
 export interface UploadAvatarResponse {
     success: boolean;
     message: string;
-    avatarUrl?: string;
+    avatar?: string;
 }
 
 export default class UserService {
@@ -54,6 +54,8 @@ export default class UserService {
     async getUserInfo(): Promise<UserResponseData> {
         try {
             const response = await axiosInstance.get<UserResponseData>(`/users/byID`)
+
+            console.log('Informações do usuário obtidas:', response.data)
             return response.data
         } catch (error) {
             console.error('Erro ao buscar usuário:', error)
@@ -77,10 +79,10 @@ export default class UserService {
             )
 
             // Guardar a URL do avatar na store
-            if (response.data.avatarUrl) {
+            if (response.data.avatar) {
                 const userStore = useUserStore()
-                userStore.setAvatarUrl(response.data.avatarUrl)
-                console.log('Avatar URL salva na store:', response.data.avatarUrl)
+                userStore.setavatar(response.data.avatar)
+                console.log('Avatar URL salva na store:', response.data.avatar)
             }
 
             return response.data

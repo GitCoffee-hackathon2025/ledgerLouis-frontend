@@ -3,8 +3,8 @@
     <h2>Upload de Avatar</h2>
 
     <!-- Preview atual -->
-    <div v-if="avatarUrl" class="preview">
-      <img :src="avatarUrl" alt="Avatar" />
+    <div v-if="avatar" class="preview">
+      <img :src="avatar" alt="Avatar" />
     </div>
 
     <!-- Input file -->
@@ -19,7 +19,7 @@
 
 
 
-    <img :src="avatarUrl" alt="" v-if="avatarUrl" />
+    <img :src="avatar" alt="" v-if="avatar" />
   </div>
 </template>
 
@@ -30,7 +30,7 @@ import UserService from "@/services/userService";
 const userService = new UserService();
 
 const selectedFile = ref<File | null>(null);
-const avatarUrl = ref<string | null>(null);
+const avatar = ref<string | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
@@ -42,7 +42,7 @@ function onFileChange(event: Event) {
   selectedFile.value = target.files[0] ?? null;
 
   // preview local antes do upload (UX melhor)
-  avatarUrl.value = URL.createObjectURL(selectedFile.value as Blob);
+  avatar.value = URL.createObjectURL(selectedFile.value as Blob);
 }
 
 async function upload() {
@@ -54,8 +54,8 @@ async function upload() {
   try {
     const response = await userService.uploadAvatar(selectedFile.value);
 
-    // backend retorna avatarUrl
-    avatarUrl.value = response.avatarUrl;
+    // backend retorna avatar
+    avatar.value = response.avatar ?? null;
 
   } catch (err) {
     console.error(err);

@@ -125,7 +125,7 @@ interface UserInfo {
   id: string
   name: string
   email: string
-  avatarUrl?: string
+  avatar?: string
 }
 
 const isUserExpanded = ref(true)
@@ -140,13 +140,13 @@ const userInfo = reactive<UserInfo>({
   id: '',
   name: '',
   email: '',
-  avatarUrl: ''
+  avatar: '',
 })
 
 const userService = new UserService()
 
 // Avatar URL da store (prioridade)
-const displayAvatarUrl = computed(() => userStore.avatarUrl || userInfo.avatarUrl)
+const displayAvatarUrl = computed(() => userStore.avatar || userInfo.avatar)
 
 const toggleUserSection = () => {
   isUserExpanded.value = !isUserExpanded.value
@@ -159,11 +159,11 @@ const loadUserInfo = async () => {
       userInfo.id = response.id || ''
       userInfo.name = response.name || ''
       userInfo.email = response.email || ''
-      userInfo.avatarUrl = response.avatarUrl || ''
+      userInfo.avatar = response.avatar || ''
       
       // Salvar na store se houver URL
-      if (response.avatarUrl) {
-        userStore.setAvatarUrl(response.avatarUrl)
+      if (response.avatar) {
+        userStore.setavatar(response.avatar)
       }
     }
   } catch (error) {
@@ -194,7 +194,7 @@ const handleAvatarSelect = async (event: Event) => {
   // Preview local
   const reader = new FileReader()
   reader.onload = (e) => {
-    userInfo.avatarUrl = e.target?.result as string
+    userInfo.avatar = e.target?.result as string
   }
   reader.readAsDataURL(file)
 

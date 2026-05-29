@@ -17,7 +17,7 @@ export const useUserStore = defineStore('user', () => {
 
   const accessToken = ref<string>('')
 
-  const avatarUrl = ref<string>('')
+  const avatar = ref<string>('')
 
   const setUserRegister = (userData: userRegisterType) => {
     Object.assign(userRegisterData, userData);
@@ -41,8 +41,8 @@ export const useUserStore = defineStore('user', () => {
   }
 
   //  Guardar avatar URL na store
-  const setAvatarUrl = (url: string) => {
-    avatarUrl.value = url
+  const setavatar = (url: string) => {
+    avatar.value = url
   }
 
   // Limpar tokens ao deslogar
@@ -67,7 +67,7 @@ export const useUserStore = defineStore('user', () => {
       password: '',
       rememberMe: false
     });
-    avatarUrl.value = ''
+    avatar.value = ''
     clearTokens()
   };
 
@@ -75,11 +75,11 @@ export const useUserStore = defineStore('user', () => {
     userRegisterData,
     userLoginData,
     accessToken,
-    avatarUrl,
+    avatar,
     setUserRegister,
     setUserLogin,
     setTokens,
-    setAvatarUrl,
+    setavatar,
     clearTokens,
     restoreAccessToken,
     clearUser,
