@@ -1,4 +1,17 @@
 
+<script setup lang="ts">
+import { useRouter } from 'vue-router';
+import UserService from '@/services/userService';
+
+const router = useRouter();
+const userService = new UserService();
+
+const handleLogout = () => {
+  userService.logout();
+  router.push('/entrar');
+};
+</script>
+
 <template>
     <div class="profile-card">
       <div class="header">
@@ -32,6 +45,7 @@
   
       <div class="actions">
         <button class="btn-primary">Editar Perfil</button>
+        <button class="btn-logout" @click="handleLogout">Sair</button>
       </div>
     </div>
   </template>
@@ -104,6 +118,7 @@
   .actions {
     margin-top: 2rem;
     display: flex;
+    gap: 1rem;
     justify-content: center;
   }
   
@@ -121,5 +136,21 @@
   .btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 18px var(--color-primary-glow);
+  }
+
+  .btn-logout {
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: var(--radius-input);
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.3s ease;
+  }
+
+  .btn-logout:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(255, 68, 68, 0.4);
   }
   </style>
