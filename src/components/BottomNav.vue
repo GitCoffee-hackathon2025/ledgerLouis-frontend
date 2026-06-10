@@ -27,8 +27,8 @@
 
     <button 
       class="nav-item" 
-      :class="{ 'active': route.path === '/management' }" 
-      @click="handleNavigate('/management')"
+      :class="{ 'active': route.path === '/company/settings' }" 
+      @click="handleNavigate('/company/settings')"
     >
       <div class="icon-wrapper"><Layers :size="24" /></div>
       <span>Gerenciamento</span>
@@ -76,7 +76,7 @@ const route = useRoute();
 const companyStore = useCompanyStore();
 
 const handleNavigate = (path: string) => {
-  if (path === '/management') {
+  if (path === '/company/settings') {
     if (!companyStore.company.hasCompany) {
       router.push('/company');
     } else {

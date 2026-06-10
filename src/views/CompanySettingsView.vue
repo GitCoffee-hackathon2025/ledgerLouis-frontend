@@ -1,45 +1,53 @@
 <template>
-  <main class="company-page">
-    <section class="company-card">
-      <div class="company-header">
-        <div class="company-avatar">E</div>
+  <main class="company-admin-page">
+    <!-- Header da Página -->
+    <div class="admin-header">
+      <div class="header-content">
+        <div class="avatar-large">{{ companyName.charAt(0).toUpperCase() }}</div>
         <div>
-          <h1>{{ companyName || 'Empresa não definida' }}</h1>
-          <p>Configurações e controles da sua conta empresarial.</p>
+          <h1>{{ companyName }}</h1>
+          <p>Painel de Administração da Empresa</p>
         </div>
       </div>
+      <button class="btn-leave" @click="leaveCompany">Sair da Empresa</button>
+    </div>
 
-      <div class="company-body">
-        <div class="company-detail-row">
-          <strong>Empresa:</strong>
+    <!-- Informações da Empresa -->
+    <section class="info-section">
+      <h3>📋 Informações da Empresa</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <label>Nome</label>
           <span>{{ companyStore.company.name }}</span>
         </div>
-        <div class="company-detail-row" v-if="companyStore.company.cnpj">
-          <strong>CNPJ:</strong>
-          <span>{{ companyStore.company.cnpj }}</span>
+        <div class="info-item">
+          <label>CNPJ</label>
+          <span>{{ companyStore.company.cnpj || 'Não informado' }}</span>
         </div>
-        <div class="company-detail-row">
-          <strong>Endereço:</strong>
-          <span>{{ companyStore.company.address || 'Não informado' }}</span>
-        </div>
-        <div class="company-detail-row">
-          <strong>Email:</strong>
+        <div class="info-item">
+          <label>Email</label>
           <span>{{ companyStore.company.email || 'Não informado' }}</span>
         </div>
-        <div class="company-detail-row">
-          <strong>Site:</strong>
-          <span>{{ companyStore.company.website || 'Não informado' }}</span>
-        </div>
-        <div class="company-detail-row">
-          <strong>Telefone:</strong>
+        <div class="info-item">
+          <label>Telefone</label>
           <span>{{ companyStore.company.phone || 'Não informado' }}</span>
         </div>
-
-        <div class="company-actions">
-          <button class="secondary-button" @click="leaveCompany">Sair da empresa</button>
+        <div class="info-item">
+          <label>Endereço</label>
+          <span>{{ companyStore.company.address || 'Não informado' }}</span>
+        </div>
+        <div class="info-item">
+          <label>Site</label>
+          <span>{{ companyStore.company.website || 'Não informado' }}</span>
         </div>
       </div>
     </section>
+
+    <!-- Componentes de Gerenciamento -->
+    <div class="management-container">
+      <CategoryManager />
+      <RecurringExpenseManager />
+    </div>
   </main>
 </template>
 
@@ -47,12 +55,13 @@
 import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCompanyStore } from '@/stores/CompanyStore';
+import CategoryManager from '@/components/CompanyManagement/CategoryManager.vue';
+import RecurringExpenseManager from '@/components/CompanyManagement/RecurringExpenseManager.vue';
 
 const router = useRouter();
 const companyStore = useCompanyStore();
 
 const companyName = computed(() => companyStore.company.name || 'Minha Empresa');
-
 
 const leaveCompany = () => {
   companyStore.clearCompany();
@@ -67,132 +76,160 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.company-page {
+.company-admin-page {
   min-height: calc(100vh - 65px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 18px;
+  padding: 32px 20px;
   background-color: var(--color-surface-soft);
 }
 
-.company-card {
-  width: 100%;
-  max-width: 760px;
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  padding: 24px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 28px;
-  padding: 28px;
-  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.company-header {
+.header-content {
   display: flex;
   align-items: center;
-  gap: 18px;
-  margin-bottom: 24px;
+  gap: 20px;
 }
 
-.company-avatar {
-  width: 68px;
-  height: 68px;
-  border-radius: 18px;
-  display: grid;
-  place-items: center;
-  background: var(--color-success-alt);
-  color: var(--color-surface);
-  font-size: 28px;
+.avatar-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
   font-weight: 800;
 }
 
-h1 {
-  font-size: 28px;
-  color: var(--color-success-dark);
-  margin: 0 0 8px;
+.header-content h1 {
+  margin: 0 0 8px 0;
+  font-size: 2rem;
+  color: var(--color-primary);
 }
 
-p {
-  line-height: 1.75;
+.header-content p {
+  margin: 0;
   color: var(--color-text-secondary);
 }
 
-.company-body {
-  padding-top: 12px;
-}
-
-.company-actions {
-  margin-top: 24px;
-  display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-.primary-button,
-.secondary-button {
-  padding: 14px 22px;
-  border-radius: 999px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.primary-button {
+.btn-leave {
+  background: #ff4444;
+  color: white;
   border: none;
-  background: var(--color-success-gradient);
-  color: var(--color-surface);
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+  white-space: nowrap;
 }
 
-.secondary-button {
-  border: 1px solid var(--color-success-dark);
-  background: transparent;
-  color: var(--color-success-dark);
+.btn-leave:hover {
+  background: #dd3333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 68, 68, 0.3);
+}
+
+.info-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.info-section h3 {
+  margin: 0 0 20px 0;
+  font-size: 1.2rem;
+  color: var(--color-primary);
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  background: var(--color-bg);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+
+.info-item label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.info-item span {
+  font-size: 0.95rem;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.management-container {
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 /* Responsividade */
 @media (max-width: 768px) {
-  .company-page {
+  .company-admin-page {
     padding: 20px 16px;
   }
 
-  .company-card {
-    padding: 24px 20px;
-  }
-
-  .company-header {
+  .admin-header {
     flex-direction: column;
-    text-align: center;
+    align-items: flex-start;
     gap: 16px;
   }
 
-  h1 {
-    font-size: 24px;
+  .btn-leave {
+    align-self: flex-start;
   }
 
-  .company-avatar {
+  .header-content h1 {
+    font-size: 1.5rem;
+  }
+
+  .avatar-large {
     width: 60px;
     height: 60px;
-    font-size: 24px;
+    font-size: 1.5rem;
   }
 
-  .company-actions {
-    flex-direction: column;
-  }
-
-  .primary-button,
-  .secondary-button {
-    width: 100%;
-    padding: 16px;
+  .info-grid {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 480px) {
-  h1 {
-    font-size: 20px;
+  .header-content h1 {
+    font-size: 1.3rem;
   }
 
-  .company-avatar {
+  .avatar-large {
     width: 50px;
     height: 50px;
-    font-size: 20px;
+    font-size: 1.2rem;
   }
 }
 </style>

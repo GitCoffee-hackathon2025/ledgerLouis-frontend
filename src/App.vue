@@ -20,8 +20,17 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue';
 import BottomNav from './components/BottomNav.vue';
 import TopNav from './components/TopNav.vue';
+import { useCompanyStore } from './stores/CompanyStore';
+
+const companyStore = useCompanyStore();
+
+onMounted(() => {
+  // Carregar dados da empresa salvos em localStorage
+  companyStore.loadCompanyData();
+});
 </script>
 
 <style>
