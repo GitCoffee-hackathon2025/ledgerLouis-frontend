@@ -12,7 +12,7 @@ defineEmits(['click'])
 
 <style scoped>
 .primary-btn {
-  width: 60%;
+  width: 100%;
   padding: 15px;
   background: var(--color-primary);
   color: var(--color-surface);

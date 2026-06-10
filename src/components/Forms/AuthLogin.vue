@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
+import { useRouter } from 'vue-router';
 import BaseInput from '../inputs/BaseInput.vue';
 import PrimaryButton from '../inputs/PrimaryButton.vue';
 import UserService from '../../services/userService';
@@ -7,6 +8,7 @@ import ResponsePopUp from './ResponsePopUp.vue';
 import { useUserStore } from '@/stores/userStore';
 
 const userStore = useUserStore();
+const router = useRouter();
 const loginData = userStore.userLoginData;
 const userService = new UserService();
 
@@ -18,27 +20,61 @@ const response = reactive({
 
 const handleLogin = async () => {
   try {
-    if(!loginData.email || !loginData.password) {
+    if (!loginData.email || !loginData.password) {
       response.status = 'error';
       response.message = 'Preencha todos os campos';
       response.show = true;
       return;
     }
-    if(loginData.rememberMe) {
+
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(loginData.email)) {
+      response.status = 'error';
+      response.message = 'Digite um e-mail válido';
+      response.show = true;
+      return;
+    }
+    if (loginData.password.length < 8) {
+      response.status = 'error';
+      response.message = 'A senha deve ter no mínimo 8 caracteres';
+      response.show = true;
+      return;
+    }
+
+    if (loginData.rememberMe) {
       localStorage.setItem('rememberMe', 'true');
     } else {
       localStorage.removeItem('rememberMe');
     }
+
+    // Limpar avatar da conta anterior
+    userStore.setavatar('');
+
     await userService.login(loginData);
+
     response.status = 'success';
     response.message = 'Login realizado com sucesso!';
     response.show = true;
+  // Redirecionar para tela inicial após 1 segundo
+    setTimeout(() => {
+      router.push('/');
+    }, 1000);
+
+  
   } catch (error: any) {
     response.status = 'error';
-    response.message = error?.response?.data?.message || 'Erro ao fazer login';
+    response.message =
+      error?.response?.data?.message || 'Erro ao fazer login';
     response.show = true;
   }
+
+  setTimeout(() => {
+    response.show = false;
+  }, 3000);
 };
+
 </script>
 
 <template>

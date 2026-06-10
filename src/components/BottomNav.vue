@@ -68,13 +68,23 @@
 import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { Home, Layers, Plus, PieChart, Settings, ArrowUp, ArrowDown } from 'lucide-vue-next';
+import { useCompanyStore } from '@/stores/CompanyStore';
 
 const isMenuOpen = ref(false);
 const router = useRouter();
 const route = useRoute();
+const companyStore = useCompanyStore();
 
 const handleNavigate = (path: string) => {
-  router.push(path);
+  if (path === '/management') {
+    if (!companyStore.company.hasCompany) {
+      router.push('/company');
+    } else {
+      router.push(path);
+    }
+  } else {
+    router.push(path);
+  }
   isMenuOpen.value = false;
 };
 </script>
