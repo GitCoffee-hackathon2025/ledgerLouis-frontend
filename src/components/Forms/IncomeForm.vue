@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
+import { useCategoryStore } from '@/stores/categoryStore';
 import BaseInput from '../inputs/BaseInput.vue';
 import PrimaryButton from '../inputs/PrimaryButton.vue';
 import ResponsePopUp from './ResponsePopUp.vue';
 import { useTransactionStore } from '@/stores/transactionStore';
 import { useRouter } from 'vue-router';
-import type { categoryIncome } from '@/types/TransactionTypes';
-
 const router = useRouter();
 const transactionStore = useTransactionStore();
+const categoryStore = useCategoryStore();
 
 const incomeData = reactive({
   amount: '',
   description: '',
-  category: 'salary' as categoryIncome,
+  category: categoryStore.getCategories('income')[0]?.id ?? '',
   date: new Date().toISOString().split('T')[0],
   notes: '',
 });
@@ -26,7 +26,7 @@ const response = reactive({
 
 const handleAddIncome = async () => {
   try {
-    if (!incomeData.amount || !incomeData.description || !incomeData.date) {
+    if (!incomeData.amount || !incomeData.description || !incomeData.date || !incomeData.category) {
       response.status = 'error';
       response.message = 'Preencha todos os campos obrigatórios';
       response.show = true;
@@ -57,7 +57,7 @@ const handleAddIncome = async () => {
     Object.assign(incomeData, {
       amount: '',
       description: '',
-      category: 'salary',
+      category: categoryStore.getCategories('income')[0]?.id ?? '',
       date: new Date().toISOString().split('T')[0],
       notes: '',
     });
@@ -108,11 +108,9 @@ const handleAddIncome = async () => {
     <div class="form-group">
       <label for="category">Categoria *</label>
       <select id="category" v-model="incomeData.category" class="form-select">
-        <option value="salary">Salário</option>
-        <option value="freelance">Freelance</option>
-        <option value="investment">Investimento</option>
-        <option value="gift">Presente</option>
-        <option value="other">Outro</option>
+        <option v-for="cat in categoryStore.getCategories('income')" :key="cat.id" :value="cat.id">
+          {{ cat.name }}
+        </option>
       </select>
     </div>
 

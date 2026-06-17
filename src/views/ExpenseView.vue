@@ -2,15 +2,16 @@
 import { reactive } from 'vue';
 import { useTransactionStore } from '@/stores/transactionStore';
 import { useRouter } from 'vue-router';
-import type { categoryExpense } from '@/types/TransactionTypes';
+import { useCategoryStore } from '@/stores/categoryStore';
 
 const router = useRouter();
 const transactionStore = useTransactionStore();
+const categoryStore = useCategoryStore();
 
 const expenseData = reactive({
   amount: '',
   description: '',
-  category: '' as categoryExpense,
+  category: categoryStore.getCategories('expense')[0]?.id ?? '',
   date: new Date().toISOString().split('T')[0],
   notes: '',
   recurring: false,
@@ -145,13 +146,7 @@ const handleCancel = () => {
           <div class="select-wrapper">
             <select v-model="expenseData.category" class="form-select">
               <option value="" disabled>Selecione uma categoria</option>
-              <option value="food">Alimentação</option>
-              <option value="transport">Transporte</option>
-              <option value="entertainment">Diversão</option>
-              <option value="utilities">Contas e Utilidades</option>
-              <option value="health">Saúde</option>
-              <option value="shopping">Compras</option>
-              <option value="other">Outro</option>
+              <option v-for="cat in categoryStore.getCategories('expense')" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
             </select>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="select-icon">
               <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />

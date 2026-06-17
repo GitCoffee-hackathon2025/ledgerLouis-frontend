@@ -6,7 +6,6 @@ export interface Category {
   name: string;
   type: CategoryType;
   description?: string;
-  color?: string;
   createdAt?: string;
 }
 

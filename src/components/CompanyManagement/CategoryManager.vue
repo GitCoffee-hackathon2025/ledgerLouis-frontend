@@ -14,13 +14,11 @@ const message = reactive({ status: '', text: '', show: false });
 const newCategory = reactive<Omit<Category, 'id' | 'createdAt'>>({
   name: '',
   type: 'expense',
-  color: '#1db954',
 });
 
 const resetForm = () => {
   newCategory.name = '';
   newCategory.type = 'expense';
-  newCategory.color = '#1db954';
   showForm.value = false;
 };
 
@@ -38,7 +36,6 @@ const handleAddCategory = async () => {
     categoryStore.addCategory({
       name: newCategory.name,
       type: newCategory.type,
-      color: newCategory.color,
     });
 
     message.status = 'success';
@@ -113,17 +110,7 @@ export default {
           </select>
         </div>
 
-        <div class="form-group">
-          <label>Cor</label>
-          <div class="color-picker">
-            <input 
-              v-model="newCategory.color"
-              type="color"
-              class="color-input"
-            >
-            <span class="color-code">{{ newCategory.color }}</span>
-          </div>
-        </div>
+        
       </div>
 
       <div class="form-actions">
@@ -281,25 +268,7 @@ export default {
   margin-bottom: 16px;
 }
 
-.color-picker {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
 
-.color-input {
-  width: 50px;
-  height: 40px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.color-code {
-  font-family: monospace;
-  color: var(--color-text-secondary);
-  font-size: 0.85rem;
-}
 
 .form-actions {
   display: flex;

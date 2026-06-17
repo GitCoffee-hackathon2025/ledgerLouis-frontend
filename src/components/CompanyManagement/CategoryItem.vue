@@ -29,12 +29,11 @@ export default {
 <template>
   <div class="category-item">
     <div class="category-content">
-      <div class="color-indicator" :style="{ backgroundColor: category.color }"></div>
-      <div class="category-info">
-        <h5>{{ category.name }}</h5>
-        <p class="type">{{ typeLabel }}</p>
+        <div class="category-info">
+          <h5>{{ category.name }}</h5>
+          <p class="type">{{ typeLabel }}</p>
+        </div>
       </div>
-    </div>
     <button 
       class="btn-delete" 
       @click="$emit('delete', category.id)"
@@ -69,12 +68,7 @@ export default {
   flex: 1;
 }
 
-.color-indicator {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  flex-shrink: 0;
-}
+
 
 .category-info h5 {
   margin: 0;

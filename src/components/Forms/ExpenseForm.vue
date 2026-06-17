@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
+import { useCategoryStore } from '@/stores/categoryStore';
 import BaseInput from '../inputs/BaseInput.vue';
 import PrimaryButton from '../inputs/PrimaryButton.vue';
 import ResponsePopUp from './ResponsePopUp.vue';
 import { useTransactionStore } from '@/stores/transactionStore';
 import { useRouter } from 'vue-router';
-import type { categoryExpense } from '@/types/TransactionTypes';
-
 const router = useRouter();
 const transactionStore = useTransactionStore();
+const categoryStore = useCategoryStore();
 
 const expenseData = reactive({
   amount: '',
   description: '',
-  category: 'food' as categoryExpense,
+  category: categoryStore.getCategories('expense')[0]?.id ?? '',
   date: new Date().toISOString().split('T')[0],
   notes: '',
 });
@@ -26,7 +26,7 @@ const response = reactive({
 
 const handleAddExpense = async () => {
   try {
-    if (!expenseData.amount || !expenseData.description || !expenseData.date) {
+    if (!expenseData.amount || !expenseData.description || !expenseData.date || !expenseData.category) {
       response.status = 'error';
       response.message = 'Preencha todos os campos obrigatórios';
       response.show = true;
@@ -57,7 +57,7 @@ const handleAddExpense = async () => {
     Object.assign(expenseData, {
       amount: '',
       description: '',
-      category: 'food',
+      category: categoryStore.getCategories('expense')[0]?.id ?? '',
       date: new Date().toISOString().split('T')[0],
       notes: '',
     });
@@ -108,13 +108,9 @@ const handleAddExpense = async () => {
     <div class="form-group">
       <label for="category">Categoria *</label>
       <select id="category" v-model="expenseData.category" class="form-select">
-        <option value="food">Alimentação</option>
-        <option value="transport">Transporte</option>
-        <option value="entertainment">Diversão</option>
-        <option value="utilities">Contas e Utilidades</option>
-        <option value="health">Saúde</option>
-        <option value="shopping">Compras</option>
-        <option value="other">Outro</option>
+        <option v-for="cat in categoryStore.getCategories('expense')" :key="cat.id" :value="cat.id">
+          {{ cat.name }}
+        </option>
       </select>
     </div>
 

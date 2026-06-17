@@ -4,16 +4,16 @@ import type { Category } from '@/types/CompanyTypes';
 
 export const useCategoryStore = defineStore('category', () => {
   const categories = ref<Category[]>([
-    { id: '1', name: 'Alimentação', type: 'expense', color: '#FF6B6B' },
-    { id: '2', name: 'Transporte', type: 'expense', color: '#4ECDC4' },
-    { id: '3', name: 'Diversão', type: 'expense', color: '#45B7D1' },
-    { id: '4', name: 'Utilidades', type: 'expense', color: '#FFA07A' },
-    { id: '5', name: 'Saúde', type: 'expense', color: '#98D8C8' },
-    { id: '6', name: 'Compras', type: 'expense', color: '#F7DC6F' },
-    { id: '7', name: 'Salário', type: 'income', color: '#52C41A' },
-    { id: '8', name: 'Freelancer', type: 'income', color: '#1890FF' },
-    { id: '9', name: 'Investimento', type: 'income', color: '#722ED1' },
-    { id: '10', name: 'Presente', type: 'income', color: '#EB2F96' },
+    { id: '1', name: 'Alimentação', type: 'expense' },
+    { id: '2', name: 'Transporte', type: 'expense' },
+    { id: '3', name: 'Diversão', type: 'expense' },
+    { id: '4', name: 'Utilidades', type: 'expense' },
+    { id: '5', name: 'Saúde', type: 'expense' },
+    { id: '6', name: 'Compras', type: 'expense' },
+    { id: '7', name: 'Salário', type: 'income' },
+    { id: '8', name: 'Freelancer', type: 'income' },
+    { id: '9', name: 'Investimento', type: 'income' },
+    { id: '10', name: 'Presente', type: 'income' },
   ]);
 
   const addCategory = (category: Category) => {
