@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive } from 'vue';
 import type { RecurringExpenseDistribution } from '@/types/CompanyTypes';
-import { Plus, Trash2, Zap } from 'lucide-vue-next';
+import { Plus, Trash2 } from 'lucide-vue-next';
 import { useRecurringExpenseStore } from '@/stores/recurringExpenseStore';
 
 const expenseStore = useRecurringExpenseStore();
@@ -10,17 +10,14 @@ const showForm = ref(false);
 const isLoading = ref(false);
 const message = reactive({ status: '', text: '', show: false });
 
-const newExpense = reactive<Omit<RecurringExpenseDistribution, 'id' | 'createdAt'>>({
+const formData = reactive({
   description: '',
-  totalAmount: 0,
+  unitValue: 0,
+  quantity: 1,
   frequency: 'monthly',
   startDate: new Date().toISOString().split('T')[0],
   endDate: '',
-  participants: [],
-  category: '',
 });
-
-const salaryInputs = ref<Array<{ tempId: string; amount: number }>>([]);
 
 const frequencyLabels: Record<string, string> = {
   weekly: 'Semanal',
@@ -28,81 +25,36 @@ const frequencyLabels: Record<string, string> = {
   yearly: 'Anual',
 };
 
-const amountPerSalary = computed(() => {
-  if (salaryInputs.value.length === 0) return 0;
-  return newExpense.totalAmount / salaryInputs.value.length;
-});
-
-const totalDistributed = computed(() =>
-  salaryInputs.value.reduce((sum, s) => sum + s.amount, 0)
-);
+const totalValue = () => formData.unitValue * formData.quantity;
 
 const resetForm = () => {
-  newExpense.description = '';
-  newExpense.totalAmount = 0;
-  newExpense.frequency = 'monthly';
-  newExpense.startDate = new Date().toISOString().split('T')[0];
-  newExpense.endDate = '';
-  newExpense.participants = [];
-  newExpense.category = '';
-  salaryInputs.value = [];
+  formData.description = '';
+  formData.unitValue = 0;
+  formData.quantity = 1;
+  formData.frequency = 'monthly';
+  formData.startDate = new Date().toISOString().split('T')[0];
+  formData.endDate = '';
   showForm.value = false;
 };
 
-const addSalaryLine = () => {
-  salaryInputs.value.push({
-    tempId: Math.random().toString(36).substr(2, 9),
-    amount: amountPerSalary.value,
-  });
-};
-
-const removeSalaryLine = (index: number) => {
-  salaryInputs.value.splice(index, 1);
-};
-
-const handleAutoDistribute = () => {
-  if (salaryInputs.value.length === 0) {
-    message.status = 'error';
-    message.text = 'Adicione pelo menos um salário';
-    message.show = true;
-    return;
-  }
-
-  if (newExpense.totalAmount <= 0) {
-    message.status = 'error';
-    message.text = 'Digite um valor total maior que zero';
-    message.show = true;
-    return;
-  }
-
-  salaryInputs.value.forEach(salary => {
-    salary.amount = amountPerSalary.value;
-  });
-
-  message.status = 'success';
-  message.text = 'Valores distribuídos automaticamente!';
-  message.show = true;
-  setTimeout(() => { message.show = false; }, 2000);
-};
-
 const handleCreateExpense = async () => {
-  if (!newExpense.description.trim()) {
+  if (!formData.description.trim()) {
     message.status = 'error';
-    message.text = 'Digite uma descrição';
+    message.text = 'Digite a descrição da conta';
     message.show = true;
     return;
   }
 
-  if (newExpense.totalAmount <= 0) {
+  if (formData.unitValue <= 0) {
     message.status = 'error';
     message.text = 'Digite um valor maior que zero';
     message.show = true;
     return;
   }
 
-  if (salaryInputs.value.length === 0) {
+  if (formData.quantity < 1) {
     message.status = 'error';
-    message.text = 'Adicione pelo menos um salário';
+    message.text = 'Quantidade deve ser maior que zero';
     message.show = true;
     return;
   }
@@ -110,21 +62,19 @@ const handleCreateExpense = async () => {
   try {
     isLoading.value = true;
 
-    // Mapear salários para participantes com ID simples
-    const participants = salaryInputs.value.map((salary, index) => ({
-      participantId: `emp_${index + 1}`,
-      participantName: `Salário ${index + 1}`,
-      amount: salary.amount,
-    }));
-
-    const expenseData = {
-      description: newExpense.description,
-      totalAmount: newExpense.totalAmount,
-      frequency: newExpense.frequency,
-      startDate: newExpense.startDate,
-      endDate: newExpense.endDate || undefined,
-      category: newExpense.category,
-      participants,
+    const expenseData: Omit<RecurringExpenseDistribution, 'id' | 'createdAt'> = {
+      description: formData.description,
+      totalAmount: totalValue(),
+      frequency: formData.frequency as 'weekly' | 'monthly' | 'yearly',
+      startDate: formData.startDate,
+      endDate: formData.endDate || undefined,
+      participants: [{
+        participantId: 'main',
+        participantName: formData.description,
+        amount: formData.unitValue,
+        quantity: formData.quantity,
+      }],
+      category: '',
     };
 
     expenseStore.addExpense(expenseData);
@@ -180,127 +130,74 @@ export default {
 
     <!-- Formulário de criar despesa recorrente -->
     <div v-if="showForm" class="form-container">
-      <h4>Criar Despesa Recorrente</h4>
+      <h4>Adicionar Despesa Recorrente</h4>
       
       <div class="form-group">
-        <label>Descrição da Despesa *</label>
+        <label>Nome da Conta *</label>
         <input 
-          v-model="newExpense.description"
+          v-model="formData.description"
           type="text"
-          placeholder="Ex: Folha de Pagamento"
+          placeholder="Ex: Salário Repositor"
           class="input"
         >
       </div>
 
       <div class="form-row">
         <div class="form-group">
-          <label>Valor Total (R$) *</label>
+          <label>Valor Unitário (R$) *</label>
           <input 
-            v-model.number="newExpense.totalAmount"
+            v-model.number="formData.unitValue"
             type="number"
-            step="100"
+            step="0.01"
             min="0"
-            placeholder="0.00"
+            placeholder="1500.00"
             class="input"
           >
         </div>
 
         <div class="form-group">
-          <label>Frequência</label>
-          <select v-model="newExpense.frequency" class="input">
-            <option value="weekly">Semanal</option>
-            <option value="monthly">Mensal</option>
-            <option value="yearly">Anual</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>Data de Início</label>
+          <label>Quantidade *</label>
           <input 
-            v-model="newExpense.startDate"
-            type="date"
-            class="input"
-          >
-        </div>
-
-        <div class="form-group">
-          <label>Data de Término (Opcional)</label>
-          <input 
-            v-model="newExpense.endDate"
-            type="date"
+            v-model.number="formData.quantity"
+            type="number"
+            step="1"
+            min="1"
+            placeholder="1"
             class="input"
           >
         </div>
       </div>
 
       <div class="form-group">
-        <label>Categoria (Opcional)</label>
+        <label>Frequência</label>
+        <select v-model="formData.frequency" class="input">
+          <option value="weekly">Semanal</option>
+          <option value="monthly">Mensal</option>
+          <option value="yearly">Anual</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Data de Início</label>
         <input 
-          v-model="newExpense.category"
-          type="text"
-          placeholder="Ex: Folha de Pagamento"
+          v-model="formData.startDate"
+          type="date"
           class="input"
         >
       </div>
 
-      <!-- Distribuição de Salários -->
-      <div class="salaries-section" v-if="salaryInputs.length > 0">
-        <div class="salaries-header">
-          <h5>Distribuição de Salários</h5>
-          <button class="btn-auto-distribute" @click="handleAutoDistribute">
-            <Zap size="16" />
-            Distribuir
-          </button>
-        </div>
+      <div class="form-group">
+        <label>Data de Término (Opcional)</label>
+        <input 
+          v-model="formData.endDate"
+          type="date"
+          class="input"
+        >
+      </div>
 
-        <div class="salaries-info">
-          <div class="info-stat">
-            <span class="label">Valor por Salário:</span>
-            <span class="value">R$ {{ amountPerSalary.toFixed(2) }}</span>
-          </div>
-          <div class="info-stat">
-            <span class="label">Total:</span>
-            <span class="value">R$ {{ totalDistributed.toFixed(2) }}</span>
-          </div>
-          <div class="info-stat">
-            <span class="label">Salários:</span>
-            <span class="value">{{ salaryInputs.length }}</span>
-          </div>
-        </div>
-
-        <div class="salaries-list">
-          <div 
-            v-for="(salary, index) in salaryInputs"
-            :key="salary.tempId"
-            class="salary-item"
-          >
-            <span class="salary-label">Salário {{ index + 1 }}</span>
-            <div class="salary-input-group">
-              <span class="currency">R$</span>
-              <input 
-                v-model.number="salaryInputs[index].amount"
-                type="number"
-                step="0.01"
-                min="0"
-                class="amount-input"
-              >
-              <button 
-                class="btn-remove"
-                @click="removeSalaryLine(index)"
-                title="Remover"
-              >
-                <Trash2 size="16" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <button class="btn-add-salary" @click="addSalaryLine">
-          <Plus size="14" />
-          Adicionar Salário
-        </button>
+      <div class="total-preview">
+        <span class="preview-label">Total:</span>
+        <span class="preview-value">R$ {{ totalValue().toFixed(2) }}</span>
       </div>
 
       <div class="form-actions">
@@ -309,7 +206,7 @@ export default {
           @click="handleCreateExpense" 
           :disabled="isLoading"
         >
-          {{ isLoading ? 'Salvando...' : 'Criar Despesa' }}
+          {{ isLoading ? 'Salvando...' : 'Criar' }}
         </button>
         <button class="btn-cancel" @click="resetForm">Cancelar</button>
       </div>
@@ -341,27 +238,20 @@ export default {
 
         <div class="expense-details">
           <div class="detail-item">
-            <span class="detail-label">Período:</span>
+            <span class="detail-label">Data de Início:</span>
             <span class="detail-value">{{ expense.startDate }}</span>
-            <span v-if="expense.endDate" class="detail-value">até {{ expense.endDate }}</span>
           </div>
-          <div v-if="expense.category" class="detail-item">
-            <span class="detail-label">Categoria:</span>
-            <span class="detail-value">{{ expense.category }}</span>
+          <div v-if="expense.endDate" class="detail-item">
+            <span class="detail-label">Data de Término:</span>
+            <span class="detail-value">{{ expense.endDate }}</span>
           </div>
-        </div>
-
-        <div class="salaries-breakdown">
-          <h6>Salários ({{ expense.participants.length }})</h6>
-          <div class="breakdown-list">
-            <div 
-              v-for="participant in expense.participants"
-              :key="participant.participantId"
-              class="breakdown-item"
-            >
-              <span class="participant-id">{{ participant.participantName }}</span>
-              <span class="amount">R$ {{ participant.amount.toFixed(2) }}</span>
-            </div>
+          <div v-if="expense.participants[0]?.quantity && expense.participants[0]?.quantity > 0" class="detail-item">
+            <span class="detail-label">Quantidade:</span>
+            <span class="detail-value">{{ expense.participants[0]?.quantity }}x</span>
+          </div>
+          <div v-if="expense.participants[0]?.amount" class="detail-item">
+            <span class="detail-label">Valor Unitário:</span>
+            <span class="detail-value">R$ {{ expense.participants[0]?.amount.toFixed(2) }}</span>
           </div>
         </div>
       </div>
@@ -490,159 +380,27 @@ export default {
   gap: 16px;
 }
 
-.salaries-section {
+.total-preview {
   background: var(--color-surface);
-  padding: 16px;
+  padding: 12px 16px;
   border-radius: 8px;
-  margin: 16px 0;
-  border: 1px solid var(--color-border);
-}
-
-.salaries-header {
+  border: 2px solid var(--color-primary);
+  margin: 12px 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
 }
 
-.salaries-header h5 {
-  margin: 0;
-  color: var(--color-text);
-}
-
-.btn-auto-distribute {
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
+.preview-label {
   font-weight: 600;
-  font-size: 0.85rem;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s;
+  color: var(--color-text);
+  font-size: 0.9rem;
 }
 
-.btn-auto-distribute:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(29, 185, 84, 0.3);
-}
-
-.salaries-info {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 12px;
-  background: var(--color-bg);
-  border-radius: 6px;
-}
-
-.info-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.info-stat .label {
-  font-size: 0.85rem;
-  color: var(--color-text-secondary);
-}
-
-.info-stat .value {
+.preview-value {
   font-weight: 700;
+  font-size: 1.1rem;
   color: var(--color-primary);
-  font-size: 0.95rem;
-}
-
-.salaries-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.salary-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-}
-
-.salary-label {
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--color-text);
-  min-width: 100px;
-}
-
-.salary-input-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.currency {
-  font-weight: 600;
-  color: var(--color-text-secondary);
-}
-
-.amount-input {
-  width: 120px;
-  padding: 8px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  font-size: 0.9rem;
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-
-.amount-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.btn-remove {
-  background: rgba(255, 68, 68, 0.1);
-  color: #c41e3a;
-  border: 1px solid rgba(255, 68, 68, 0.2);
-  padding: 6px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-remove:hover {
-  background: rgba(255, 68, 68, 0.2);
-}
-
-.btn-add-salary {
-  width: 100%;
-  background: var(--color-bg);
-  color: var(--color-primary);
-  border: 2px dashed var(--color-border);
-  padding: 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.btn-add-salary:hover {
-  border-color: var(--color-primary);
-  background: rgba(29, 185, 84, 0.05);
 }
 
 .form-actions {
@@ -784,37 +542,6 @@ export default {
   color: var(--color-text);
 }
 
-.salaries-breakdown h6 {
-  margin: 0 0 8px 0;
-  color: var(--color-text);
-  font-size: 0.95rem;
-}
-
-.breakdown-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.breakdown-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px;
-  background: var(--color-surface);
-  border-radius: 4px;
-  font-size: 0.9rem;
-}
-
-.participant-id {
-  color: var(--color-text);
-}
-
-.breakdown-item .amount {
-  color: var(--color-primary);
-  font-weight: 600;
-}
-
 .empty-state {
   text-align: center;
   padding: 32px;
@@ -826,18 +553,10 @@ export default {
     grid-template-columns: 1fr;
   }
 
-  .salaries-info {
-    grid-template-columns: 1fr;
-  }
-
-  .salary-item {
+  .total-preview {
     flex-direction: column;
-    align-items: flex-start;
     gap: 8px;
-  }
-
-  .salary-input-group {
-    width: 100%;
+    align-items: flex-start;
   }
 }
 </style>

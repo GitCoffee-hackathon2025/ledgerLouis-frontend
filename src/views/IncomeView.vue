@@ -14,8 +14,6 @@ const incomeData = reactive({
   category: categoryStore.getCategories('income')[0]?.id ?? '',
   date: new Date().toISOString().split('T')[0],
   notes: '',
-  recurring: false,
-  recurringMonths: '',
 });
 
 const response = reactive({
@@ -116,27 +114,6 @@ const handleCancel = () => {
               v-model="incomeData.date"
               type="date" 
               class="form-input"
-            >
-          </div>
-        </div>
-        
-        <div class="recurring-section">
-          <label class="checkbox-label">
-            <input 
-              v-model="incomeData.recurring"
-              type="checkbox" 
-              class="checkbox-input"
-            >
-            <span>Repetir Mensalmente</span>
-          </label>
-          
-          <div class="recurring-input">
-            <span class="recurring-text">Por quanto tempo?</span>
-            <input 
-              v-if="incomeData.recurring"
-              v-model="incomeData.recurringMonths"
-              type="text" 
-              class="form-input small"
             >
           </div>
         </div>

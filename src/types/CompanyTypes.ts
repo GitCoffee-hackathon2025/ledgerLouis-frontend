@@ -33,6 +33,7 @@ export interface RecurringExpenseDistribution {
     participantId?: string;
     participantName: string;
     amount: number;
+    quantity?: number;
   }>;
   category?: string;
   createdAt?: string;
