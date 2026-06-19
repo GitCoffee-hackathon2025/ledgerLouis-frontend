@@ -168,12 +168,9 @@ const loadUserInfo = async () => {
       userInfo.id = response.id || ''
       userInfo.name = response.name || ''
       userInfo.email = response.email || ''
-      userInfo.avatar = response.avatar || ''
-      
-      // Salvar na store se houver URL
-      if (response.avatar) {
-        userStore.setavatar(response.avatar)
-      }
+      userInfo.avatar = response.avatarUrl || ''
+
+      if (response.avatarUrl) userStore.setavatar(response.avatarUrl)
     }
   } catch (error) {
     console.error('Erro ao carregar informações do usuário:', error)

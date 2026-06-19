@@ -55,7 +55,10 @@ async function upload() {
     const response = await userService.uploadAvatar(selectedFile.value);
 
     // backend retorna avatar
-    avatar.value = response.avatar ?? null;
+    
+    // avatar.value = response.avatar ?? null;
+    avatar.value = response.avatarUrl ?? null;
+    ///
 
   } catch (err) {
     console.error(err);

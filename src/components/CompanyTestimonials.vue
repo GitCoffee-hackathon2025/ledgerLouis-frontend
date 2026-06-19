@@ -78,14 +78,25 @@ const companies = ref([
 const activeIndex = ref(0);
 let timer: any = null;
 
+// const visibleCompanies = computed(() => {
+//   const list = [...companies.value];
+//   const rotated = [];
+//   for (let i = 0; i < list.length; i++) {
+//     rotated.push(list[(activeIndex.value + i) % list.length]);
+//   }
+//   return rotated;
+// });
+
 const visibleCompanies = computed(() => {
   const list = [...companies.value];
   const rotated = [];
   for (let i = 0; i < list.length; i++) {
-    rotated.push(list[(activeIndex.value + i) % list.length]);
+    rotated.push(list[(activeIndex.value + i) % list.length]!);
   }
   return rotated;
 });
+
+///
 
 const nextCard = () => {
   activeIndex.value = (activeIndex.value + 1) % companies.value.length;
