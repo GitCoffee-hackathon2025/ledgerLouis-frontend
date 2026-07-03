@@ -3,76 +3,92 @@
     <section class="company-join-container">
       <header class="header-block">
         <p class="eyebrow">Entrar em Empresa</p>
-        <h1>Conecte-se a uma empresa existente</h1>
+        <h1>Escolha uma empresa existente</h1>
         <p class="description">
-          Digite o código de acesso para entrar em uma empresa.
+          Se você já faz parte de uma empresa, selecione-a abaixo para continuar.
         </p>
       </header>
 
-      <form class="company-form" @submit.prevent="handleJoin">
-        <BaseInput
-          id="companyCode"
-          label="Código de acesso"
-          type="text"
-          placeholder="12345"
-          v-model="companyCode"
-          required
-        />
+      <div v-if="loading" class="loading-state">
+        <p>Carregando empresas...</p>
+      </div>
 
-        <div class="form-actions">
-          <button type="button" class="secondary-button" @click="goBack">Voltar</button>
-          <PrimaryButton type="submit" :loading="loading">Entrar</PrimaryButton>
+      <div v-else>
+        <div v-if="companies.length">
+          <ul class="company-list">
+            <li v-for="company in companies" :key="company.companyId">
+              <div>
+                <strong>{{ company.companyName }}</strong>
+                <span>{{ company.role }}</span>
+              </div>
+              <button class="primary-button" @click="selectCompany(company)">Entrar</button>
+            </li>
+          </ul>
+
+          <div class="form-actions">
+            <button type="button" class="secondary-button" @click="goBack">Voltar</button>
+            <button type="button" class="secondary-button" @click="goToCreate">Criar nova empresa</button>
+          </div>
         </div>
-      </form>
+
+        <div v-else class="empty-state">
+          <h2>Você ainda não pertence a uma empresa</h2>
+          <p>Crie uma empresa para começar a trabalhar com times e membros.</p>
+          <div class="form-actions">
+            <button type="button" class="secondary-button" @click="goBack">Voltar</button>
+            <button type="button" class="primary-button" @click="goToCreate">Criar empresa</button>
+          </div>
+        </div>
+      </div>
     </section>
   </main>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCompanyStore } from '@/stores/CompanyStore';
-import BaseInput from '@/components/inputs/BaseInput.vue';
-import PrimaryButton from '@/components/inputs/PrimaryButton.vue';
+import CompanyService from '@/services/companyService';
 
 const router = useRouter();
 const companyStore = useCompanyStore();
-const companyCode = ref('');
-const loading = ref(false);
-
-const errors = reactive({
-  companyCode: false,
-});
+const service = new CompanyService();
+const companies = ref<Array<{ companyId: string; companyName: string; role: string }>>([]);
+const loading = ref(true);
 
 const goBack = () => {
   router.back();
 };
 
-const handleJoin = () => {
-  // Limpar erros anteriores
-  errors.companyCode = false;
+const goToCreate = () => {
+  router.push({ name: 'companyCreate' });
+};
 
-  // Validar campo obrigatório
-  if (!companyCode.value.trim()) {
-    errors.companyCode = true;
-    return;
-  }
-
-  loading.value = true;
-  const joinedName = `Empresa ${companyCode.value}`;
+const selectCompany = (company: { companyId: string; companyName: string; role: string }) => {
   companyStore.setCompanyData({
-    name: joinedName,
-    cnpj: '',
-    address: 'Endereço padrão da empresa',
-    email: 'contato@empresa.com',
-    website: 'https://www.empresa.com',
-    phone: '(00) 00000-0000',
-    owner: companyCode.value,
+    id: company.companyId,
+    name: company.companyName,
+    role: company.role,
     hasCompany: true,
   });
   router.replace({ name: 'companySettings' });
-  loading.value = false;
 };
+
+const loadUserCompanies = async () => {
+  try {
+    const result = await service.getUserCompanies();
+    companies.value = result;
+    if (result.length === 1) {
+      selectCompany(result[0]);
+    }
+  } catch (error) {
+    console.error('Erro ao carregar empresas do usuário:', error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(loadUserCompanies);
 </script>
 
 <style scoped>

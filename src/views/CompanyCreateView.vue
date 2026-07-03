@@ -26,10 +26,12 @@
 
           <BaseInput
             id="cnpj"
-            label="CNPJ (opcional)"
+            label="CNPJ"
             type="text"
             placeholder="00.000.000/0000-00"
             v-model="form.cnpj"
+            :error="errors.cnpj"
+            required
           />
 
           <BaseInput
@@ -84,9 +86,11 @@ import { useRouter } from 'vue-router';
 import { useCompanyStore } from '@/stores/CompanyStore';
 import BaseInput from '@/components/inputs/BaseInput.vue';
 import PrimaryButton from '@/components/inputs/PrimaryButton.vue';
+import CompanyService from '@/services/companyService';
 
 const router = useRouter();
 const companyStore = useCompanyStore();
+const companyService = new CompanyService();
 const loading = ref(false);
 
 const form = reactive({
@@ -100,6 +104,7 @@ const form = reactive({
 
 const errors = reactive({
   name: false,
+  cnpj: false,
   email: false,
   phone: false,
 });
@@ -108,16 +113,19 @@ const goBack = () => {
   router.back();
 };
 
-const handleSubmit = () => {
-  // Limpar erros anteriores
+const handleSubmit = async () => {
   errors.name = false;
+  errors.cnpj = false;
   errors.email = false;
   errors.phone = false;
 
-  // Validar campos obrigatórios
   let isValid = true;
   if (!form.name.trim()) {
     errors.name = true;
+    isValid = false;
+  }
+  if (!form.cnpj.trim()) {
+    errors.cnpj = true;
     isValid = false;
   }
   if (!form.email.trim()) {
@@ -134,18 +142,28 @@ const handleSubmit = () => {
   }
 
   loading.value = true;
-  companyStore.setCompanyData({
-    name: form.name,
-    cnpj: form.cnpj,
-    address: form.address,
-    email: form.email,
-    website: form.website,
-    phone: form.phone,
-    owner: form.email,
-    hasCompany: true,
-  });
-  router.replace({ name: 'companySettings' });
-  loading.value = false;
+
+  try {
+    const createdCompany = await companyService.createCompany(form.name.trim(), form.cnpj.trim());
+    companyStore.setCompanyData({
+      id: createdCompany.id,
+      name: createdCompany.name,
+      cnpj: createdCompany.cnpj,
+      address: form.address,
+      email: form.email,
+      website: form.website,
+      phone: form.phone,
+      owner: form.email,
+      role: 'owner',
+      hasCompany: true,
+    });
+    router.replace({ name: 'companySettings' });
+  } catch (error) {
+    console.error('Erro ao criar empresa:', error);
+    alert('Não foi possível criar a empresa. Verifique os dados e tente novamente.');
+  } finally {
+    loading.value = false;
+  }
 };
 </script>
 

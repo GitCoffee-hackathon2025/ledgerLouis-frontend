@@ -37,6 +37,7 @@
 
         <div class="company-actions">
           <button class="secondary-button" @click="leaveCompany">Sair da empresa</button>
+          <button class="secondary-button" @click="goToManagement">Gerenciar membros</button>
         </div>
       </div>
     </section>
@@ -44,26 +45,56 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCompanyStore } from '@/stores/CompanyStore';
+import CompanyService from '@/services/companyService';
 
 const router = useRouter();
 const companyStore = useCompanyStore();
+const companyService = new CompanyService();
+const loading = ref(true);
 
 const companyName = computed(() => companyStore.company.name || 'Minha Empresa');
-
 
 const leaveCompany = () => {
   companyStore.clearCompany();
   router.replace({ name: 'company' });
 };
 
-onMounted(() => {
-  if (!companyStore.company.hasCompany) {
-    router.replace({ name: 'company' });
+const goToManagement = () => {
+  router.push({ name: 'management' });
+};
+
+const loadCompany = async () => {
+  if (companyStore.company.hasCompany && companyStore.company.id) {
+    loading.value = false;
+    return;
   }
-});
+
+  try {
+    const companies = await companyService.getUserCompanies();
+    if (!companies.length) {
+      router.replace({ name: 'company' });
+      return;
+    }
+
+    const firstCompany = companies[0];
+    companyStore.setCompanyData({
+      id: firstCompany.companyId,
+      name: firstCompany.companyName,
+      role: firstCompany.role,
+      hasCompany: true,
+    });
+  } catch (error) {
+    console.error('Erro ao carregar a empresa:', error);
+    router.replace({ name: 'company' });
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(loadCompany);
 </script>
 
 <style scoped>
