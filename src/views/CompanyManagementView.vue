@@ -69,7 +69,7 @@
             <select id="memberRole" v-model="newMember.role">
               <option value="owner">Owner</option>
               <option value="admin">Admin</option>
-              <option value="user">User</option>
+              <option value="viewer">Viewer</option>
             </select>
 
             <div class="form-actions">
@@ -77,6 +77,7 @@
                 {{ inviteLoading ? 'Enviando...' : 'Convidar membro' }}
               </button>
             </div>
+            <p v-if="inviteError" class="error-message">{{ inviteError }}</p>
           </form>
         </section>
       </div>
@@ -99,8 +100,9 @@ const inviteLoading = ref(false);
 const companies = ref<Array<{ companyId: string; companyName: string; role: string }>>([]);
 const members = ref([] as Array<{ userId: string; name: string; email: string; role: string; createdAt: string }>);
 
-const newMember = reactive({ email: '', role: 'user' });
+const newMember = reactive({ email: '', role: 'viewer' });
 const errors = reactive({ email: false });
+const inviteError = ref('');
 
 const goToCreate = () => router.push({ name: 'companyCreate' });
 const goToJoin = () => router.push({ name: 'companyJoin' });
@@ -157,10 +159,22 @@ const handleAddMember = async () => {
   try {
     await service.addCompanyMember(companyStore.company.id, newMember.email.trim(), newMember.role);
     newMember.email = '';
-    newMember.role = 'user';
+    newMember.role = 'viewer';
     await loadMembers();
+    inviteError.value = '';
   } catch (error) {
+    // show friendly messages based on backend error codes
     console.error('Erro ao adicionar membro:', error);
+    const resp = (error as any)?.response?.data;
+    if (resp?.error === 'USER_NOT_FOUND') {
+      inviteError.value = 'Usuário não encontrado: peça para a pessoa se cadastrar antes de convidá-la.';
+    } else if (resp?.error === 'MEMBER_ALREADY_EXISTS') {
+      inviteError.value = 'Este usuário já é membro da empresa.';
+    } else if (resp?.error === 'FORBIDDEN') {
+      inviteError.value = 'Permissão insuficiente: apenas o owner pode convidar novos membros.';
+    } else {
+      inviteError.value = 'Erro ao convidar membro. Verifique o console para mais detalhes.';
+    }
   } finally {
     inviteLoading.value = false;
   }
@@ -318,6 +332,12 @@ select {
 .form-actions {
   display: flex;
   justify-content: flex-start;
+}
+
+.error-message {
+  color: var(--color-danger);
+  margin-top: 12px;
+  font-weight: 600;
 }
 
 .action-row {

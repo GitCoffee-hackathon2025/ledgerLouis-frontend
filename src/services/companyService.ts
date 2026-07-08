@@ -34,8 +34,20 @@ export default class CompanyService {
     return response.data;
   }
 
-  async createCompany(name: string, cnpj: string) {
-    const response = await axiosInstance.post<CompanyDto>('/companies', { name, cnpj });
+  async createCompany(nameOrPayload: string | { name: string; cnpj: string; [key: string]: any }, cnpj?: string) {
+    let name: string;
+    let cnpjVal: string;
+
+    if (typeof nameOrPayload === 'string') {
+      name = nameOrPayload;
+      cnpjVal = cnpj || '';
+    } else {
+      // sanitize payload: only send fields backend expects
+      name = nameOrPayload.name;
+      cnpjVal = nameOrPayload.cnpj;
+    }
+
+    const response = await axiosInstance.post<CompanyDto>('/companies', { name, cnpj: cnpjVal });
     return response.data;
   }
 
@@ -44,7 +56,8 @@ export default class CompanyService {
     return response.data;
   }
 
-  async updateCompany(companyId: string, name: string) {
+  async updateCompany(companyId: string, nameOrPayload: string | { name: string; [key: string]: any }) {
+    const name = typeof nameOrPayload === 'string' ? nameOrPayload : nameOrPayload.name;
     const response = await axiosInstance.patch<CompanyDto>(`/companies/${companyId}`, { name });
     return response.data;
   }

@@ -112,6 +112,32 @@ const errors = reactive({
 const goBack = () => {
   router.back();
 };
+//validando cpf no front temporariamente (codigo do reddit)
+function validateCNPJ(cnpj: string) {
+  const digits = cnpj.replace(/\D/g, '');
+  if (digits.length !== 14) return false;
+
+  const calc = (base: string, factors: number[]) => {
+    let sum = 0;
+    for (let i = 0; i < factors.length; i++) {
+      sum += parseInt(base.charAt(i), 10) * factors[i];
+    }
+    const mod = sum % 11;
+    return mod < 2 ? 0 : 11 - mod;
+  };
+
+  // first verifier
+  const base12 = digits.substr(0, 12);
+  const factors1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  const v1 = calc(base12, factors1);
+
+  // second verifier
+  const base13 = base12 + String(v1);
+  const factors2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  const v2 = calc(base13, factors2);
+
+  return digits === base12 + String(v1) + String(v2);
+}
 
 const handleSubmit = async () => {
   errors.name = false;
@@ -125,6 +151,12 @@ const handleSubmit = async () => {
     isValid = false;
   }
   if (!form.cnpj.trim()) {
+    errors.cnpj = true;
+    isValid = false;
+  }
+
+  // validate CNPJ format/algorithm
+  if (form.cnpj && !validateCNPJ(form.cnpj)) {
     errors.cnpj = true;
     isValid = false;
   }
@@ -144,7 +176,9 @@ const handleSubmit = async () => {
   loading.value = true;
 
   try {
-    const createdCompany = await companyService.createCompany(form.name.trim(), form.cnpj.trim());
+    // normalize CNPJ to digits only before sending
+    const normalizedCnpj = form.cnpj.replace(/\D/g, '');
+    const createdCompany = await companyService.createCompany(form.name.trim(), normalizedCnpj);
     companyStore.setCompanyData({
       id: createdCompany.id,
       name: createdCompany.name,
