@@ -1,71 +1,66 @@
+<script setup lang="ts">
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import { Compass } from 'lucide-vue-next';
+import BaseButton from '@/components/ui/BaseButton.vue';
+
+const route = useRoute();
+
+const title = computed(() => route.meta.title ?? 'Página em construção');
+const description = computed(
+  () => route.meta.description ?? 'Esta página ainda não está implementada, mas a navegação já funciona.',
+);
+</script>
+
 <template>
-  <div class="placeholder-page">
-    <div class="placeholder-card">
+  <div class="page placeholder-page">
+    <div class="placeholder">
+      <span class="code" aria-hidden="true">404</span>
+      <span class="icon-tile icon-tile--solid"><Compass :size="22" /></span>
       <h1>{{ title }}</h1>
       <p>{{ description }}</p>
-      <router-link to="/" class="back-button">Voltar ao Início</router-link>
+      <BaseButton to="/" size="lg">Voltar ao início</BaseButton>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { computed } from 'vue';
-import { useRoute } from 'vue-router';
-
-const route = useRoute();
-
-const title = computed(() => {
-  const routeName = route.name ? String(route.name) : '';
-  return (route.meta.title as string) || `Página ${routeName}`;
-});
-
-const description = computed(() => {
-  return (
-    (route.meta.description as string) ||
-    'Esta página ainda não está implementada, mas a navegação já está funcionando corretamente.'
-  );
-});
-</script>
-
 <style scoped>
 .placeholder-page {
-  min-height: calc(100vh - 165px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  background-color: var(--color-surface-alt);
+  min-height: calc(100vh - var(--topbar-height) - var(--bottom-nav-height));
 }
 
-.placeholder-card {
-  width: 100%;
-  max-width: 520px;
-  padding: 32px;
-  border-radius: 24px;
-  background: var(--color-surface);
-  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.08);
+.placeholder {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: 460px;
+  isolation: isolate;
   text-align: center;
 }
 
-h1 {
-  font-size: 28px;
-  color: var(--color-success-dark);
-  margin-bottom: 14px;
+.code {
+  position: absolute;
+  top: -70px;
+  z-index: -1;
+  font-family: var(--font-display);
+  font-size: 9rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: var(--color-surface-3);
 }
 
-p {
-  color: var(--color-text-secondary);
-  line-height: 1.75;
-  margin-bottom: 24px;
+.placeholder h1 {
+  font-size: var(--text-2xl);
 }
 
-.back-button {
-  display: inline-block;
-  padding: 12px 24px;
-  border-radius: 999px;
-  background: var(--color-success-gradient);
-  color: var(--color-surface);
-  font-weight: 600;
-  text-decoration: none;
+.placeholder p {
+  margin-bottom: var(--space-2);
+  color: var(--color-text-muted);
 }
 </style>

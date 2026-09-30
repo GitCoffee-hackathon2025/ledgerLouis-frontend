@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { reactive, ref } from 'vue';
+import { ref } from 'vue';
 import type { TransactionDto, CreateTransactionDto } from '@/services/transactionService';
 import TransactionService from '@/services/transactionService';
 

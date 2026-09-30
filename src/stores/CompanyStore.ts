@@ -110,6 +110,10 @@ export const useCompanyStore = defineStore('company', () => {
     });
   };
 
+  // Restaura a empresa salva já na criação da store, para que o guard do
+  // router (requiresCompany) funcione desde a primeira navegação.
+  loadCompanyData();
+
   return {
     company,
     companies,

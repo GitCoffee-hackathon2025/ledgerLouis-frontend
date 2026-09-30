@@ -1,98 +1,33 @@
-<template>
-  <main class="invitations-page">
-    <section class="invitations-container">
-      <header class="header-block">
-        <p class="kicker">Convites</p>
-        <h1>Seus <span class="accent-text">convites</span></h1>
-        <p class="description">
-          Veja os convites recebidos para participar de empresas.
-        </p>
-      </header>
-
-      <div v-if="tokenInvitation" class="invitation-card token-card">
-        <div class="invitation-info">
-          <div class="invitation-header">
-            <h3>Convite para participar de uma empresa</h3>
-            <span class="role-badge">{{ tokenInvitation.role }}</span>
-          </div>
-          <p class="invitation-detail">
-            <span class="detail-label">Email:</span> {{ tokenInvitation.email }}
-          </p>
-          <p class="invitation-detail">
-            <span class="detail-label">Expira em:</span> {{ formatDate(tokenInvitation.expiresAt) }}
-          </p>
-        </div>
-        <div class="invitation-actions">
-          <PrimaryButton :loading="acceptingId !== null" @click="handleTokenAccept">
-            Aceitar convite
-          </PrimaryButton>
-        </div>
-      </div>
-
-      <div v-else-if="tokenError" class="empty-state">
-        <p>{{ tokenError }}</p>
-      </div>
-
-      <div v-else-if="loading" class="loading-state">
-        <p>Carregando convites...</p>
-      </div>
-
-      <div v-else-if="invitations.length === 0" class="empty-state">
-        <p>Você não tem convites pendentes no momento.</p>
-      </div>
-
-      <ul v-else class="invitations-list">
-        <li v-for="invitation in invitations" :key="invitation.id" class="invitation-card">
-          <div class="invitation-info">
-            <div class="invitation-header">
-              <h3>Convite para empresa</h3>
-              <span class="role-badge" :data-role="invitation.role">{{ invitation.role }}</span>
-            </div>
-            <p class="invitation-detail">
-              <span class="detail-label">Email:</span> {{ invitation.email }}
-            </p>
-            <p class="invitation-detail">
-              <span class="detail-label">Expira em:</span> {{ formatDate(invitation.expiresAt) }}
-            </p>
-          </div>
-          <div class="invitation-actions">
-            <PrimaryButton :loading="acceptingId === invitation.id" @click="handleAccept(invitation)">
-              Aceitar convite
-            </PrimaryButton>
-          </div>
-        </li>
-      </ul>
-    </section>
-  </main>
-</template>
-
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { Building2, Clock, Inbox, Mail } from 'lucide-vue-next';
 import CompanyService, { type UserInvitationDto } from '@/services/companyService';
-import PrimaryButton from '@/components/ui/PrimaryButton.vue';
+import { useCompanyStore } from '@/stores/CompanyStore';
+import PageHeader from '@/components/ui/PageHeader.vue';
+import BaseButton from '@/components/ui/BaseButton.vue';
+import { useToast } from '@/composables/useToast';
+import { apiErrorStatus } from '@/utils/apiError';
+import { formatDateTime } from '@/utils/format';
+
+type TokenInvitation = Omit<UserInvitationDto, 'id'>;
 
 const service = new CompanyService();
 const route = useRoute();
 const router = useRouter();
+const companyStore = useCompanyStore();
+const toast = useToast();
 
 const loading = ref(true);
 const acceptingId = ref<string | null>(null);
 const invitations = ref<UserInvitationDto[]>([]);
-const tokenInvitation = ref<Omit<UserInvitationDto, 'id'> | null>(null);
+const tokenInvitation = ref<TokenInvitation | null>(null);
 const tokenError = ref('');
-
-const formatDate = (value: string) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString('pt-BR');
-};
 
 const loadInvitations = async () => {
   loading.value = true;
   try {
-    const data = await service.listUserInvitations();
-    invitations.value = data.items;
+    invitations.value = (await service.listUserInvitations()).items;
   } catch (error) {
     console.error('Erro ao carregar convites:', error);
     invitations.value = [];
@@ -101,13 +36,20 @@ const loadInvitations = async () => {
   }
 };
 
+const onAccepted = async () => {
+  toast.success('Convite aceito! A empresa já está disponível para você.');
+  await companyStore.syncFromBackend();
+};
+
 const handleAccept = async (invitation: UserInvitationDto) => {
   acceptingId.value = invitation.id;
   try {
     await service.acceptInvitationById(invitation.id);
+    await onAccepted();
     await loadInvitations();
   } catch (error) {
     console.error('Erro ao aceitar convite:', error);
+    toast.error('Não foi possível aceitar o convite.');
   } finally {
     acceptingId.value = null;
   }
@@ -121,7 +63,8 @@ const handleTokenAccept = async () => {
   try {
     await service.acceptInvitation(token);
     tokenInvitation.value = null;
-    tokenError.value = '';
+    await onAccepted();
+    router.push({ name: 'company' });
   } catch (error) {
     console.error('Erro ao aceitar convite:', error);
     tokenError.value = 'Não foi possível aceitar este convite.';
@@ -132,169 +75,129 @@ const handleTokenAccept = async () => {
 
 onMounted(async () => {
   const token = route.params.token;
-  if (typeof token === 'string') {
-    try {
-      tokenInvitation.value = await service.getInvitation(token);
-    } catch (error) {
-      console.error('Erro ao carregar convite:', error);
-      if (typeof error === 'object' && error !== null && 'response' in error) {
-        const status = (error as { response?: { status?: number } }).response?.status;
-        if (status === 401) {
-          await router.replace({ name: 'entrar', query: { redirect: route.fullPath } });
-          return;
-        }
-      }
-      tokenError.value = 'Convite inválido, expirado ou destinado a outro email.';
-    } finally {
-      loading.value = false;
-    }
+  if (typeof token !== 'string') {
+    await loadInvitations();
     return;
   }
 
-  await loadInvitations();
+  try {
+    tokenInvitation.value = await service.getInvitation(token);
+  } catch (error) {
+    console.error('Erro ao carregar convite:', error);
+    if (apiErrorStatus(error) === 401) {
+      await router.replace({ name: 'entrar', query: { redirect: route.fullPath } });
+      return;
+    }
+    tokenError.value = 'Convite inválido, expirado ou destinado a outro e-mail.';
+  } finally {
+    loading.value = false;
+  }
 });
 </script>
 
+<template>
+  <div class="page">
+    <div class="page-shell page-shell--narrow">
+      <PageHeader eyebrow="Convites" title="Seus convites">
+        <template #title>Seus <span class="gradient-text">convites</span></template>
+        <template #description>Convites recebidos para participar de empresas no Ledger Louis.</template>
+      </PageHeader>
+
+      <div v-if="loading" class="invitation-list">
+        <span v-for="n in 2" :key="n" class="skeleton" style="height: 96px; border-radius: var(--radius-lg)" />
+      </div>
+
+      <p v-else-if="tokenError" class="alert alert--error" role="alert">{{ tokenError }}</p>
+
+      <ul v-else-if="tokenInvitation" class="invitation-list">
+        <li class="invitation">
+          <span class="icon-tile"><Building2 :size="20" /></span>
+          <div class="invitation-copy">
+            <div class="invitation-title">
+              <strong>Convite para participar de uma empresa</strong>
+              <span class="badge" data-tone="success">{{ tokenInvitation.role }}</span>
+            </div>
+            <p><Mail :size="14" /> {{ tokenInvitation.email }}</p>
+            <p><Clock :size="14" /> Expira em {{ formatDateTime(tokenInvitation.expiresAt) }}</p>
+          </div>
+          <BaseButton :loading="acceptingId !== null" @click="handleTokenAccept">Aceitar convite</BaseButton>
+        </li>
+      </ul>
+
+      <div v-else-if="invitations.length === 0" class="empty-state">
+        <Inbox :size="28" />
+        Você não tem convites pendentes no momento.
+      </div>
+
+      <ul v-else class="invitation-list">
+        <li v-for="invitation in invitations" :key="invitation.id" class="invitation">
+          <span class="icon-tile"><Building2 :size="20" /></span>
+          <div class="invitation-copy">
+            <div class="invitation-title">
+              <strong>Convite para empresa</strong>
+              <span class="badge" :data-tone="invitation.role === 'owner' ? 'success' : undefined">
+                {{ invitation.role }}
+              </span>
+            </div>
+            <p><Mail :size="14" /> {{ invitation.email }}</p>
+            <p><Clock :size="14" /> Expira em {{ formatDateTime(invitation.expiresAt) }}</p>
+          </div>
+          <BaseButton :loading="acceptingId === invitation.id" @click="handleAccept(invitation)">
+            Aceitar convite
+          </BaseButton>
+        </li>
+      </ul>
+    </div>
+  </div>
+</template>
+
 <style scoped>
-.invitations-page {
-  min-height: calc(100vh - 65px);
-  padding: 48px 20px 64px;
-  background: var(--color-bg);
-}
-
-.invitations-container {
-  max-width: 720px;
-  margin: 0 auto;
-}
-
-.header-block {
-  margin-bottom: 24px;
-}
-
-.kicker {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-primary);
-  margin-bottom: 14px;
-}
-
-h1 {
-  font-family: var(--font-display);
-  font-size: clamp(1.5rem, 4vw, 2rem);
-  font-weight: 800;
-  line-height: 1.2;
-  color: var(--color-text);
-  margin-bottom: 14px;
-  text-wrap: balance;
-}
-
-.accent-text {
-  background: var(--color-success-gradient);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.description {
-  color: var(--color-text-secondary);
-  font-size: 16px;
-  line-height: 1.7;
-}
-
-.loading-state,
-.empty-state {
-  padding: 24px;
-  border: 1px solid var(--color-border);
-  border-radius: 20px;
-  background: var(--color-surface-alt);
-  color: var(--color-text-secondary);
-}
-
-.invitations-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 16px;
-}
-
-.invitation-card {
+.invitation-list {
   display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  align-items: center;
-  padding: 20px 22px;
-  border-radius: 22px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-alt);
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
-.invitation-info {
-  flex: 1;
+.invitation {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.invitation-copy {
+  flex: 1 1 260px;
   min-width: 0;
 }
 
-.invitation-header {
+.invitation-title {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 
-.invitation-header h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-text);
+.invitation-copy p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
 }
 
-.invitation-detail {
-  margin: 4px 0;
-  font-size: 14px;
-  color: var(--color-text-secondary);
+.invitation-copy p svg {
+  color: var(--color-text-subtle);
 }
 
-.detail-label {
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.invitation-actions {
-  flex-shrink: 0;
-}
-
-.invitation-actions :deep(.primary-btn) {
-  width: auto;
-  min-width: 160px;
-}
-
-.role-badge {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: capitalize;
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-border);
-}
-
-.role-badge[data-role='owner'] {
-  background: var(--color-primary-glow);
-  color: var(--color-primary);
-  border-color: transparent;
-}
-
-@media (max-width: 640px) {
-  .invitation-card {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .invitation-actions :deep(.primary-btn) {
+@media (max-width: 560px) {
+  .invitation > :deep(.btn) {
     width: 100%;
   }
 }

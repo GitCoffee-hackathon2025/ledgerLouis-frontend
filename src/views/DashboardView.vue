@@ -1,109 +1,10 @@
-<template>
-  <main class="dashboard-page">
-    <div class="dashboard-shell">
-      <DashboardHeader @export="handleExport" />
-
-      <TagFilterChips />
-
-      <section class="metrics-grid" aria-label="Resumo financeiro">
-        <DashboardCard
-          title="Saldo total"
-          :value="formattedAccountValue"
-          description="Saldo disponível"
-          :trend-value="balanceTrend"
-          trend-label="vs mês anterior"
-          :tone="accountValue >= 0 ? 'positive' : 'negative'"
-        >
-          <template #icon>
-            <div class="card-icon" :class="accountValue >= 0 ? 'card-icon--positive' : 'card-icon--negative'">
-              <WalletMinimal :size="20" />
-            </div>
-          </template>
-
-          <template #sparkline>
-            <DashboardSparkline :variant="accountValue >= 0 ? 'success' : 'danger'" />
-          </template>
-        </DashboardCard>
-
-        <DashboardCard
-          title="Entradas do mês"
-          :value="formattedIncome"
-          :description="entriesDescription"
-          trend-value="+ 8,3%"
-          trend-label="vs mês anterior"
-          tone="positive"
-        >
-          <template #icon>
-            <div class="card-icon card-icon--positive">
-              <ArrowDownToLine :size="20" />
-            </div>
-          </template>
-
-          <template #sparkline>
-            <DashboardSparkline variant="success" />
-          </template>
-        </DashboardCard>
-
-        <DashboardCard
-          title="Saídas do mês"
-          :value="formattedExpense"
-          :description="exitsDescription"
-          trend-value="+ 3,7%"
-          trend-label="vs mês anterior"
-          tone="negative"
-        >
-          <template #icon>
-            <div class="card-icon card-icon--negative">
-              <ArrowUpFromLine :size="20" />
-            </div>
-          </template>
-
-          <template #sparkline>
-            <DashboardSparkline variant="danger" />
-          </template>
-        </DashboardCard>
-
-        <DashboardCard
-          title="Transações"
-          :value="transactionCount.toString()"
-          :description="countDescription"
-          trend-value="+ 5,2%"
-          trend-label="vs mês anterior"
-          tone="neutral"
-        >
-          <template #icon>
-            <div class="card-icon card-icon--neutral">
-              <ChartNoAxesCombined :size="20" />
-            </div>
-          </template>
-
-          <template #sparkline>
-            <DashboardSparkline variant="success" />
-          </template>
-        </DashboardCard>
-      </section>
-
-      <section class="charts-grid" aria-label="Gráficos financeiros">
-        <RevenueChart :transactions="filteredTransactions" />
-        <TagsDistributionCard :transactions="filteredTransactions" />
-      </section>
-
-      <section class="insights-grid" aria-label="Estatísticas de gastos">
-        <ExpenseInsightsCard />
-      </section>
-
-      <RecentTransactions :transactions="filteredTransactions" />
-    </div>
-  </main>
-</template>
-
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
-import { ArrowDownToLine, ArrowUpFromLine, ChartNoAxesCombined, WalletMinimal } from 'lucide-vue-next';
-
+import { ArrowDownToLine, ArrowUpFromLine, Plus, ReceiptText, WalletMinimal } from 'lucide-vue-next';
+import PageHeader from '@/components/ui/PageHeader.vue';
+import BaseButton from '@/components/ui/BaseButton.vue';
+import ExportMenu from '@/components/ui/ExportMenu.vue';
 import DashboardCard from '@/components/dashboard/DashboardCard.vue';
-import DashboardHeader from '@/components/dashboard/DashboardHeader.vue';
-import DashboardSparkline from '@/components/dashboard/DashboardSparkline.vue';
 import RecentTransactions from '@/components/dashboard/RecentTransactions.vue';
 import RevenueChart from '@/components/dashboard/RevenueChart.vue';
 import TagFilterChips from '@/components/dashboard/TagFilterChips.vue';
@@ -113,89 +14,55 @@ import { useTransactionStore } from '@/stores/transactionStore';
 import { useCompanyStore } from '@/stores/CompanyStore';
 import { useTagStore } from '@/stores/tagStore';
 import { exportTransactionsCsv, exportTransactionsPdf } from '@/utils/exportTransactions';
+import { formatCurrency } from '@/utils/format';
+
+const SPARKLINE_MONTHS = 6;
 
 const transactionStore = useTransactionStore();
 const companyStore = useCompanyStore();
 const tagStore = useTagStore();
 
 onMounted(async () => {
-  if (companyStore.company.hasCompany) {
-    await transactionStore.fetchTransactions();
-    await transactionStore.fetchAccountValue();
-  }
+  await Promise.all([transactionStore.fetchTransactions(), transactionStore.fetchAccountValue()]);
 });
 
-const accountValue = computed(() => transactionStore.accountValue);
-
-const activeTagName = computed(
-  () => tagStore.tags.find((tag) => tag.id === tagStore.activeTagId)?.name,
-);
+const activeTagName = computed(() => tagStore.tags.find((tag) => tag.id === tagStore.activeTagId)?.name);
 
 const filteredTransactions = computed(() => {
   const activeTagId = tagStore.activeTagId;
   if (!activeTagId) return transactionStore.transactions;
-
-  return transactionStore.transactions.filter((transaction) =>
-    tagStore.transactionHasTag(transaction.id, activeTagId),
-  );
+  return transactionStore.transactions.filter((t) => tagStore.transactionHasTag(t.id, activeTagId));
 });
 
-const formattedAccountValue = computed(() => {
-  const value = accountValue.value;
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
+// Chaves "YYYY-MM" dos últimos N meses (o último é o mês atual).
+const monthKeys = computed(() => {
+  const now = new Date();
+  return Array.from({ length: SPARKLINE_MONTHS }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - (SPARKLINE_MONTHS - 1 - index), 1);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  });
 });
 
-const balanceTrend = computed(() => {
-  const value = accountValue.value;
-  if (value > 0) return '+ 12,5%';
-  if (value < 0) return '- 5,2%';
-  return '0%';
+const monthly = computed(() => {
+  const buckets = new Map(monthKeys.value.map((key) => [key, { income: 0, expense: 0, count: 0 }]));
+  for (const transaction of filteredTransactions.value) {
+    const bucket = buckets.get(transaction.date.slice(0, 7));
+    if (!bucket) continue;
+    bucket.count += 1;
+    if (transaction.entryType === 'credit') bucket.income += transaction.amount;
+    else bucket.expense += transaction.amount;
+  }
+  return monthKeys.value.map((key) => buckets.get(key)!);
 });
 
-const income = computed(() => {
-  return filteredTransactions.value
-    .filter(t => t.entryType === 'credit')
-    .reduce((sum, t) => sum + t.amount, 0);
-});
+const current = computed(() => monthly.value[monthly.value.length - 1]!);
+const previous = computed(() => monthly.value[monthly.value.length - 2]!);
 
-const expense = computed(() => {
-  return filteredTransactions.value
-    .filter(t => t.entryType === 'debit')
-    .reduce((sum, t) => sum + t.amount, 0);
-});
+const percentChange = (now: number, before: number) => (before === 0 ? null : ((now - before) / before) * 100);
 
-const formattedIncome = computed(() => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(income.value);
-});
+const accountValue = computed(() => transactionStore.accountValue);
 
-const formattedExpense = computed(() => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(expense.value);
-});
-
-const transactionCount = computed(() => {
-  return filteredTransactions.value.length;
-});
-
-const entriesDescription = computed(() =>
-  activeTagName.value ? `Total de entradas · Tag: ${activeTagName.value}` : 'Total de entradas',
-);
-
-const exitsDescription = computed(() =>
-  activeTagName.value ? `Total de saídas · Tag: ${activeTagName.value}` : 'Total de saídas',
-);
-
-const countDescription = computed(() =>
-  activeTagName.value ? `Total de transações · Tag: ${activeTagName.value}` : 'Total de transações',
-);
+const tagSuffix = computed(() => (activeTagName.value ? ` · ${activeTagName.value}` : ''));
 
 const handleExport = (format: 'csv' | 'pdf') => {
   if (format === 'csv') {
@@ -206,72 +73,95 @@ const handleExport = (format: 'csv' | 'pdf') => {
 };
 </script>
 
+<template>
+  <div class="page">
+    <div class="page-shell">
+      <PageHeader
+        eyebrow="Relatórios"
+        title="Visão geral"
+        :description="`Saldo, entradas e saídas de ${companyStore.company.name || 'sua empresa'} em uma leitura rápida.`"
+      >
+        <template #actions>
+          <ExportMenu @export="handleExport" />
+          <BaseButton :to="{ name: 'addExpense' }">
+            <Plus :size="18" />
+            Novo lançamento
+          </BaseButton>
+        </template>
+      </PageHeader>
+
+      <TagFilterChips />
+
+      <section class="metrics-grid" aria-label="Resumo financeiro">
+        <DashboardCard
+          title="Saldo total"
+          :value="formatCurrency(accountValue)"
+          :icon="WalletMinimal"
+          :tone="accountValue >= 0 ? 'positive' : 'negative'"
+          description="Saldo disponível"
+          :series="monthly.map((m) => m.income - m.expense)"
+        />
+        <DashboardCard
+          title="Entradas do mês"
+          :value="formatCurrency(current.income)"
+          :icon="ArrowDownToLine"
+          tone="positive"
+          :trend="percentChange(current.income, previous.income)"
+          :description="`vs mês anterior${tagSuffix}`"
+          :series="monthly.map((m) => m.income)"
+        />
+        <DashboardCard
+          title="Saídas do mês"
+          :value="formatCurrency(current.expense)"
+          :icon="ArrowUpFromLine"
+          tone="negative"
+          invert-trend
+          :trend="percentChange(current.expense, previous.expense)"
+          :description="`vs mês anterior${tagSuffix}`"
+          :series="monthly.map((m) => m.expense)"
+        />
+        <DashboardCard
+          title="Transações do mês"
+          :value="current.count.toString()"
+          :icon="ReceiptText"
+          :trend="percentChange(current.count, previous.count)"
+          :description="`vs mês anterior${tagSuffix}`"
+          :series="monthly.map((m) => m.count)"
+        />
+      </section>
+
+      <section class="charts-grid" aria-label="Gráficos financeiros">
+        <RevenueChart :transactions="filteredTransactions" />
+        <TagsDistributionCard :transactions="filteredTransactions" />
+      </section>
+
+      <ExpenseInsightsCard />
+
+      <RecentTransactions :transactions="filteredTransactions" />
+    </div>
+  </div>
+</template>
+
 <style scoped>
-.dashboard-page {
-  min-height: calc(100vh - 165px);
-  padding: 30px 16px 32px;
-  background: var(--color-bg);
-}
-
-.dashboard-shell {
-  display: grid;
-  gap: 18px;
-  max-width: 1240px;
-  margin: 0 auto;
-}
-
 .metrics-grid,
-.charts-grid,
-.insights-grid {
+.charts-grid {
   display: grid;
-  gap: 16px;
-}
-
-.card-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
-}
-
-.card-icon--positive {
-  color: var(--color-success-dark);
-  background: rgba(29, 205, 108, 0.12);
-}
-
-.card-icon--negative {
-  color: var(--color-danger);
-  background: rgba(229, 33, 36, 0.12);
-}
-
-.card-icon--neutral {
-  color: var(--color-text-secondary);
-  background: rgba(107, 114, 128, 0.12);
+  gap: var(--space-4);
 }
 
 @media (min-width: 640px) {
-  .dashboard-page {
-    padding-inline: 20px;
-  }
-
   .metrics-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (min-width: 1024px) {
-  .dashboard-page {
-    padding: 28px 24px 40px;
-  }
-
+@media (min-width: 1100px) {
   .metrics-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .charts-grid {
-    grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.95fr);
+    grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr);
     align-items: stretch;
   }
 }

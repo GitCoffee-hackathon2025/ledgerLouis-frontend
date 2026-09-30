@@ -1,81 +1,85 @@
+<script setup lang="ts">
+import { ArrowRight, ArrowDownRight, ArrowUpRight, TrendingUp } from 'lucide-vue-next';
+import BaseButton from '@/components/ui/BaseButton.vue';
+
+defineEmits<{ signup: [] }>();
+
+const stats = [
+  { value: '100%', label: 'Gratuito' },
+  { value: '24/7', label: 'Na nuvem' },
+  { value: '5 min', label: 'Para começar' },
+];
+
+const bars = [42, 58, 36, 70, 52, 84, 66];
+
+const scrollToFeatures = () => {
+  document.getElementById('recursos')?.scrollIntoView({ behavior: 'smooth' });
+};
+</script>
+
 <template>
   <section class="hero">
-    <div class="hero-background">
-      <div class="gradient-orb gradient-orb--1"></div>
-      <div class="gradient-orb gradient-orb--2"></div>
-      <div class="gradient-orb gradient-orb--3"></div>
-    </div>
+    <div class="hero-grid" aria-hidden="true" />
+    <div class="hero-glow hero-glow--1" aria-hidden="true" />
+    <div class="hero-glow hero-glow--2" aria-hidden="true" />
 
-    <div class="hero-container">
+    <div class="hero-inner">
       <div class="hero-content">
+        <span class="hero-pill">
+          <span class="hero-pill-dot" />
+          Gestão financeira para pequenas empresas
+        </span>
 
         <h1 class="hero-title">
-          Transforme suas
-          <span class="gradient-text">finanças</span>
-          <br />
-          em resultados
+          Transforme suas <span class="gradient-text">finanças</span> em resultados
         </h1>
 
         <p class="hero-description">
-          Controle total de entradas e saídas, relatórios inteligentes e uma 
-          experiência que simplifica a gestão financeira da sua empresa.
+          Registre entradas e saídas em segundos, automatize despesas fixas e acompanhe relatórios com previsão do
+          próximo mês — tudo em um só lugar, com sua equipe.
         </p>
 
         <div class="hero-actions">
-          <button class="btn-primary" @click="$emit('signup')">
-            <span>Começar Gratuitamente</span>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M4.16666 10H15.8333M15.8333 10L10 4.16666M15.8333 10L10 15.8333" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
-          <button class="btn-secondary" @click="scrollToFeatures">
-            <span>Saiba Mais</span>
-          </button>
+          <BaseButton size="lg" @click="$emit('signup')">
+            Começar gratuitamente
+            <ArrowRight :size="18" />
+          </BaseButton>
+          <button type="button" class="hero-secondary" @click="scrollToFeatures">Conhecer recursos</button>
         </div>
 
-        <div class="hero-stats">
-          <div class="stat-item">
-            <div class="stat-value">100%</div>
-            <div class="stat-label">Gratuito</div>
+        <dl class="hero-stats">
+          <div v-for="stat in stats" :key="stat.label">
+            <dt>{{ stat.label }}</dt>
+            <dd>{{ stat.value }}</dd>
           </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <div class="stat-value">24/7</div>
-            <div class="stat-label">Disponível</div>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <div class="stat-value">5min</div>
-            <div class="stat-label">Setup rápido</div>
-          </div>
-        </div>
+        </dl>
       </div>
 
-      <div class="hero-visual">
-        <div class="dashboard-mockup">
-          <div class="mockup-header">
-            <div class="mockup-dots">
-              <span class="dot"></span>
-              <span class="dot"></span>
-              <span class="dot"></span>
-            </div>
+      <div class="hero-visual" aria-hidden="true">
+        <div class="mock mock--main">
+          <div class="mock-head">
+            <span class="mock-label">Saldo total</span>
+            <span class="mock-trend"><TrendingUp :size="13" /> +12,5%</span>
           </div>
-          <div class="mockup-content">
-            <div class="mockup-card">
-              <div class="mockup-line short"></div>
-              <div class="mockup-line"></div>
-            </div>
-            <div class="mockup-card">
-              <div class="mockup-line medium"></div>
-              <div class="mockup-line short"></div>
-            </div>
-            <div class="mockup-chart">
-              <div class="chart-bar" style="height: 60%"></div>
-              <div class="chart-bar" style="height: 80%"></div>
-              <div class="chart-bar" style="height: 45%"></div>
-              <div class="chart-bar" style="height: 90%"></div>
-              <div class="chart-bar" style="height: 70%"></div>
-            </div>
+          <p class="mock-balance">R$ 48.920,00</p>
+          <div class="mock-bars">
+            <span v-for="(height, index) in bars" :key="index" :style="{ height: `${height}%` }" />
+          </div>
+        </div>
+
+        <div class="mock mock--float mock--income">
+          <span class="mock-icon"><ArrowUpRight :size="16" /></span>
+          <div>
+            <p>Venda · Loja</p>
+            <strong>+ R$ 2.450,00</strong>
+          </div>
+        </div>
+
+        <div class="mock mock--float mock--expense">
+          <span class="mock-icon"><ArrowDownRight :size="16" /></span>
+          <div>
+            <p>Aluguel · recorrente</p>
+            <strong>- R$ 3.200,00</strong>
           </div>
         </div>
       </div>
@@ -83,326 +87,305 @@
   </section>
 </template>
 
-<script setup lang="ts">
-const scrollToFeatures = () => {
-  const featuresSection = document.querySelector('.features-section');
-  featuresSection?.scrollIntoView({ behavior: 'smooth' });
-};
-</script>
-
 <style scoped>
 .hero {
   position: relative;
-  min-height: 100vh;
+  overflow: hidden;
   display: flex;
   align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  padding: 48px 20px 110px;
+  min-height: calc(100vh - var(--topbar-height));
+  padding: var(--space-12) var(--space-5) 88px;
+  background: var(--gradient-ink);
+  color: #fff;
+  isolation: isolate;
 }
 
-.hero-background {
+.hero-grid {
   position: absolute;
   inset: 0;
-  overflow: hidden;
-  z-index: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at 70% 40%, #000 20%, transparent 70%);
 }
 
-.gradient-orb {
+.hero-glow {
   position: absolute;
+  z-index: -1;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.6;
-  animation: float 20s ease-in-out infinite;
+  filter: blur(90px);
+  pointer-events: none;
 }
 
-.gradient-orb--1 {
-  width: 400px;
-  height: 400px;
-  background: linear-gradient(135deg, #27B969 0%, #1DCD6C 100%);
-  top: -100px;
-  right: -100px;
-  animation-delay: 0s;
+.hero-glow--1 {
+  width: 480px;
+  height: 480px;
+  top: -160px;
+  right: -120px;
+  background: rgba(50, 213, 131, 0.35);
 }
 
-.gradient-orb--2 {
-  width: 300px;
-  height: 300px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  bottom: -50px;
-  left: -50px;
-  animation-delay: 5s;
+.hero-glow--2 {
+  width: 360px;
+  height: 360px;
+  bottom: -160px;
+  left: -120px;
+  background: rgba(18, 183, 106, 0.22);
 }
 
-.gradient-orb--3 {
-  width: 250px;
-  height: 250px;
-  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  animation-delay: 10s;
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(30px, -30px) scale(1.05);
-  }
-  66% {
-    transform: translate(-20px, 20px) scale(0.95);
-  }
-}
-
-.hero-container {
-  position: relative;
-  z-index: 1;
-  max-width: 1200px;
-  width: 100%;
+.hero-inner {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 60px;
+  gap: var(--space-12);
   align-items: center;
+  width: 100%;
+  max-width: var(--shell-width);
+  margin: 0 auto;
 }
 
 @media (min-width: 1024px) {
-  .hero-container {
-    grid-template-columns: 1fr 1fr;
+  .hero-inner {
+    grid-template-columns: 1.1fr 0.9fr;
   }
 }
 
-.hero-content {
-  color: white;
-}
-
-
-.badge-icon {
-  font-size: 18px;
-}
-
-.badge-text {
-  font-size: 14px;
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--space-6);
+  padding: 6px 14px 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: var(--text-sm);
   font-weight: 600;
-  color: #27B969;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.hero-pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #32d583;
+  box-shadow: 0 0 0 4px rgba(50, 213, 131, 0.2);
 }
 
 .hero-title {
-  font-size: clamp(2rem, 5vw, 3.5rem);
+  max-width: 14ch;
+  margin-bottom: var(--space-5);
+  font-size: var(--text-3xl);
   font-weight: 800;
-  line-height: 1.1;
-  margin-bottom: 24px;
-  color: white;
-}
-
-.gradient-text {
-  background: linear-gradient(135deg, #27B969 0%, #1DCD6C 50%, #34d399 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  color: #fff;
 }
 
 .hero-description {
-  font-size: clamp(1rem, 2vw, 1.125rem);
+  max-width: 52ch;
+  margin-bottom: var(--space-8);
+  font-size: clamp(1rem, 1.6vw, 1.125rem);
   line-height: 1.7;
-  color: #cbd5e1;
-  margin-bottom: 32px;
-  max-width: 540px;
+  color: rgba(255, 255, 255, 0.68);
 }
 
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 48px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-10);
 }
 
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 32px;
-  background: linear-gradient(135deg, #27B969 0%, #1DCD6C 100%);
-  color: white;
-  border: none;
-  border-radius: 999px;
-  font-size: 16px;
+.hero-secondary {
+  min-height: 52px;
+  padding: 0 24px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.04);
   font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(39, 185, 105, 0.4);
+  color: #fff;
+  transition: background-color var(--duration-fast) ease, border-color var(--duration-fast) ease;
 }
 
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 30px rgba(39, 185, 105, 0.5);
-}
-
-.btn-primary:active {
-  transform: translateY(0);
-}
-
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 32px;
+.hero-secondary:hover {
   background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 999px;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-}
-
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.3);
 }
 
 .hero-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 24px;
-  align-items: center;
+  gap: var(--space-8);
 }
 
-.stat-item {
+.hero-stats div {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: column-reverse;
+  gap: 2px;
 }
 
-.stat-value {
-  font-size: 24px;
-  font-weight: 800;
-  color: #27B969;
+.hero-stats dd {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
 }
 
-.stat-label {
-  font-size: 14px;
-  color: #94a3b8;
+.hero-stats dt {
+  font-size: var(--text-sm);
+  color: rgba(255, 255, 255, 0.5);
 }
 
-.stat-divider {
-  width: 1px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.2);
-}
-
+/* Mockup */
 .hero-visual {
+  position: relative;
   display: none;
+  max-width: 440px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 @media (min-width: 1024px) {
   .hero-visual {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
   }
 }
 
-.dashboard-mockup {
-  width: 100%;
-  max-width: 500px;
-  background: rgba(30, 41, 59, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  overflow: hidden;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+.mock {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.6);
+}
+
+.mock--main {
+  padding: var(--space-6);
+}
+
+.mock-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mock-label {
+  font-size: var(--text-sm);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.mock-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(50, 213, 131, 0.16);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: #4ade94;
+}
+
+.mock-balance {
+  margin: var(--space-2) 0 var(--space-6);
+  font-family: var(--font-display);
+  font-size: 2.1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.mock-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 140px;
+}
+
+.mock-bars span {
+  flex: 1;
+  border-radius: 8px 8px 3px 3px;
+  background: linear-gradient(180deg, #32d583 0%, rgba(18, 183, 106, 0.35) 100%);
+  transform-origin: bottom;
+  animation: grow 900ms var(--ease-out) both;
+}
+
+.mock-bars span:nth-child(2n) {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.08) 100%);
+}
+
+.mock-bars span:nth-child(1) { animation-delay: 60ms; }
+.mock-bars span:nth-child(2) { animation-delay: 120ms; }
+.mock-bars span:nth-child(3) { animation-delay: 180ms; }
+.mock-bars span:nth-child(4) { animation-delay: 240ms; }
+.mock-bars span:nth-child(5) { animation-delay: 300ms; }
+.mock-bars span:nth-child(6) { animation-delay: 360ms; }
+.mock-bars span:nth-child(7) { animation-delay: 420ms; }
+
+@keyframes grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+.mock--float {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: rgba(17, 24, 39, 0.78);
   animation: float 6s ease-in-out infinite;
 }
 
-.mockup-header {
-  padding: 12px 16px;
-  background: rgba(15, 23, 42, 0.6);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+.mock--float p {
+  font-size: var(--text-xs);
+  color: rgba(255, 255, 255, 0.6);
 }
 
-.mockup-dots {
-  display: flex;
-  gap: 6px;
+.mock--float strong {
+  font-size: var(--text-sm);
 }
 
-.dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+.mock-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
 }
 
-.dot:first-child {
-  background: #ef4444;
+.mock--income {
+  top: 44%;
+  right: -44px;
 }
 
-.dot:nth-child(2) {
-  background: #f59e0b;
+.mock--income .mock-icon {
+  background: rgba(50, 213, 131, 0.18);
+  color: #4ade94;
 }
 
-.dot:last-child {
-  background: #10b981;
+.mock--expense {
+  bottom: -30px;
+  left: -44px;
+  animation-delay: -3s;
 }
 
-.mockup-content {
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.mock--expense .mock-icon {
+  background: rgba(255, 107, 110, 0.18);
+  color: #ff8587;
 }
 
-.mockup-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 16px;
-}
-
-.mockup-line {
-  height: 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  margin-bottom: 8px;
-}
-
-.mockup-line:last-child {
-  margin-bottom: 0;
-}
-
-.mockup-line.short {
-  width: 60%;
-}
-
-.mockup-line.medium {
-  width: 80%;
-}
-
-.mockup-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  height: 120px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-}
-
-.chart-bar {
-  flex: 1;
-  background: linear-gradient(180deg, #27B969 0%, #1DCD6C 100%);
-  border-radius: 8px 8px 0 0;
-  transition: all 0.3s ease;
-}
-
-.chart-bar:hover {
-  background: linear-gradient(180deg, #34d399 0%, #27B969 100%);
-  transform: scaleY(1.05);
-  transform-origin: bottom;
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 </style>

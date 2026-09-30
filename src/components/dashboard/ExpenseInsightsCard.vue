@@ -1,23 +1,22 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
 import { useAnalyticsStore } from '@/stores/analyticsStore';
-import { useThemeStore } from '@/stores/themeStore';
 import { colorForTag } from '@/utils/tagColor';
+import { useChartTheme } from '@/utils/chartTheme';
+import { formatCompactCurrency, formatCurrency } from '@/utils/format';
+import BaseSwitch from '@/components/ui/BaseSwitch.vue';
 
 const analyticsStore = useAnalyticsStore();
-const themeStore = useThemeStore();
+const { isDark, colors, axisLabelStyle } = useChartTheme();
 
 onMounted(() => {
   if (!analyticsStore.overallStats) analyticsStore.fetchOverallStats();
 });
 
-const onToggle = (event: Event) => {
-  const checked = (event.target as HTMLInputElement).checked;
-  analyticsStore.setGroupByTag(checked);
-};
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+const groupByTag = computed({
+  get: () => analyticsStore.groupByTag,
+  set: (value: boolean) => analyticsStore.setGroupByTag(value),
+});
 
 const periodLabel = (period: string) => {
   const [year, month] = period.split('-');
@@ -59,12 +58,7 @@ const overallChartSeries = computed(() => {
   ];
 });
 
-const isDark = computed(() => themeStore.theme === 'dark');
-const axisLabelColor = computed(() => (isDark.value ? '#a3aab8' : '#64748b'));
-const gridLineColor = computed(() =>
-  isDark.value ? 'rgba(163, 170, 184, 0.14)' : 'rgba(148, 163, 184, 0.16)',
-);
-const meanLineColor = computed(() => (isDark.value ? '#7c8494' : '#94a3b8'));
+const axisLabelColor = computed(() => colors.value.axis);
 
 // Faixa de ±1 desvio padrão em torno da média: com menos de 2 meses a variância
 // não tem significado (fica 0), então a faixa fica escondida para não sugerir precisão falsa.
@@ -78,7 +72,7 @@ const deviationAnnotations = computed(() => {
       y: meanValue - standardDeviation,
       y2: meanValue + standardDeviation,
       borderColor: 'transparent',
-      fillColor: '#27B969',
+      fillColor: colors.value.income,
       opacity: 0.12,
       label: {
         text: '± 1 desvio padrão',
@@ -94,7 +88,7 @@ const deviationAnnotations = computed(() => {
     },
     {
       y: meanValue,
-      borderColor: meanLineColor.value,
+      borderColor: colors.value.reference,
       strokeDashArray: 4,
       label: {
         text: 'Média',
@@ -115,9 +109,8 @@ const overallChartOptions = computed(() => ({
   chart: {
     type: 'line',
     toolbar: { show: false },
-    fontFamily: 'var(--font-body)',
   },
-  colors: ['#27B969', '#f59e0b'],
+  colors: [colors.value.income, colors.value.forecast],
   stroke: {
     curve: 'smooth',
     width: [3, 3],
@@ -126,7 +119,7 @@ const overallChartOptions = computed(() => ({
   markers: {
     size: [4, 7],
     strokeWidth: [0, 2],
-    strokeColors: '#fff',
+    strokeColors: colors.value.markerStroke,
     hover: { size: 9 },
   },
   fill: {
@@ -146,29 +139,31 @@ const overallChartOptions = computed(() => ({
     style: {
       fontSize: '12px',
       fontWeight: 800,
-      colors: ['#f59e0b'],
+      colors: [colors.value.forecast],
     },
     background: {
       enabled: true,
-      foreColor: '#f59e0b',
-      borderColor: '#f59e0b',
+      foreColor: colors.value.forecast,
+      borderColor: colors.value.forecast,
       borderWidth: 1.5,
       padding: 5,
       opacity: isDark.value ? 0.16 : 0.1,
     },
   },
   grid: {
-    borderColor: gridLineColor.value,
+    borderColor: colors.value.grid,
     strokeDashArray: 4,
   },
   xaxis: {
     categories: overallChartCategories.value,
-    labels: { style: { colors: axisLabelColor.value, fontSize: '12px' } },
+    labels: { style: axisLabelStyle.value },
+    axisBorder: { show: false },
+    axisTicks: { show: false },
   },
   yaxis: {
     labels: {
-      style: { colors: axisLabelColor.value, fontSize: '12px' },
-      formatter: (value: number) => `R$ ${Math.round(value / 100) / 10}k`,
+      style: axisLabelStyle.value,
+      formatter: formatCompactCurrency,
     },
   },
   legend: { show: false },
@@ -207,31 +202,23 @@ const tagSparklineOptions = (tagId: string) => ({
 </script>
 
 <template>
-  <section class="chart-card insights-card">
-    <header class="chart-header">
+  <section class="card">
+    <header class="card-header">
       <div>
-        <p class="chart-kicker">Estatísticas de gastos</p>
-        <h2>Variação e previsão</h2>
+        <p class="card-kicker">Estatísticas de gastos</p>
+        <h2 class="card-title">Variação e previsão</h2>
       </div>
 
-      <label class="toggle">
-        <input
-          type="checkbox"
-          :checked="analyticsStore.groupByTag"
-          @change="onToggle"
-        />
-        <span class="toggle-track"><span class="toggle-thumb"></span></span>
-        <span class="toggle-label">Agrupar por tag</span>
-      </label>
+      <BaseSwitch v-model="groupByTag">Agrupar por tag</BaseSwitch>
     </header>
 
-    <div v-if="analyticsStore.loading && !overall && sortedByTagStats.length === 0" class="insights-empty">
+    <div v-if="analyticsStore.loading && !overall && sortedByTagStats.length === 0" class="empty-state">
       Calculando estatísticas...
     </div>
 
     <template v-else>
       <div v-if="!analyticsStore.groupByTag" class="overall-view">
-        <div v-if="!overall || overall.count === 0" class="insights-empty">
+        <div v-if="!overall || overall.count === 0" class="empty-state">
           Ainda não há despesas suficientes para calcular estatísticas.
         </div>
 
@@ -266,7 +253,7 @@ const tagSparklineOptions = (tagId: string) => ({
       </div>
 
       <ul v-else class="tag-stats-list">
-        <li v-if="sortedByTagStats.length === 0" class="insights-empty">
+        <li v-if="sortedByTagStats.length === 0" class="empty-state">
           Nenhuma tag com despesas registradas ainda.
         </li>
 
@@ -309,126 +296,42 @@ const tagSparklineOptions = (tagId: string) => ({
 </template>
 
 <style scoped>
-.chart-card {
-  padding: 18px;
-  border-radius: 16px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-}
-
-.chart-header {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.chart-kicker {
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-h2 {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--color-text);
-}
-
-.toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  user-select: none;
-}
-
-.toggle input {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggle-track {
-  width: 38px;
-  height: 22px;
-  border-radius: 999px;
-  background: var(--color-border);
-  position: relative;
-  transition: background 0.2s ease;
-  flex-shrink: 0;
-}
-
-.toggle-thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: white;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.16);
-  transition: transform 0.2s ease;
-}
-
-.toggle input:checked + .toggle-track {
-  background: var(--color-success-gradient);
-}
-
-.toggle input:checked + .toggle-track .toggle-thumb {
-  transform: translateX(16px);
-}
-
-.toggle-label {
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.insights-empty {
-  padding: 24px 12px;
-  text-align: center;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  background: var(--color-surface-soft);
-  border-radius: 18px;
-  border: 1px dashed var(--color-border);
-}
-
 .stat-tiles {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   margin-bottom: 16px;
 }
 
 .stat-tile {
   padding: 12px 14px;
-  border-radius: 18px;
-  background: var(--color-surface-soft);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
 .stat-tile--forecast {
-  background: rgba(29, 205, 108, 0.1);
+  background: var(--color-warning-soft);
 }
 
 .stat-tile-label {
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
   font-size: 12px;
   font-weight: 600;
 }
 
 .stat-tile-value {
   color: var(--color-text);
-  font-size: 15px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-tile--forecast .stat-tile-label {
+  color: var(--color-warning-strong);
 }
 
 .chart-wrapper {
@@ -446,8 +349,8 @@ h2 {
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 14px;
-  background: var(--color-surface-soft);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
 }
 
 .tag-stats-sparkline {
@@ -475,7 +378,7 @@ h2 {
 }
 
 .tag-stats-info span {
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
   font-size: 12px;
 }
 
@@ -494,7 +397,7 @@ h2 {
 }
 
 .tag-stats-metrics span {
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
   font-size: 11px;
   font-weight: 600;
 }
@@ -505,14 +408,9 @@ h2 {
   font-weight: 800;
 }
 
-:deep(.apexcharts-text),
-:deep(.apexcharts-legend-text) {
-  font-family: var(--font-body) !important;
-}
-
 @media (min-width: 560px) {
   .stat-tiles {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -534,9 +432,4 @@ h2 {
   }
 }
 
-@media (min-width: 768px) {
-  .chart-card {
-    padding: 24px;
-  }
-}
 </style>

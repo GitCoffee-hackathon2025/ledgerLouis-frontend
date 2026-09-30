@@ -1,31 +1,30 @@
 <template>
-  <section class="chart-card chart-card--revenue">
-    <header class="chart-header">
+  <section class="card chart-card">
+    <header class="card-header">
       <div>
-        <p class="chart-kicker">Entradas vs Saídas</p>
-        <h2>Movimentação financeira</h2>
+        <p class="card-kicker">Entradas vs saídas</p>
+        <h2 class="card-title">Movimentação financeira</h2>
       </div>
-      
-      <div class="chart-controls">
-        <select v-model="selectedPeriod" class="period-select">
-          <option value="daily">Diário</option>
-          <option value="weekly">Semanal</option>
-          <option value="monthly">Mensal</option>
-          <option value="annual">Anual</option>
-        </select>
-      </div>
+
+      <label class="sr-only" for="revenue-period">Período</label>
+      <select id="revenue-period" v-model="selectedPeriod" class="input input--sm period-select">
+        <option value="daily">Últimos 7 dias</option>
+        <option value="weekly">Últimas 4 semanas</option>
+        <option value="monthly">Mensal</option>
+        <option value="annual">Anual</option>
+      </select>
     </header>
 
-    <div class="chart-legend" aria-label="Legendas do gráfico de barras">
-      <span><i class="legend-dot legend-dot--income"></i> Entradas ({{ incomePercentage }}%)</span>
-      <span><i class="legend-dot legend-dot--expense"></i> Saídas ({{ expensePercentage }}%)</span>
+    <div class="chart-legend">
+      <span><i class="dot" :style="{ background: colors.income }" /> Entradas · {{ incomePercentage }}%</span>
+      <span><i class="dot" :style="{ background: colors.expense }" /> Saídas · {{ expensePercentage }}%</span>
     </div>
 
     <div class="chart-wrapper">
       <apexchart
         :key="`${selectedPeriod}-${source.length}-${isDark}`"
         type="bar"
-        height="320"
+        height="300"
         :options="chartOptions"
         :series="chartSeries"
       />
@@ -36,14 +35,14 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useTransactionStore } from '@/stores/transactionStore';
-import { useThemeStore } from '@/stores/themeStore';
 import type { TransactionDto } from '@/services/transactionService';
+import { useChartTheme } from '@/utils/chartTheme';
+import { formatCompactCurrency, formatCurrency } from '@/utils/format';
 
 const props = defineProps<{ transactions?: TransactionDto[] }>();
 
 const transactionStore = useTransactionStore();
-const themeStore = useThemeStore();
-const isDark = computed(() => themeStore.theme === 'dark');
+const { isDark, colors, axisLabelStyle } = useChartTheme();
 const selectedPeriod = ref('monthly');
 const source = computed(() => props.transactions ?? transactionStore.transactions);
 
@@ -133,8 +132,8 @@ const periodData = computed(() => {
   } else if (selectedPeriod.value === 'monthly') {
     // Últimos 12 meses
     categories = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    incomeData = new Array(12).fill(0);
-    expenseData = new Array(12).fill(0);
+    incomeData = Array.from({ length: 12 }, () => 0);
+    expenseData = Array.from({ length: 12 }, () => 0);
     
     source.value.forEach((transaction) => {
       const date = new Date(transaction.date);
@@ -183,40 +182,31 @@ const chartOptions = computed(() => ({
   chart: {
     type: 'bar',
     toolbar: { show: false },
-    fontFamily: 'var(--font-body)',
   },
-  colors: ['#27B969', '#FF585A'],
+  colors: [colors.value.income, colors.value.expense],
   plotOptions: {
     bar: {
-      borderRadius: 8,
-      columnWidth: '45%',
+      borderRadius: 6,
+      borderRadiusApplication: 'end',
+      columnWidth: '52%',
     },
   },
   dataLabels: {
     enabled: false,
   },
   grid: {
-    borderColor: isDark.value ? 'rgba(163, 170, 184, 0.14)' : 'rgba(148, 163, 184, 0.16)',
+    borderColor: colors.value.grid,
     strokeDashArray: 4,
   },
   xaxis: {
     categories: periodData.value?.categories || [],
-    labels: {
-      style: {
-        colors: isDark.value ? '#a3aab8' : '#64748b',
-        fontSize: '12px',
-      },
-    },
+    labels: { style: axisLabelStyle.value },
+    axisBorder: { show: false },
+    axisTicks: { show: false },
   },
   yaxis: {
     decimalsInFloat: 1,
-    labels: {
-      style: {
-        colors: isDark.value ? '#a3aab8' : '#64748b',
-        fontSize: '12px',
-      },
-      formatter: (value: number) => `R$ ${Math.round(value / 100) / 10}k`,
-    },
+    labels: { style: axisLabelStyle.value, formatter: formatCompactCurrency },
   },
   legend: {
     show: false,
@@ -224,8 +214,7 @@ const chartOptions = computed(() => ({
   tooltip: {
     theme: isDark.value ? 'dark' : 'light',
     y: {
-      formatter: (value: number) =>
-        `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      formatter: formatCurrency,
     },
   },
   responsive: [
@@ -245,91 +234,28 @@ const chartOptions = computed(() => ({
 </script>
 
 <style scoped>
-.chart-card {
-  padding: 18px;
-  border-radius: 16px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-}
-
-.chart-header {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.chart-kicker {
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-h2 {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--color-text);
-}
-
-.chart-controls {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
 .period-select {
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-soft);
-  color: var(--color-text);
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius: 999px;
-  font-weight: 700;
-  cursor: pointer;
-  outline: none;
+  width: auto;
+  border-radius: var(--radius-full);
 }
 
 .chart-legend {
   display: flex;
-  gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 14px;
-  color: var(--color-text-secondary);
-  font-size: 13px;
+  gap: var(--space-4);
+  margin: calc(var(--space-2) * -1) 0 var(--space-2);
+  font-size: var(--text-sm);
   font-weight: 600;
+  color: var(--color-text-muted);
 }
 
-.legend-dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  margin-right: 8px;
-}
-
-.legend-dot--income {
-  background: #27b969;
-}
-
-.legend-dot--expense {
-  background: #ff585a;
+.chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .chart-wrapper {
-  margin-left: -10px;
-}
-
-:deep(.apexcharts-text),
-:deep(.apexcharts-legend-text) {
-  font-family: var(--font-body) !important;
-}
-
-@media (min-width: 768px) {
-  .chart-card {
-    padding: 24px;
-  }
+  margin: 0 -8px -8px -12px;
 }
 </style>

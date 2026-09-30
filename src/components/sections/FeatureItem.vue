@@ -1,73 +1,47 @@
-<template>
-  <div class="feature-item">
-    <div class="feature-number">
-      {{ number }}
-    </div>
-    <div class="feature-text">
-      <h3>{{ title }}</h3>
-      <p>{{ description }}</p>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-defineProps<{
-  number: string;
-  title: string;
-  description: string;
-}>();
+import type { Component } from 'vue';
+
+defineProps<{ icon: Component; title: string; description: string }>();
 </script>
 
+<template>
+  <article class="feature">
+    <span class="icon-tile"><component :is="icon" :size="20" /></span>
+    <h3>{{ title }}</h3>
+    <p>{{ description }}</p>
+  </article>
+</template>
+
 <style scoped>
-.feature-item {
+.feature {
   display: flex;
-  gap: 20px;
-  padding: 20px;
-  background: var(--color-surface);
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-6);
   border: 1px solid var(--color-border);
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: all 0.3s ease;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  transition:
+    transform var(--duration) var(--ease-out),
+    box-shadow var(--duration) ease,
+    border-color var(--duration-fast) ease;
 }
 
-.feature-item:hover {
+.feature:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  border-color: var(--color-primary-ring);
+  box-shadow: var(--shadow-md);
 }
 
-.feature-number {
-  font-size: 32px;
-  font-weight: 800;
-  color: var(--color-success-dark);
-  line-height: 1;
-  min-width: 30px;
-  border-left: 4px solid var(--color-success-alt);
-  padding-left: 16px;
-  flex-shrink: 0;
+.feature h3 {
+  margin-top: var(--space-2);
+  font-size: var(--text-lg);
 }
 
-.feature-text {
-  flex: 1;
-}
-
-.feature-text h3 {
-  font-size: 18px;
-  color: var(--color-text);
-  margin: 0 0 8px 0;
-  font-weight: 700;
-  line-height: 1.3;
-}
-
-.feature-text p {
-  font-size: 14px;
-  color: var(--color-text-secondary);
-  line-height: 1.6;
-  margin: 0;
-}
-
-@media (min-width: 1100px) {
-  .feature-item {
-    padding: 24px;
-  }
+.feature p {
+  font-size: var(--text-sm);
+  line-height: 1.65;
+  color: var(--color-text-muted);
 }
 </style>

@@ -1,0 +1,143 @@
+/* ==========================================================================
+   Design tokens — fonte única de cores, tipografia, raios, sombras e medidas.
+   Componentes nunca devem usar cores hex diretamente: sempre um token daqui,
+   para que o tema escuro funcione sem exceções.
+   ========================================================================== */
+
+:root {
+  /* Tipografia */
+  --font-display: 'Sora', system-ui, sans-serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: clamp(1.6rem, 3.2vw, 2.125rem);
+  --text-3xl: clamp(2.1rem, 5.5vw, 3.6rem);
+
+  /* Raios */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-full: 999px;
+
+  /* Espaçamento */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Layout */
+  --topbar-height: 60px;
+  --sidebar-width: 76px;
+  --sidebar-width-open: 240px;
+  --bottom-nav-height: 84px;
+  --shell-width: 1200px;
+
+  /* Movimento */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 150ms;
+  --duration: 220ms;
+
+  /* ---------- Tema claro ---------- */
+  color-scheme: light;
+
+  --color-bg: #f4f6f9;
+  --color-surface: #ffffff;
+  --color-surface-2: #f7f8fa;
+  --color-surface-3: #eef1f5;
+  --color-border: #e4e8ee;
+  --color-border-strong: #cfd5df;
+  --color-overlay: rgba(10, 15, 25, 0.48);
+
+  --color-text: #0f1724;
+  --color-text-muted: #5b6577;
+  --color-text-subtle: #8a93a3;
+
+  --color-primary: #12b76a;
+  --color-primary-hover: #0ea05c;
+  --color-primary-strong: #067647;
+  --color-primary-soft: rgba(18, 183, 106, 0.1);
+  --color-primary-ring: rgba(18, 183, 106, 0.28);
+  --color-on-primary: #ffffff;
+
+  --color-danger: #e5484d;
+  --color-danger-hover: #d13438;
+  --color-danger-strong: #b42318;
+  --color-danger-soft: rgba(229, 72, 77, 0.1);
+  --color-danger-ring: rgba(229, 72, 77, 0.26);
+
+  --color-warning: #f59e0b;
+  --color-warning-strong: #b45309;
+  --color-warning-soft: rgba(245, 158, 11, 0.12);
+
+  --color-info: #3b82f6;
+  --color-info-soft: rgba(59, 130, 246, 0.1);
+
+  --gradient-primary: linear-gradient(135deg, #12b76a 0%, #32d583 100%);
+  --gradient-danger: linear-gradient(135deg, #e5484d 0%, #ff7a7d 100%);
+  --gradient-ink: linear-gradient(145deg, #0b1220 0%, #111a2c 55%, #0d1a1a 100%);
+
+  --shadow-xs: 0 1px 2px rgba(15, 23, 36, 0.05);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 36, 0.06), 0 1px 2px rgba(15, 23, 36, 0.04);
+  --shadow-md: 0 8px 24px -6px rgba(15, 23, 36, 0.1), 0 2px 6px rgba(15, 23, 36, 0.04);
+  --shadow-lg: 0 24px 56px -12px rgba(15, 23, 36, 0.2);
+  --shadow-primary: 0 8px 20px -6px rgba(18, 183, 106, 0.55);
+  --shadow-danger: 0 8px 20px -6px rgba(229, 72, 77, 0.5);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-bg: #0a0e14;
+  --color-surface: #111720;
+  --color-surface-2: #161d28;
+  --color-surface-3: #1d2532;
+  --color-border: #222b38;
+  --color-border-strong: #334055;
+  --color-overlay: rgba(0, 0, 0, 0.62);
+
+  --color-text: #edf1f6;
+  --color-text-muted: #a1aab8;
+  --color-text-subtle: #717b8b;
+
+  --color-primary: #2bd37f;
+  --color-primary-hover: #4ade94;
+  --color-primary-strong: #6ee7b0;
+  --color-primary-soft: rgba(43, 211, 127, 0.12);
+  --color-primary-ring: rgba(43, 211, 127, 0.3);
+  --color-on-primary: #04150c;
+
+  --color-danger: #ff6b6e;
+  --color-danger-hover: #ff8587;
+  --color-danger-strong: #ff9c9e;
+  --color-danger-soft: rgba(255, 107, 110, 0.12);
+  --color-danger-ring: rgba(255, 107, 110, 0.3);
+
+  --color-warning: #fbbf24;
+  --color-warning-strong: #fcd34d;
+  --color-warning-soft: rgba(251, 191, 36, 0.12);
+
+  --color-info: #60a5fa;
+  --color-info-soft: rgba(96, 165, 250, 0.12);
+
+  --gradient-primary: linear-gradient(135deg, #1fbf6f 0%, #3ee08c 100%);
+  --gradient-danger: linear-gradient(135deg, #e5484d 0%, #ff7a7d 100%);
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 10px 28px -8px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 28px 60px -12px rgba(0, 0, 0, 0.7);
+  --shadow-primary: 0 8px 22px -8px rgba(43, 211, 127, 0.5);
+  --shadow-danger: 0 8px 22px -8px rgba(255, 107, 110, 0.45);
+}

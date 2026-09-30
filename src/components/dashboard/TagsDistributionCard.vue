@@ -2,16 +2,16 @@
 import { computed } from 'vue';
 import { useTagStore } from '@/stores/tagStore';
 import { useTransactionStore } from '@/stores/transactionStore';
-import { useThemeStore } from '@/stores/themeStore';
 import { colorForTag } from '@/utils/tagColor';
 import type { TransactionDto } from '@/services/transactionService';
+import { useChartTheme } from '@/utils/chartTheme';
+import { formatCurrency } from '@/utils/format';
 
 const props = defineProps<{ transactions?: TransactionDto[] }>();
 
 const tagStore = useTagStore();
 const transactionStore = useTransactionStore();
-const themeStore = useThemeStore();
-const isDark = computed(() => themeStore.theme === 'dark');
+const { isDark, colors } = useChartTheme();
 const source = computed(() => props.transactions ?? transactionStore.transactions);
 
 interface TagAggregate {
@@ -20,9 +20,6 @@ interface TagAggregate {
   total: number;
   color: string;
 }
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
 const aggregates = computed<TagAggregate[]>(() => {
   const totals = new Map<string, number>();
@@ -58,14 +55,14 @@ const chartOptions = computed(() => ({
   chart: {
     type: 'donut',
     toolbar: { show: false },
-    fontFamily: 'var(--font-body)',
   },
   labels: aggregates.value.map((item) => item.label),
   colors: aggregates.value.map((item) => item.color),
   legend: { show: false },
   dataLabels: { enabled: false },
   stroke: {
-    width: 0,
+    width: 2,
+    colors: [colors.value.markerStroke],
   },
   plotOptions: {
     pie: {
@@ -88,43 +85,42 @@ const chartOptions = computed(() => ({
 </script>
 
 <template>
-  <section class="chart-card tags-card">
-    <header class="chart-header">
+  <section class="card">
+    <header class="card-header">
       <div>
-        <p class="chart-kicker">Distribuição por tag</p>
-        <h2>Onde as tags estão concentradas</h2>
+        <p class="card-kicker">Distribuição por tag</p>
+        <h2 class="card-title">Onde o dinheiro se concentra</h2>
       </div>
     </header>
 
-    <div v-if="aggregates.length === 0" class="tags-empty">
+    <div v-if="aggregates.length === 0" class="empty-state">
       Marque suas transações com tags para ver a distribuição aqui.
     </div>
 
-    <div v-else class="expenses-layout">
-      <div class="donut-panel">
-        <div class="chart-wrapper">
-          <apexchart
-            :key="`${aggregates.length}-${isDark}`"
-            type="donut"
-            height="260"
-            :options="chartOptions"
-            :series="chartSeries"
-          />
-
-          <div class="donut-center" aria-hidden="true">
-            <span class="donut-center-label">Total marcado</span>
-            <strong class="donut-center-value">{{ formatCurrency(grandTotal) }}</strong>
-          </div>
+    <div v-else class="distribution">
+      <div class="donut">
+        <apexchart
+          :key="`${aggregates.length}-${isDark}`"
+          type="donut"
+          height="240"
+          :options="chartOptions"
+          :series="chartSeries"
+        />
+        <div class="donut-center" aria-hidden="true">
+          <span>Total marcado</span>
+          <strong class="tabular">{{ formatCurrency(grandTotal) }}</strong>
         </div>
       </div>
 
-      <ul class="breakdown-list" aria-label="Totais por tag">
+      <ul class="breakdown" aria-label="Totais por tag">
         <li v-for="item in aggregates" :key="item.id">
-          <span class="breakdown-marker" :style="{ backgroundColor: item.color }"></span>
-          <div>
-            <strong>{{ item.label }}</strong>
-            <span>{{ formatCurrency(item.total) }} · {{ percentage(item.total) }}%</span>
-          </div>
+          <span class="dot" :style="{ backgroundColor: item.color }" />
+          <span class="breakdown-name">{{ item.label }}</span>
+          <span class="breakdown-value tabular">{{ formatCurrency(item.total) }}</span>
+          <span class="breakdown-bar" aria-hidden="true">
+            <span :style="{ width: `${percentage(item.total)}%`, backgroundColor: item.color }" />
+          </span>
+          <span class="breakdown-pct tabular">{{ percentage(item.total) }}%</span>
         </li>
       </ul>
     </div>
@@ -132,131 +128,96 @@ const chartOptions = computed(() => ({
 </template>
 
 <style scoped>
-.chart-card {
-  padding: 18px;
-  border-radius: 16px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-}
-
-.chart-header {
-  margin-bottom: 14px;
-}
-
-.chart-kicker {
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-h2 {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--color-text);
-}
-
-.tags-empty {
-  padding: 24px 12px;
-  text-align: center;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  background: var(--color-surface-soft);
-  border-radius: 18px;
-  border: 1px dashed var(--color-border);
-}
-
-.expenses-layout {
+.distribution {
   display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  align-items: center;
+  gap: var(--space-4);
 }
 
-.donut-panel {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.chart-wrapper {
+.donut {
   position: relative;
+  max-width: 260px;
   width: 100%;
-  max-width: 300px;
-  min-width: 0;
+  margin: 0 auto;
 }
 
 .donut-center {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  max-width: 62%;
-  text-align: center;
+  justify-content: center;
+  gap: 2px;
   pointer-events: none;
+  text-align: center;
 }
 
-.donut-center-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--color-text-secondary);
+.donut-center span {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
 }
 
-.donut-center-value {
-  font-size: 17px;
-  font-weight: 800;
-  line-height: 1.15;
-  color: var(--color-text);
+.donut-center strong {
+  max-width: 60%;
+  font-family: var(--font-display);
+  font-size: var(--text-md);
   overflow-wrap: anywhere;
 }
 
-.breakdown-list {
-  display: grid;
-  gap: 12px;
+.breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
-.breakdown-list li {
+.breakdown li {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'dot name value'
+    'bar bar pct';
   align-items: center;
-  padding: 10px 12px;
-  border-radius: 18px;
-  background: var(--color-surface-soft);
+  gap: 6px var(--space-2);
+  font-size: var(--text-sm);
 }
 
-.breakdown-list strong {
-  display: block;
-  color: var(--color-text);
-  font-size: 14px;
-  margin-bottom: 3px;
+.breakdown .dot {
+  grid-area: dot;
 }
 
-.breakdown-list span {
-  color: var(--color-text-secondary);
-  font-size: 13px;
+.breakdown-name {
+  grid-area: name;
   font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.breakdown-marker {
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
+.breakdown-value {
+  grid-area: value;
+  font-weight: 700;
 }
 
-:deep(.apexcharts-text),
-:deep(.apexcharts-legend-text) {
-  font-family: var(--font-body) !important;
+.breakdown-bar {
+  grid-area: bar;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-3);
+  overflow: hidden;
 }
 
+.breakdown-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
 
-@media (min-width: 768px) {
-  .chart-card {
-    padding: 24px;
-  }
+.breakdown-pct {
+  grid-area: pct;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-align: right;
 }
 </style>

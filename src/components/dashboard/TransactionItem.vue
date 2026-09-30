@@ -1,122 +1,63 @@
-<template>
-  <li class="transaction-item">
-    <div class="transaction-icon" :class="iconClass">
-      <component :is="iconComponent" :size="18" />
-    </div>
-
-    <div class="transaction-content">
-      <div class="transaction-copy">
-        <strong>{{ title }}</strong>
-        <span>{{ subtitle }}</span>
-      </div>
-
-      <div class="transaction-meta">
-        <span>{{ date }}</span>
-        <strong :class="amountClass">{{ amount }}</strong>
-      </div>
-    </div>
-  </li>
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue';
 import { ArrowDownRight, ArrowUpRight } from 'lucide-vue-next';
+import type { TransactionDto } from '@/services/transactionService';
+import { formatRelativeDate, formatSignedAmount } from '@/utils/format';
 
-type TransactionKind = 'income' | 'expense';
+const props = withDefaults(defineProps<{ transaction: TransactionDto; withYear?: boolean }>(), {
+  withYear: false,
+});
 
-const props = defineProps<{
-  title: string;
-  subtitle: string;
-  amount: string;
-  date: string;
-  kind: TransactionKind;
-}>();
-
-const iconComponent = computed(() => (props.kind === 'income' ? ArrowUpRight : ArrowDownRight));
-
-const iconClass = computed(() => ({
-  'transaction-icon--income': props.kind === 'income',
-  'transaction-icon--expense': props.kind === 'expense',
-}));
-
-const amountClass = computed(() => ({
-  'amount--income': props.kind === 'income',
-  'amount--expense': props.kind === 'expense',
-}));
+const isIncome = computed(() => props.transaction.entryType === 'credit');
 </script>
 
+<template>
+  <li class="transaction">
+    <span class="icon-tile" :class="{ 'icon-tile--danger': !isIncome }">
+      <ArrowUpRight v-if="isIncome" :size="18" />
+      <ArrowDownRight v-else :size="18" />
+    </span>
+
+    <div class="transaction-copy">
+      <strong>{{ transaction.description }}</strong>
+      <span>{{ isIncome ? 'Entrada' : 'Saída' }} · {{ formatRelativeDate(transaction.date, withYear) }}</span>
+    </div>
+
+    <strong class="transaction-amount tabular" :class="isIncome ? 'text-income' : 'text-expense'">
+      {{ formatSignedAmount(transaction.amount, transaction.entryType) }}
+    </strong>
+  </li>
+</template>
+
 <style scoped>
-.transaction-item {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 14px;
-  align-items: center;
-  padding: 14px 0;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-}
-
-.transaction-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.transaction-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.transaction-icon--income {
-  background: rgba(29, 205, 108, 0.14);
-  color: var(--color-success-dark);
-}
-
-.transaction-icon--expense {
-  background: rgba(229, 33, 36, 0.12);
-  color: var(--color-danger);
-}
-
-.transaction-content {
+.transaction {
   display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+
+.transaction-copy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .transaction-copy strong {
-  display: block;
-  color: var(--color-text);
-  font-size: 14px;
-  font-weight: 800;
-  margin-bottom: 4px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.transaction-copy span,
-.transaction-meta span {
-  color: var(--color-text-secondary);
-  font-size: 12px;
-  line-height: 1.5;
+.transaction-copy span {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
 }
 
-.transaction-meta {
-  text-align: right;
-}
-
-.transaction-meta strong {
-  display: block;
-  font-size: 14px;
-  font-weight: 800;
-  margin-top: 4px;
-}
-
-.amount--income {
-  color: var(--color-success-dark);
-}
-
-.amount--expense {
-  color: var(--color-danger);
+.transaction-amount {
+  flex-shrink: 0;
+  font-weight: 700;
 }
 </style>

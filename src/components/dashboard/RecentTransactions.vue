@@ -1,120 +1,38 @@
-<template>
-  <section class="transactions-card">
-    <header class="transactions-header">
-      <div>
-        <p class="chart-kicker">Últimas movimentações</p>
-        <h2>Atividade recente</h2>
-      </div>
-
-      <button class="transactions-action" type="button" @click="router.push({ name: 'transactions' })">Ver todas</button>
-    </header>
-
-    <ul class="transactions-list">
-      <TransactionItem
-        v-for="transaction in recentTransactions"
-        :key="transaction.id"
-        :title="transaction.description"
-        :subtitle="transaction.entryType === 'credit' ? 'Entrada' : 'Saída'"
-        :amount="formattedAmount(transaction)"
-        :date="formattedDate(transaction.date)"
-        :kind="transaction.entryType === 'credit' ? 'income' : 'expense'"
-      />
-    </ul>
-  </section>
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { ArrowRight, ReceiptText } from 'lucide-vue-next';
 import TransactionItem from '@/components/dashboard/TransactionItem.vue';
+import BaseButton from '@/components/ui/BaseButton.vue';
 import { useTransactionStore } from '@/stores/transactionStore';
 import type { TransactionDto } from '@/services/transactionService';
 
-const router = useRouter();
-
-const props = defineProps<{
-  transactions?: TransactionDto[];
-}>();
+const props = defineProps<{ transactions?: TransactionDto[] }>();
 
 const transactionStore = useTransactionStore();
 
-const recentTransactions = computed(() => {
-  const source = props.transactions ?? transactionStore.transactions;
-  return source.slice(0, 5);
-});
-
-const formattedAmount = (transaction: { amount: number; entryType: string }) => {
-  const value = new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(transaction.amount);
-  
-  return transaction.entryType === 'credit' ? `+ ${value}` : `- ${value}`;
-};
-
-const formattedDate = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  
-  if (diffDays === 0) {
-    return `Hoje, ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-  } else if (diffDays === 1) {
-    return `Ontem, ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-  } else {
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-  }
-};
+const recentTransactions = computed(() => (props.transactions ?? transactionStore.transactions).slice(0, 5));
 </script>
 
-<style scoped>
-.transactions-card {
-  padding: 18px;
-  border-radius: 28px;
-  border: 1px solid var(--color-border);
-  background: rgba(var(--color-surface-rgb), 0.96);
-  box-shadow: 0 18px 52px rgba(15, 23, 42, 0.06);
-}
+<template>
+  <section class="card">
+    <header class="card-header">
+      <div>
+        <p class="card-kicker">Últimas movimentações</p>
+        <h2 class="card-title">Atividade recente</h2>
+      </div>
+      <BaseButton variant="ghost" size="sm" :to="{ name: 'transactions' }">
+        Ver todas
+        <ArrowRight :size="15" />
+      </BaseButton>
+    </header>
 
-.transactions-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 8px;
-}
+    <div v-if="recentTransactions.length === 0" class="empty-state">
+      <ReceiptText :size="26" />
+      Nenhuma transação registrada ainda.
+    </div>
 
-.chart-kicker {
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-h2 {
-  color: var(--color-text);
-  font-size: 20px;
-  font-weight: 800;
-}
-
-.transactions-action {
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: var(--color-surface-soft);
-  color: var(--color-text);
-  min-height: 40px;
-  padding: 0 14px;
-  font-weight: 700;
-}
-
-.transactions-list {
-  display: grid;
-}
-
-@media (min-width: 768px) {
-  .transactions-card {
-    padding: 24px;
-  }
-}
-</style>
+    <ul v-else class="list-divided">
+      <TransactionItem v-for="transaction in recentTransactions" :key="transaction.id" :transaction="transaction" />
+    </ul>
+  </section>
+</template>

@@ -1,77 +1,47 @@
-<template>
-  <div class="input-group">
-    <label v-if="label" :for="id">{{ label }}</label>
-    <input
-      :id="id"
-      :type="type"
-      :placeholder="placeholder"
-      :value="modelValue"
-      @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
-      class="custom-input"
-      :class="{ 'input-error': error }"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
-defineProps({
-  id: String,
-  label: String,
-  type: { type: String, default: 'text' },
-  placeholder: String,
-  modelValue: String,
-  error: { type: Boolean, default: false }
-});
-defineEmits(['update:modelValue']);
+import { computed, useId } from 'vue';
+
+defineOptions({ inheritAttrs: false });
+
+const props = withDefaults(
+  defineProps<{
+    label?: string;
+    id?: string;
+    type?: string;
+    placeholder?: string;
+    hint?: string;
+    /**
+     * `true` só marca o campo; uma string também exibe a mensagem abaixo.
+     * String vem antes de boolean de propósito: com a ordem inversa o Vue
+     * converte `''` em `true` e o campo nasceria marcado como inválido.
+     */
+    error?: string | boolean;
+  }>(),
+  { label: undefined, id: undefined, type: 'text', placeholder: undefined, hint: undefined, error: false },
+);
+
+const model = defineModel<string | number>();
+
+const fallbackId = useId();
+const inputId = computed(() => props.id ?? fallbackId);
+const errorMessage = computed(() => (typeof props.error === 'string' ? props.error : ''));
 </script>
 
-<style scoped>
-.input-group {
-  width: 100%;
-  margin-bottom: 1.2rem;
-  display: flex;
-  flex-direction: column;
-}
-
-label {
-  font-family: var(--font-body);
-  font-size: 0.85rem;
-  margin-bottom: 6px;
-  margin-left: 12px;
-  color: var(--color-placeholder);
-  font-weight: 600;
-}
-
-.custom-input {
-  width: 100%;
-  padding: 14px 20px;
-  border-radius: var(--radius-input);
-  border: 2px solid transparent;
-  background-color: var(--color-bg); 
-  font-family: var(--font-body);
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  outline: none;
-}
-
-.custom-input:focus {
-  border-color: var(--color-primary);
-  background-color: var(--color-surface);
-  box-shadow: 0 4px 12px var(--color-primary-glow);
-}
-
-.custom-input::placeholder {
-  color: var(--color-placeholder);
-  opacity: 0.7;
-}
-
-.custom-input.input-error {
-  border-color: #ef4444;
-  background-color: rgba(239, 68, 68, 0.05);
-}
-
-.custom-input.input-error:focus {
-  border-color: #dc2626;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
-</style>
+<template>
+  <div class="field">
+    <label v-if="label" :for="inputId" class="field-label">{{ label }}</label>
+    <!-- Atributos extras (required, autocomplete, min, step...) vão para o <input>, não para a div. -->
+    <input
+      :id="inputId"
+      v-model="model"
+      v-bind="$attrs"
+      :type="type"
+      :placeholder="placeholder"
+      class="input"
+      :class="{ 'is-invalid': error }"
+      :aria-invalid="error ? true : undefined"
+    />
+    <span v-if="errorMessage" class="field-error">{{ errorMessage }}</span>
+    <span v-else-if="hint" class="field-hint">{{ hint }}</span>
+  </div>
+</template>

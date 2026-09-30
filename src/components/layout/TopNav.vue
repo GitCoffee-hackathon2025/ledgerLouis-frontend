@@ -1,115 +1,169 @@
-<template>
-  <header class="top-navbar">
-    <router-link to="/" class="logo-section">
-      <span class="logo-text">LEDGER</span>
-    </router-link>
-
-    <div class="nav-actions">
-      <button class="icon-button" @click="goToInvitations" title="Convites">
-        <Mail :size="20" stroke-width="2.5" />
-        <span v-if="pendingInvitations > 0" class="badge">{{ pendingInvitations }}</span>
-      </button>
-    </div>
-  </header>
-</template>
-
 <script setup lang="ts">
-import { Mail } from 'lucide-vue-next';
-import { useRouter } from 'vue-router';
-import { ref, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import { Building2, Mail, Moon, Sun } from 'lucide-vue-next';
 import CompanyService from '@/services/companyService';
+import { useCompanyStore } from '@/stores/CompanyStore';
+import { useThemeStore } from '@/stores/themeStore';
+import AppLogo from './AppLogo.vue';
 
-const router = useRouter();
-const pendingInvitations = ref(0);
+const companyStore = useCompanyStore();
+const themeStore = useThemeStore();
 const service = new CompanyService();
 
-const loadPendingInvitations = async () => {
+const pendingInvitations = ref(0);
+const isDark = computed(() => themeStore.theme === 'dark');
+
+onMounted(async () => {
   try {
     const response = await service.listUserInvitations();
     pendingInvitations.value = response.items.length;
   } catch {
     pendingInvitations.value = 0;
   }
-};
-
-const goToInvitations = () => {
-  router.push({ name: 'invitations' });
-};
-
-onMounted(() => {
-  loadPendingInvitations();
 });
 </script>
 
-<style scoped>
-.top-navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 52px;
-  background-color: var(--color-surface);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 18px;
-  box-sizing: border-box;
-  z-index: 1001;
+<template>
+  <header class="topbar">
+    <RouterLink to="/" class="topbar-brand" aria-label="Ledger Louis — início">
+      <AppLogo />
+    </RouterLink>
 
+    <div class="topbar-actions">
+      <RouterLink
+        v-if="companyStore.company.hasCompany"
+        :to="{ name: 'companySettings' }"
+        class="company-pill"
+        title="Empresa atual"
+      >
+        <Building2 :size="15" />
+        <span>{{ companyStore.company.name }}</span>
+      </RouterLink>
+
+      <button
+        type="button"
+        class="icon-button"
+        :aria-label="isDark ? 'Usar tema claro' : 'Usar tema escuro'"
+        :title="isDark ? 'Tema claro' : 'Tema escuro'"
+        @click="themeStore.toggleTheme()"
+      >
+        <Sun v-if="isDark" :size="19" />
+        <Moon v-else :size="19" />
+      </button>
+
+      <RouterLink :to="{ name: 'invitations' }" class="icon-button" title="Convites" aria-label="Convites">
+        <Mail :size="19" />
+        <span v-if="pendingInvitations > 0" class="icon-badge">{{ pendingInvitations }}</span>
+      </RouterLink>
+    </div>
+  </header>
+</template>
+
+<style scoped>
+.topbar {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  height: var(--topbar-height);
+  padding: 0 var(--space-4);
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
   border-bottom: 1px solid var(--color-border);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  backdrop-filter: saturate(1.6) blur(14px);
+  -webkit-backdrop-filter: saturate(1.6) blur(14px);
 }
 
-.logo-section {
+@media (min-width: 1024px) {
+  .topbar {
+    padding: 0 var(--space-6) 0 22px;
+  }
+}
+
+.topbar-brand {
   display: inline-flex;
   align-items: center;
-  text-decoration: none;
 }
 
-.logo-text {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 15px;
-  letter-spacing: 1px;
-  color: var(--color-text);
-}
-
-.nav-actions {
+.topbar-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
+  min-width: 0;
+}
+
+.company-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 200px;
+  height: 34px;
+  margin-right: 4px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-2);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  transition: border-color var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+.company-pill span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.company-pill svg {
+  color: var(--color-primary);
+}
+
+.company-pill:hover {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
 }
 
 .icon-button {
   position: relative;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 6px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+  transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+.icon-button:hover {
+  background: var(--color-surface-3);
   color: var(--color-text);
-  transition: transform 0.2s ease;
 }
 
-.icon-button:active {
-  transform: scale(0.92);
-}
-
-.badge {
+.icon-badge {
   position: absolute;
-  top: 0;
-  right: 0;
-  min-width: 16px;
-  height: 16px;
+  top: 3px;
+  right: 3px;
+  min-width: 17px;
+  height: 17px;
   padding: 0 4px;
-  border-radius: 999px;
+  border: 2px solid var(--color-surface);
+  border-radius: var(--radius-full);
   background: var(--color-danger);
   color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 16px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 13px;
   text-align: center;
+}
+
+@media (max-width: 420px) {
+  .company-pill {
+    max-width: 130px;
+  }
 }
 </style>

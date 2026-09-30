@@ -1,249 +1,212 @@
-<template>
-  <Transition name="fade">
-    <div v-if="isMenuOpen" class="nav-overlay" @click="isMenuOpen = false"></div>
-  </Transition>
-
-  <div :class="['floating-menu', { 'is-open': isMenuOpen }]">
-    <button class="btn-action btn-income" @click="handleNavigate('/add/income')">
-      Entrada
-      <ArrowUp :size="20" />
-    </button>
-
-    <button class="btn-action btn-expense" @click="handleNavigate('/add/expense')">
-      Saída
-      <ArrowDown :size="20" />
-    </button>
-  </div>
-
-  <nav class="bottom-nav">
-    <button 
-      class="nav-item" 
-      :class="{ 'active': route.path === '/' }" 
-      @click="handleNavigate('/')"
-    >
-      <div class="icon-wrapper"><Home :size="24" /></div>
-      <span>Início</span>
-    </button>
-
-    <button 
-      class="nav-item" 
-      :class="{ 'active': route.path === '/company/settings' }" 
-      @click="handleNavigate('/company/settings')"
-    >
-      <div class="icon-wrapper"><Layers :size="24" /></div>
-      <span>Gerenciamento</span>
-    </button>
-
-    <button 
-      class="nav-item btn-add-wrapper" 
-      @click="isMenuOpen = !isMenuOpen"
-    >
-      <div :class="['plus-icon', { 'rotated': isMenuOpen }]">
-        <Plus :size="28" />
-      </div>
-      <span :class="{ 'label-active': isMenuOpen }">Adicionar</span>
-    </button>
-
-    <button 
-      class="nav-item" 
-      :class="{ 'active': route.path === '/reports' }" 
-      @click="handleNavigate('/reports')"
-    >
-      <div class="icon-wrapper"><PieChart :size="24" /></div>
-      <span>Relatórios</span>
-    </button>
-
-    <button 
-      class="nav-item" 
-      :class="{ 'active': route.path === '/settings' }" 
-      @click="handleNavigate('/settings')"
-    >
-      <div class="icon-wrapper"><Settings :size="24" /></div>
-      <span>Configurações</span>
-    </button>
-  </nav>
-</template>
-
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import { Home, Layers, Plus, PieChart, Settings, ArrowUp, ArrowDown } from 'lucide-vue-next';
-import { useCompanyStore } from '@/stores/CompanyStore';
+import { computed, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { ArrowDown, ArrowUp, Plus } from 'lucide-vue-next';
+import { isNavItemActive, mainNav } from '@/router/navigation';
 
-const isMenuOpen = ref(false);
-const router = useRouter();
 const route = useRoute();
-const companyStore = useCompanyStore();
+const isMenuOpen = ref(false);
 
-const handleNavigate = (path: string) => {
-  if (path === '/company/settings') {
-    if (!companyStore.company.hasCompany) {
-      router.push('/company');
-    } else {
-      router.push(path);
-    }
-  } else {
-    router.push(path);
-  }
-  isMenuOpen.value = false;
-};
+const leftItems = computed(() => mainNav.slice(0, 2));
+const rightItems = computed(() => mainNav.slice(2));
+
+watch(
+  () => route.fullPath,
+  () => {
+    isMenuOpen.value = false;
+  },
+);
 </script>
 
-<style scoped>
-/* Mantive os mesmos estilos de alta qualidade que definimos antes */
-.nav-item, .btn-action {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  border: none;
-  outline: none;
-  background: none;
-  padding: 0;
-  margin: 0;
-}
+<template>
+  <div class="bottom-nav-root">
+    <Transition name="fade">
+      <div v-if="isMenuOpen" class="nav-overlay" @click="isMenuOpen = false" />
+    </Transition>
 
+    <Transition name="sheet">
+      <div v-if="isMenuOpen" class="quick-menu">
+        <RouterLink :to="{ name: 'addIncome' }" class="quick-action quick-action--income">
+          <ArrowUp :size="20" />
+          Nova entrada
+        </RouterLink>
+        <RouterLink :to="{ name: 'addExpense' }" class="quick-action quick-action--expense">
+          <ArrowDown :size="20" />
+          Nova saída
+        </RouterLink>
+      </div>
+    </Transition>
+
+    <nav class="bottom-nav" aria-label="Navegação principal">
+      <RouterLink
+        v-for="item in leftItems"
+        :key="item.name"
+        :to="{ name: item.name }"
+        class="nav-item"
+        :class="{ 'is-active': isNavItemActive(item, route.name) }"
+      >
+        <span class="nav-icon"><component :is="item.icon" :size="22" /></span>
+        <span class="nav-label">{{ item.label }}</span>
+      </RouterLink>
+
+      <button
+        type="button"
+        class="nav-item"
+        :aria-expanded="isMenuOpen"
+        aria-label="Adicionar lançamento"
+        @click="isMenuOpen = !isMenuOpen"
+      >
+        <span class="fab" :class="{ 'is-open': isMenuOpen }"><Plus :size="26" /></span>
+      </button>
+
+      <RouterLink
+        v-for="item in rightItems"
+        :key="item.name"
+        :to="{ name: item.name }"
+        class="nav-item"
+        :class="{ 'is-active': isNavItemActive(item, route.name) }"
+      >
+        <span class="nav-icon"><component :is="item.icon" :size="22" /></span>
+        <span class="nav-label">{{ item.label }}</span>
+      </RouterLink>
+    </nav>
+  </div>
+</template>
+
+<style scoped>
 .nav-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(3px);
+  inset: 0;
   z-index: 998;
+  background: var(--color-overlay);
+  backdrop-filter: blur(3px);
 }
 
-.floating-menu {
+.quick-menu {
   position: fixed;
-  bottom: 105px; 
   left: 50%;
-  transform: translateX(-50%) translateY(20px);
+  bottom: calc(var(--bottom-nav-height) + 16px + env(safe-area-inset-bottom));
+  z-index: 999;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  width: 220px;
-  z-index: 999;
-  opacity: 0;
-  pointer-events: none;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  gap: 10px;
+  width: 230px;
+  transform: translateX(-50%);
 }
 
-.floating-menu.is-open {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-  pointer-events: auto;
-}
-
-.btn-action {
+.quick-action {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 14px;
-  border-radius: 50px;
-  color: white;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+  height: 52px;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  color: #fff;
 }
 
-.btn-income { 
-  background: var(--color-success-gradient);
+.quick-action--income {
+  background: var(--gradient-primary);
+  color: var(--color-on-primary);
+  box-shadow: var(--shadow-primary);
 }
-.btn-expense { 
-  background: var(--color-danger-gradient);
+
+.quick-action--expense {
+  background: var(--gradient-danger);
+  box-shadow: var(--shadow-danger);
+}
+
+.sheet-enter-active,
+.sheet-leave-active {
+  transition:
+    opacity var(--duration) ease,
+    transform var(--duration) var(--ease-out);
+}
+
+.sheet-enter-from,
+.sheet-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 16px);
 }
 
 .bottom-nav {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
+  inset: auto 0 0;
   z-index: 1000;
-  background-color: var(--color-surface);
-  padding: 8px 5px 25px 5px;
   display: flex;
+  align-items: center;
   justify-content: space-around;
-  align-items: flex-end;
-  border-radius: 30px 30px 0 0;
-  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.05);
-  box-sizing: border-box;
+  height: calc(var(--bottom-nav-height) - 12px + env(safe-area-inset-bottom));
+  padding: 0 6px env(safe-area-inset-bottom);
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+  border-top: 1px solid var(--color-border);
+  backdrop-filter: saturate(1.6) blur(14px);
+  -webkit-backdrop-filter: saturate(1.6) blur(14px);
 }
 
 @media (min-width: 1024px) {
-  .bottom-nav {
+  .bottom-nav-root {
     display: none;
   }
 }
 
 .nav-item {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  flex: 1;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  height: 60px;
+  gap: 3px;
+  min-width: 0;
+  color: var(--color-text-subtle);
+  -webkit-tap-highlight-color: transparent;
 }
 
-.nav-item span {
-  font-size: 10px;
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 30px;
+  border-radius: var(--radius-full);
+  transition:
+    background-color var(--duration) ease,
+    color var(--duration) ease;
+}
+
+.nav-label {
+  font-size: 10.5px;
   font-weight: 700;
-  margin-top: 5px;
-  color: var(--color-text-tertiary);
-  transition: color 0.3s;
+  white-space: nowrap;
 }
 
-.icon-wrapper {
-  padding: 6px 18px;
-  border-radius: 20px;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.nav-item.is-active {
   color: var(--color-text);
 }
 
-.nav-item.active .icon-wrapper {
-  background-color: var(--color-border);
-  color: var(--color-success-alt);
+.nav-item.is-active .nav-icon {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
 }
 
-.nav-item.active span {
-  color: var(--color-text);
-}
-
-.plus-icon {
-  background: var(--color-surface-soft);
-  width: 44px;
-  height: 44px;
+.fab {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 50px;
+  height: 50px;
+  margin-top: -18px;
   border-radius: 50%;
-  transition: all 0.3s ease;
-  color: var(--color-text);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  background: var(--gradient-primary);
+  color: var(--color-on-primary);
+  box-shadow: var(--shadow-primary), 0 0 0 5px var(--color-surface);
+  transition:
+    transform var(--duration) var(--ease-out),
+    background var(--duration) ease;
 }
 
-.plus-icon.rotated {
+.fab.is-open {
   transform: rotate(45deg);
-  background-color: var(--color-danger-soft);
-  color: var(--color-danger);
-}
-
-.label-active {
-  color: var(--color-danger) !important;
-}
-
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
-}
-
-.nav-item:active {
-  transform: scale(0.92);
+  background: var(--color-text);
+  color: var(--color-surface);
 }
 </style>

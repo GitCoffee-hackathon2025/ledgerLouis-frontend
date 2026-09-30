@@ -1,64 +1,14 @@
-<template>
-  <main class="onboarding-page">
-    <section class="onboarding-container">
-      <header class="header-block">
-        <p class="kicker">Comece por aqui</p>
-        <h1>Vamos configurar sua <span class="accent-text">empresa</span></h1>
-        <p class="description">
-          Escolha se quer entrar em uma empresa existente ou criar a sua do zero.
-        </p>
-      </header>
-
-      <div v-if="loading" class="loading-state">Carregando suas empresas...</div>
-
-      <div v-else-if="companyStore.companies.length > 0" class="option-list">
-        <button
-          v-for="userCompany in companyStore.companies"
-          :key="userCompany.companyId"
-          class="option-row"
-          @click="enterCompany(userCompany)"
-        >
-          <span class="option-icon">
-            <Building2 :size="20" />
-          </span>
-          <span class="option-copy">
-            <strong>{{ userCompany.companyName }}</strong>
-            <span>Participante como {{ userCompany.role }}</span>
-          </span>
-          <ArrowRight class="option-arrow" :size="18" />
-        </button>
-      </div>
-
-      <div class="option-list">
-        <button class="option-row" @click="goToCreate">
-          <span class="option-icon">
-            <Building2 :size="20" />
-          </span>
-          <span class="option-copy">
-            <strong>Criar nova empresa</strong>
-            <span>Começar do zero e configurar sua empresa dentro do Ledger Louis.</span>
-          </span>
-          <ArrowRight class="option-arrow" :size="18" />
-        </button>
-      </div>
-    </section>
-  </main>
-</template>
-
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { Building2, ArrowRight } from 'lucide-vue-next';
+import { ArrowRight, Building2, Plus } from 'lucide-vue-next';
+import PageHeader from '@/components/ui/PageHeader.vue';
 import { useCompanyStore } from '@/stores/CompanyStore';
 import type { UserCompanyDto } from '@/services/companyService';
 
 const router = useRouter();
 const companyStore = useCompanyStore();
 const loading = ref(true);
-
-const goToCreate = () => {
-  router.push({ name: 'companyCreate' });
-};
 
 const enterCompany = (userCompany: UserCompanyDto) => {
   companyStore.selectCompany(userCompany);
@@ -74,135 +24,144 @@ onMounted(async () => {
 });
 </script>
 
+<template>
+  <div class="page">
+    <div class="page-shell page-shell--form">
+      <PageHeader eyebrow="Comece por aqui" title="Escolha sua empresa">
+        <template #title>Vamos configurar sua <span class="gradient-text">empresa</span></template>
+        <template #description>Entre em uma empresa da qual você já participa ou crie a sua do zero.</template>
+      </PageHeader>
+
+      <section v-if="loading || companyStore.companies.length > 0" class="option-group" aria-label="Suas empresas">
+        <p class="card-kicker">Suas empresas</p>
+        <template v-if="loading">
+          <span v-for="n in 2" :key="n" class="skeleton" style="height: 76px; border-radius: var(--radius-lg)" />
+        </template>
+        <button
+          v-for="userCompany in companyStore.companies"
+          v-else
+          :key="userCompany.companyId"
+          type="button"
+          class="option"
+          :class="{ 'is-current': userCompany.companyId === companyStore.company.id }"
+          @click="enterCompany(userCompany)"
+        >
+          <span class="option-avatar">{{ userCompany.companyName.charAt(0).toUpperCase() }}</span>
+          <span class="option-copy">
+            <strong>{{ userCompany.companyName }}</strong>
+            <span>Você participa como {{ userCompany.role }}</span>
+          </span>
+          <ArrowRight class="option-arrow" :size="18" />
+        </button>
+      </section>
+
+      <section class="option-group">
+        <RouterLink :to="{ name: 'companyCreate' }" class="option option--create">
+          <span class="icon-tile icon-tile--solid"><Plus :size="20" /></span>
+          <span class="option-copy">
+            <strong>Criar nova empresa</strong>
+            <span>Configure sua empresa no Ledger Louis em menos de um minuto.</span>
+          </span>
+          <ArrowRight class="option-arrow" :size="18" />
+        </RouterLink>
+      </section>
+
+      <p v-if="!loading && companyStore.companies.length === 0" class="hint">
+        <Building2 :size="15" />
+        Recebeu um convite? Ele aparece no ícone de e-mail no topo da tela.
+      </p>
+    </div>
+  </div>
+</template>
+
 <style scoped>
-.onboarding-page {
-  min-height: calc(100vh - 65px);
-  display: flex;
-  justify-content: center;
-  padding: 64px 20px;
-  background: var(--color-bg);
-}
-
-.onboarding-container {
-  width: 100%;
-  max-width: 560px;
-}
-
-.kicker {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-primary);
-  margin-bottom: 14px;
-}
-
-h1 {
-  font-family: var(--font-display);
-  font-size: clamp(1.65rem, 4vw, 2.25rem);
-  font-weight: 800;
-  line-height: 1.2;
-  color: var(--color-text);
-  margin-bottom: 14px;
-  text-wrap: balance;
-}
-
-.accent-text {
-  background: var(--color-success-gradient);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.description {
-  color: var(--color-text-secondary);
-  font-size: 16px;
-  line-height: 1.7;
-  max-width: 440px;
-}
-
-.option-list {
+.option-group {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 36px;
+  gap: var(--space-3);
 }
 
-.option-row {
+.option {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 20px 22px;
-  border-radius: 14px;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-4) var(--space-5);
   border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
-  cursor: pointer;
+  box-shadow: var(--shadow-xs);
   text-align: left;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition:
+    border-color var(--duration-fast) ease,
+    box-shadow var(--duration) ease,
+    transform var(--duration) var(--ease-out);
 }
 
-.option-row:hover {
+.option:hover {
+  border-color: var(--color-primary-ring);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.option.is-current {
   border-color: var(--color-primary);
-  background: var(--color-surface-alt);
 }
 
-.option-icon {
+.option--create {
+  border-style: dashed;
+  border-color: var(--color-border-strong);
+  background: transparent;
+  box-shadow: none;
+}
+
+.option-avatar {
   flex-shrink: 0;
-  width: 42px;
-  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
-  background: var(--color-primary-glow);
-  color: var(--color-primary);
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+  font-family: var(--font-display);
+  font-weight: 800;
 }
 
 .option-copy {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
 }
 
 .option-copy strong {
   font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-text);
+  font-size: var(--text-md);
 }
 
 .option-copy span {
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
 }
 
 .option-arrow {
-  flex-shrink: 0;
-  color: var(--color-text-tertiary);
-  transition: transform 0.2s ease, color 0.2s ease;
+  color: var(--color-text-subtle);
+  transition: transform var(--duration) var(--ease-out), color var(--duration-fast) ease;
 }
 
-.option-row:hover .option-arrow {
+.option:hover .option-arrow {
   transform: translateX(3px);
   color: var(--color-primary);
 }
 
-/* Responsividade */
-@media (max-width: 640px) {
-  .onboarding-page {
-    padding: 40px 16px;
-  }
-
-  .option-row {
-    padding: 16px 18px;
-    gap: 14px;
-  }
-
-  .option-copy span {
-    font-size: 13px;
-  }
+.hint {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
 }
 </style>

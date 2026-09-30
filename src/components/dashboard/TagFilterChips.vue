@@ -43,26 +43,22 @@ const selectTag = (id: string | null) => {
   tagStore.setActiveTag(id);
 };
 
-const activeChipStyle = (id: string) => ({
-  backgroundColor: colorForTag(id),
-  borderColor: colorForTag(id),
-  color: '#fff',
-});
 </script>
 
 <template>
-  <section v-if="visibleTags.length > 0" class="tag-filter-bar" aria-label="Filtrar transações por tag">
-    <div class="tag-filter-kicker">
-      <Tags :size="16" />
+  <section v-if="visibleTags.length > 0" class="tag-filter" aria-label="Filtrar transações por tag">
+    <div class="tag-filter-head">
+      <Tags :size="15" />
       <span>Filtrar por tag</span>
-      <router-link class="tag-manage-link" :to="{ name: 'tags' }">Gerenciar tags</router-link>
+      <RouterLink class="link tag-filter-manage" :to="{ name: 'tags' }">Gerenciar tags</RouterLink>
     </div>
 
-    <div class="tag-chip-row">
+    <div class="tag-filter-row">
       <button
         type="button"
-        class="tag-chip"
-        :class="{ 'tag-chip--active': tagStore.activeTagId === null }"
+        class="chip"
+        :class="{ 'is-active': tagStore.activeTagId === null }"
+        :aria-pressed="tagStore.activeTagId === null"
         @click="selectTag(null)"
       >
         Todas
@@ -72,91 +68,63 @@ const activeChipStyle = (id: string) => ({
         v-for="tag in visibleTags"
         :key="tag.id"
         type="button"
-        class="tag-chip"
-        :class="{ 'tag-chip--active': tagStore.activeTagId === tag.id }"
-        :style="tagStore.activeTagId === tag.id ? activeChipStyle(tag.id) : {}"
+        class="chip"
+        :class="{ 'is-active': tagStore.activeTagId === tag.id }"
+        :aria-pressed="tagStore.activeTagId === tag.id"
         @click="selectTag(tag.id)"
       >
-        <span class="tag-chip-dot" :style="{ backgroundColor: colorForTag(tag.id) }"></span>
+        <span class="dot" :style="{ backgroundColor: colorForTag(tag.id) }" />
         {{ tag.name }}
-        <span class="tag-chip-count">{{ tagCounts.get(tag.id) ?? 0 }}</span>
+        <span class="chip-count">{{ tagCounts.get(tag.id) ?? 0 }}</span>
       </button>
     </div>
   </section>
 </template>
 
 <style scoped>
-.tag-filter-bar {
-  display: grid;
-  gap: 10px;
-  padding: 16px 18px;
-  border-radius: 16px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
+.tag-filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
-.tag-filter-kicker {
+.tag-filter-head {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 700;
+  color: var(--color-text-muted);
 }
 
-.tag-manage-link {
+.tag-filter-manage {
   margin-left: auto;
-  color: var(--color-success-dark);
-  text-decoration: none;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--text-xs);
 }
 
-.tag-manage-link:hover {
-  text-decoration: underline;
-}
-
-.tag-chip-row {
+.tag-filter-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
 }
 
-.tag-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-soft);
-  color: var(--color-text);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-}
-
-.tag-chip:hover {
-  border-color: var(--color-text-secondary);
-}
-
-.tag-chip--active {
-  background: var(--color-primary);
-  color: var(--color-surface);
-  border-color: var(--color-primary);
-}
-
-.tag-chip-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
+.tag-filter-row .chip {
   flex-shrink: 0;
 }
 
-.tag-chip-count {
-  opacity: 0.7;
-  font-weight: 600;
+.chip-count {
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-3);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.chip.is-active .chip-count {
+  background: color-mix(in srgb, var(--color-surface) 20%, transparent);
+  color: inherit;
 }
 </style>

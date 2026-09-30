@@ -1,136 +1,163 @@
-<template>
-  <article class="dashboard-card" :class="toneClass">
-    <header class="card-top">
-      <div>
-        <p class="card-title">{{ title }}</p>
-        <p class="card-value">{{ value }}</p>
-      </div>
-
-      <slot name="icon" />
-    </header>
-
-    <p class="card-description">{{ description }}</p>
-
-    <div class="card-footer">
-      <div class="trend-pill" :class="trendClass">
-        <ArrowUpRight v-if="tone !== 'negative'" :size="14" />
-        <ArrowDownRight v-else :size="14" />
-        <span>{{ trendValue }}</span>
-      </div>
-
-      <span class="trend-label">{{ trendLabel }}</span>
-    </div>
-
-    <div v-if="$slots.sparkline" class="sparkline-wrap">
-      <slot name="sparkline" />
-    </div>
-  </article>
-</template>
-
 <script setup lang="ts">
-import { computed } from 'vue';
-import { ArrowDownRight, ArrowUpRight } from 'lucide-vue-next';
+import { computed, type Component } from 'vue';
+import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-vue-next';
+import DashboardSparkline from './DashboardSparkline.vue';
 
 type Tone = 'positive' | 'negative' | 'neutral';
 
-const props = defineProps<{
-  title: string;
-  value: string;
-  description: string;
-  trendValue: string;
-  trendLabel: string;
-  tone?: Tone;
-}>();
+const props = withDefaults(
+  defineProps<{
+    title: string;
+    value: string;
+    icon: Component;
+    tone?: Tone;
+    description?: string;
+    /** Variação percentual vs período anterior; `null` quando não há base de comparação. */
+    trend?: number | null;
+    /** Se subir é ruim (ex: despesas), inverte a cor da tendência. */
+    invertTrend?: boolean;
+    series?: number[];
+  }>(),
+  { tone: 'neutral', description: undefined, trend: null, invertTrend: false, series: undefined },
+);
 
-const tone = computed(() => props.tone ?? 'neutral');
+// Série toda zerada vira só uma linha no rodapé do card; nesse caso não desenha.
+const hasSeries = computed(() => !!props.series && props.series.length > 1 && props.series.some((v) => v !== 0));
 
-const toneClass = computed(() => ({
-  'dashboard-card--positive': tone.value === 'positive',
-  'dashboard-card--negative': tone.value === 'negative',
-  'dashboard-card--neutral': tone.value === 'neutral',
-}));
+const trendLabel = computed(() => {
+  if (props.trend === null) return null;
+  const rounded = Math.round(props.trend * 10) / 10;
+  return `${rounded > 0 ? '+' : ''}${rounded.toLocaleString('pt-BR')}%`;
+});
 
-const trendClass = computed(() => ({
-  'trend-pill--positive': tone.value !== 'negative',
-  'trend-pill--negative': tone.value === 'negative',
-}));
+const trendTone = computed(() => {
+  if (!props.trend) return 'neutral';
+  const isUp = props.trend > 0;
+  return isUp !== props.invertTrend ? 'good' : 'bad';
+});
+
+const trendIcon = computed(() => {
+  if (!props.trend) return Minus;
+  return props.trend > 0 ? ArrowUpRight : ArrowDownRight;
+});
 </script>
 
+<template>
+  <article class="metric-card" :data-tone="tone">
+    <header class="metric-top">
+      <p class="metric-title">{{ title }}</p>
+      <span class="metric-icon"><component :is="icon" :size="18" /></span>
+    </header>
+
+    <p class="metric-value tabular">{{ value }}</p>
+
+    <div class="metric-footer">
+      <span v-if="trendLabel" class="trend" :data-tone="trendTone">
+        <component :is="trendIcon" :size="13" />
+        {{ trendLabel }}
+      </span>
+      <span class="metric-description">{{ description }}</span>
+    </div>
+
+    <DashboardSparkline v-if="hasSeries" :data="series ?? []" :tone="tone" class="metric-spark" />
+  </article>
+</template>
+
 <style scoped>
-.dashboard-card {
+.metric-card {
+  --tone-color: var(--color-text-muted);
+  --tone-soft: var(--color-surface-3);
+
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-2);
   min-height: 100%;
-  padding: 18px;
+  padding: var(--space-5);
+  overflow: hidden;
   border: 1px solid var(--color-border);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
 }
 
-.card-top {
+.metric-card[data-tone='positive'] {
+  --tone-color: var(--color-primary);
+  --tone-soft: var(--color-primary-soft);
+}
+
+.metric-card[data-tone='negative'] {
+  --tone-color: var(--color-danger);
+  --tone-soft: var(--color-danger-soft);
+}
+
+.metric-top {
   display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  align-items: flex-start;
-}
-
-.card-title {
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-.card-value {
-  color: var(--color-text);
-  font-family: var(--font-display);
-  font-size: clamp(1.2rem, 2.6vw, 1.7rem);
-  font-weight: 800;
-  line-height: 1.1;
-}
-
-.card-description {
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.card-footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-3);
 }
 
-.trend-pill {
+.metric-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.metric-icon {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 10px;
-  border-radius: 999px;
-  font-size: 12px;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--tone-soft);
+  color: var(--tone-color);
+}
+
+.metric-value {
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 2.4vw, 1.75rem);
   font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
 }
 
-.trend-pill--positive {
-  color: var(--color-success-dark);
-  background: rgba(29, 205, 108, 0.12);
+.metric-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: var(--text-xs);
 }
 
-.trend-pill--negative {
+.trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 8px 2px 6px;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  background: var(--color-surface-3);
+  color: var(--color-text-muted);
+}
+
+.trend[data-tone='good'] {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+}
+
+.trend[data-tone='bad'] {
+  background: var(--color-danger-soft);
   color: var(--color-danger);
-  background: rgba(229, 33, 36, 0.12);
 }
 
-.trend-label {
-  color: var(--color-text-tertiary);
-  font-size: 12px;
+.metric-description {
+  color: var(--color-text-subtle);
   font-weight: 600;
 }
 
-.sparkline-wrap {
-  margin-top: auto;
+.metric-spark {
+  margin: auto calc(var(--space-5) * -1) calc(var(--space-5) * -1);
 }
 </style>

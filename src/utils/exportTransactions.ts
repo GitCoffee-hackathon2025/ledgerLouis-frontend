@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { TransactionDto } from '@/services/transactionService';
+import { formatCurrency } from './format';
 
 interface ExportRow {
   date: string;
@@ -9,9 +10,6 @@ interface ExportRow {
   amount: number;
   tags: string;
 }
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
 const buildRows = (
   transactions: TransactionDto[],

@@ -1,156 +1,127 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import type { TagDto } from '@/services/tagService';
+import { nextTick, ref } from 'vue';
 import { Check, Pencil, Trash2, X } from 'lucide-vue-next';
+import type { TagDto } from '@/services/tagService';
 import { colorForTag } from '@/utils/tagColor';
-import PrimaryButton from '@/components/ui/PrimaryButton.vue';
+import BaseButton from '@/components/ui/BaseButton.vue';
 
-interface Props {
-  tag: TagDto;
-}
+const props = defineProps<{ tag: TagDto }>();
 
-interface Emits {
-  (e: 'rename', id: string, name: string): void;
-  (e: 'delete', id: string): void;
-}
-
-const props = defineProps<Props>();
-const emit = defineEmits<Emits>();
+const emit = defineEmits<{
+  rename: [id: string, name: string];
+  delete: [];
+}>();
 
 const isEditing = ref(false);
 const draftName = ref(props.tag.name);
+const editInput = ref<HTMLInputElement | null>(null);
 
-const startEdit = () => {
+const startEdit = async () => {
   draftName.value = props.tag.name;
   isEditing.value = true;
-};
-
-const cancelEdit = () => {
-  isEditing.value = false;
+  await nextTick();
+  editInput.value?.select();
 };
 
 const confirmEdit = () => {
   const trimmed = draftName.value.trim();
-  if (trimmed && trimmed !== props.tag.name) {
-    emit('rename', props.tag.id, trimmed);
-  }
+  if (trimmed && trimmed !== props.tag.name) emit('rename', props.tag.id, trimmed);
   isEditing.value = false;
 };
 </script>
 
-<script lang="ts">
-export default {
-  name: 'TagListItem',
-};
-</script>
-
 <template>
-  <div class="tag-item">
-    <div class="tag-content">
-      <span class="tag-dot" :style="{ backgroundColor: colorForTag(tag.id) }" aria-hidden="true"></span>
+  <li class="tag-item" :class="{ 'is-editing': isEditing }">
+    <span class="tag-swatch" :style="{ backgroundColor: colorForTag(tag.id) }" aria-hidden="true" />
 
-      <div class="tag-info" v-if="!isEditing">
-        <h5>{{ tag.name }}</h5>
-      </div>
+    <input
+      v-if="isEditing"
+      ref="editInput"
+      v-model="draftName"
+      type="text"
+      class="input input--sm tag-edit"
+      :aria-label="`Novo nome para ${tag.name}`"
+      @keyup.enter="confirmEdit"
+      @keyup.escape="isEditing = false"
+    />
+    <span v-else class="tag-name">{{ tag.name }}</span>
 
-      <input
-        v-else
-        v-model="draftName"
-        type="text"
-        class="tag-edit-input"
-        autofocus
-        @keyup.enter="confirmEdit"
-        @keyup.escape="cancelEdit"
-      />
-    </div>
-
-    <div class="item-actions">
+    <div class="tag-actions">
       <template v-if="isEditing">
-        <PrimaryButton icon-only compact title="Salvar" @click="confirmEdit">
+        <BaseButton size="sm" icon-only aria-label="Salvar" title="Salvar" @click="confirmEdit">
           <Check :size="15" />
-        </PrimaryButton>
-        <PrimaryButton icon-only compact variant="neutral" title="Cancelar" @click="cancelEdit">
+        </BaseButton>
+        <BaseButton variant="ghost" size="sm" icon-only aria-label="Cancelar" title="Cancelar" @click="isEditing = false">
           <X :size="15" />
-        </PrimaryButton>
+        </BaseButton>
       </template>
       <template v-else>
-        <PrimaryButton icon-only compact variant="neutral" title="Renomear" @click="startEdit">
-          <Pencil :size="14" />
-        </PrimaryButton>
-        <PrimaryButton
+        <BaseButton variant="ghost" size="sm" icon-only :aria-label="`Renomear ${tag.name}`" title="Renomear" @click="startEdit">
+          <Pencil :size="15" />
+        </BaseButton>
+        <BaseButton
+          variant="ghost"
+          size="sm"
           icon-only
-          compact
-          variant="danger"
-          :title="`Remover ${tag.name}`"
-          @click="$emit('delete', tag.id)"
+          class="delete-button"
+          :aria-label="`Remover ${tag.name}`"
+          title="Remover"
+          @click="emit('delete')"
         >
-          <Trash2 :size="14" />
-        </PrimaryButton>
+          <Trash2 :size="15" />
+        </BaseButton>
       </template>
     </div>
-  </div>
+  </li>
 </template>
 
 <style scoped>
 .tag-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  background: var(--color-surface-soft);
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: 8px 8px 8px 14px;
   border: 1px solid var(--color-border);
-  border-radius: 14px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  transition: border-color var(--duration-fast) ease, background-color var(--duration-fast) ease;
 }
 
-.tag-item:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+.tag-item:hover,
+.tag-item.is-editing {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
 }
 
-.tag-content {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-  min-width: 0;
-}
-
-.tag-dot {
+.tag-swatch {
   width: 12px;
   height: 12px;
-  border-radius: 999px;
+  border-radius: 4px;
   flex-shrink: 0;
 }
 
-.tag-info h5 {
-  margin: 0;
-  font-size: 0.95rem;
-  color: var(--color-text);
-  font-weight: 600;
-}
-
-.tag-edit-input {
+.tag-name {
   flex: 1;
-  padding: 8px 10px;
-  border: 1.5px solid var(--color-primary);
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-family: inherit;
-  background: var(--color-surface);
-  color: var(--color-text);
+  min-width: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.tag-edit-input:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--color-primary-glow);
+.tag-edit {
+  flex: 1;
 }
 
-.item-actions {
+.tag-actions {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  gap: 2px;
   flex-shrink: 0;
+}
+
+.delete-button:hover {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
 }
 </style>

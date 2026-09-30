@@ -1,30 +1,22 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { Plus, X } from 'lucide-vue-next';
+import { Check, Plus, X } from 'lucide-vue-next';
 import { useTagStore } from '@/stores/tagStore';
-import { useCompanyStore } from '@/stores/CompanyStore';
 import { colorForTag } from '@/utils/tagColor';
 
-const props = defineProps<{ modelValue: string[] }>();
-const emit = defineEmits<{ (e: 'update:modelValue', value: string[]): void }>();
+const selected = defineModel<string[]>({ required: true });
 
 const tagStore = useTagStore();
-const companyStore = useCompanyStore();
 
 const showCreate = ref(false);
 const newTagName = ref('');
 const creating = ref(false);
 const createError = ref('');
 
-const isSelected = (id: string) => props.modelValue.includes(id);
+const isSelected = (id: string) => selected.value.includes(id);
 
 const toggleTag = (id: string) => {
-  emit('update:modelValue', isSelected(id) ? props.modelValue.filter((t) => t !== id) : [...props.modelValue, id]);
-};
-
-const openCreate = () => {
-  showCreate.value = true;
-  createError.value = '';
+  selected.value = isSelected(id) ? selected.value.filter((t) => t !== id) : [...selected.value, id];
 };
 
 const cancelCreate = () => {
@@ -41,7 +33,7 @@ const confirmCreate = async () => {
   createError.value = '';
   try {
     const tag = await tagStore.createTag(name);
-    emit('update:modelValue', [...props.modelValue, tag.id]);
+    selected.value = [...selected.value, tag.id];
     cancelCreate();
   } catch {
     createError.value = 'Não foi possível criar a tag.';
@@ -51,186 +43,125 @@ const confirmCreate = async () => {
 };
 
 onMounted(() => {
-  if (companyStore.company.hasCompany && tagStore.tags.length === 0) {
-    tagStore.fetchTags();
-  }
+  if (tagStore.tags.length === 0) tagStore.fetchTags();
 });
 </script>
 
-<script lang="ts">
-export default {
-  name: 'TagPicker',
-};
-</script>
-
 <template>
-  <div class="tag-picker">
-    <span class="tag-picker-label">Tags</span>
+  <fieldset class="field tag-picker">
+    <legend class="field-label">Tags <span class="optional">(opcional)</span></legend>
 
     <div class="tag-chips">
       <button
         v-for="tag in tagStore.tags"
         :key="tag.id"
         type="button"
-        class="tag-chip"
-        :class="{ 'tag-chip--active': isSelected(tag.id) }"
-        :style="isSelected(tag.id) ? { borderColor: colorForTag(tag.id), color: colorForTag(tag.id) } : {}"
+        class="chip"
+        :class="{ 'is-selected': isSelected(tag.id) }"
+        :style="{ '--tag-color': colorForTag(tag.id) }"
+        :aria-pressed="isSelected(tag.id)"
         @click="toggleTag(tag.id)"
       >
-        <span class="tag-chip-dot" :style="{ backgroundColor: colorForTag(tag.id) }"></span>
+        <Check v-if="isSelected(tag.id)" :size="13" />
+        <span v-else class="dot" :style="{ backgroundColor: colorForTag(tag.id) }" />
         {{ tag.name }}
       </button>
 
-      <button v-if="!showCreate" type="button" class="tag-chip tag-chip--new" @click="openCreate">
+      <button v-if="!showCreate" type="button" class="chip chip--dashed" @click="showCreate = true">
         <Plus :size="14" />
         Nova tag
       </button>
 
-      <form v-else class="tag-create-form" @submit.prevent="confirmCreate">
+      <!-- Não é um <form>: o TagPicker vive dentro do formulário da transação. -->
+      <div v-else class="tag-create">
         <input
           v-model="newTagName"
           type="text"
+          class="input input--sm"
           placeholder="Nome da tag"
-          class="tag-create-input"
+          aria-label="Nome da nova tag"
           autofocus
+          @keydown.enter.prevent="confirmCreate"
           @keyup.escape="cancelCreate"
         />
-        <button type="submit" class="tag-create-confirm" :disabled="creating" title="Criar tag">
-          <Plus :size="14" />
+        <button type="button" class="round-btn round-btn--confirm" :disabled="creating" title="Criar tag" @click="confirmCreate">
+          <Check :size="14" />
         </button>
-        <button type="button" class="tag-create-cancel" title="Cancelar" @click="cancelCreate">
+        <button type="button" class="round-btn" title="Cancelar" @click="cancelCreate">
           <X :size="14" />
         </button>
-      </form>
+      </div>
     </div>
 
-    <p v-if="createError" class="tag-picker-error">{{ createError }}</p>
-    <p v-else-if="tagStore.tags.length === 0 && !showCreate" class="tag-picker-hint">
-      Nenhuma tag ainda — crie a primeira para catalogar esse lançamento.
+    <p v-if="createError" class="field-error">{{ createError }}</p>
+    <p v-else-if="tagStore.tags.length === 0 && !showCreate" class="field-hint">
+      Nenhuma tag ainda — crie a primeira para catalogar este lançamento.
     </p>
-  </div>
+  </fieldset>
 </template>
 
 <style scoped>
 .tag-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  border: none;
+  gap: var(--space-2);
 }
 
-.tag-picker-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
+.optional {
+  font-weight: 500;
+  color: var(--color-text-subtle);
 }
 
 .tag-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
-.tag-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1.5px solid var(--color-border);
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-family: var(--font-body);
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
-}
-
-.tag-chip:hover {
-  border-color: var(--color-text-tertiary);
+.chip.is-selected {
+  border-color: var(--tag-color);
+  background: color-mix(in srgb, var(--tag-color) 12%, transparent);
   color: var(--color-text);
 }
 
-.tag-chip--active {
-  background: var(--color-surface-alt);
+.chip.is-selected svg {
+  color: var(--tag-color);
 }
 
-.tag-chip-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  flex-shrink: 0;
-}
-
-.tag-chip--new {
-  color: var(--color-text-secondary);
-  border-style: dashed;
-}
-
-.tag-chip--new:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.tag-create-form {
+.tag-create {
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
 
-.tag-create-input {
-  width: 140px;
-  padding: 7px 12px;
-  border-radius: 999px;
-  border: 1.5px solid var(--color-primary);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 13.5px;
-  font-family: var(--font-body);
+.tag-create .input {
+  width: 150px;
+  border-radius: var(--radius-full);
 }
 
-.tag-create-input:focus {
-  outline: none;
-}
-
-.tag-create-confirm,
-.tag-create-cancel {
-  display: flex;
+.round-btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  border: 1.5px solid var(--color-border);
-  background: transparent;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
 }
 
-.tag-create-confirm {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.tag-create-confirm:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.tag-create-cancel:hover {
-  border-color: var(--color-text-secondary);
+.round-btn:hover {
   color: var(--color-text);
+  border-color: var(--color-border-strong);
 }
 
-.tag-picker-hint,
-.tag-picker-error {
-  font-size: 12.5px;
-  color: var(--color-text-tertiary);
-  margin: 0;
+.round-btn--confirm {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
-.tag-picker-error {
-  color: var(--color-danger);
+.round-btn--confirm:hover {
+  color: var(--color-on-primary);
+  background: var(--color-primary-hover);
 }
 </style>
