@@ -61,7 +61,8 @@ const classes = computed(() => [
   border-radius: var(--radius-full);
   font-family: var(--font-body);
   font-size: var(--text-base);
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   line-height: 1;
   white-space: nowrap;
   text-decoration: none;
@@ -98,14 +99,34 @@ const classes = computed(() => [
   box-shadow: var(--shadow-primary);
 }
 
+.btn--primary {
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Varredura de luz: cruza o botao uma vez ao entrar o cursor. */
+.btn--primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
+  transform: translateX(-120%);
+}
+
+.btn--primary:hover:not(:disabled)::after {
+  transform: translateX(120%);
+  transition: transform 700ms var(--ease-out);
+}
+
 .btn--primary:hover:not(:disabled) {
-  box-shadow: 0 12px 26px -8px var(--color-primary-ring), var(--shadow-primary);
+  background: linear-gradient(135deg, #38b583 0%, #56c99b 100%);
   transform: translateY(-1px);
 }
 
 .btn--danger {
   background: var(--color-danger);
-  color: #fff;
+  color: #1d0309;
   box-shadow: var(--shadow-danger);
 }
 
@@ -115,15 +136,14 @@ const classes = computed(() => [
 }
 
 .btn--secondary {
-  background: var(--color-surface);
-  border-color: var(--color-border);
+  background: transparent;
+  border-color: var(--color-border-strong);
   color: var(--color-text);
-  box-shadow: var(--shadow-xs);
 }
 
 .btn--secondary:hover:not(:disabled) {
-  border-color: var(--color-border-strong);
-  background: var(--color-surface-2);
+  border-color: var(--color-primary-ring);
+  background: var(--color-primary-soft);
 }
 
 .btn--ghost {

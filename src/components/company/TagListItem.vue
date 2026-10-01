@@ -32,8 +32,6 @@ const confirmEdit = () => {
 
 <template>
   <li class="tag-item" :class="{ 'is-editing': isEditing }">
-    <span class="tag-swatch" :style="{ backgroundColor: colorForTag(tag.id) }" aria-hidden="true" />
-
     <input
       v-if="isEditing"
       ref="editInput"
@@ -44,7 +42,8 @@ const confirmEdit = () => {
       @keyup.enter="confirmEdit"
       @keyup.escape="isEditing = false"
     />
-    <span v-else class="tag-name">{{ tag.name }}</span>
+    <span v-else class="tag" :style="{ '--tag-color': colorForTag(tag.id) }">{{ tag.name }}</span>
+    <span class="tag-spacer" />
 
     <div class="tag-actions">
       <template v-if="isEditing">
@@ -81,43 +80,41 @@ const confirmEdit = () => {
   align-items: center;
   gap: var(--space-3);
   min-height: 56px;
-  padding: 8px 8px 8px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-2);
-  transition: border-color var(--duration-fast) ease, background-color var(--duration-fast) ease;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.tag-item:hover,
-.tag-item.is-editing {
-  border-color: var(--color-border-strong);
-  background: var(--color-surface);
+.tag-item:last-child {
+  border-bottom: 0;
 }
 
-.tag-swatch {
-  width: 12px;
-  height: 12px;
-  border-radius: 4px;
-  flex-shrink: 0;
-}
-
-.tag-name {
+.tag-spacer {
   flex: 1;
-  min-width: 0;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .tag-edit {
   flex: 1;
 }
 
+/* As acoes ficam quietas ate o cursor ou o foco chegar na linha. */
 .tag-actions {
   display: flex;
   gap: 2px;
   flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--duration-fast) ease;
+}
+
+.tag-item:hover .tag-actions,
+.tag-item:focus-within .tag-actions,
+.tag-item.is-editing .tag-actions {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .tag-actions {
+    opacity: 1;
+  }
 }
 
 .delete-button:hover {

@@ -17,7 +17,7 @@ export const formatDateTime = (value: string) => {
 
 /** Datas ISO "YYYY-MM-DD" vindas do backend, sem conversão de fuso. */
 export const formatIsoDate = (value: string | null | undefined) => {
-  if (!value) return '—';
+  if (!value) return '-';
   const [year, month, day] = value.split('-');
   return `${day}/${month}/${year}`;
 };

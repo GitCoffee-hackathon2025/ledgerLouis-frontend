@@ -1,28 +1,27 @@
 <script setup lang="ts">
-import { Quote } from 'lucide-vue-next';
 import gitcoffeImg from '@/assets/img/Gitcoffeimg.png';
 import healthupImg from '@/assets/img/healthupimg.png';
 import aquaImg from '@/assets/img/AQUAimg.png';
 
-const testimonials = [
+const featured = {
+  name: 'AQUA',
+  niche: 'Dados hidrometeorológicos',
+  quote: 'A melhor ferramenta para controle de fluxo de caixa que já utilizamos. Ganhamos o Hackathon por causa dela.',
+  image: aquaImg,
+};
+
+const others = [
   {
     name: 'GitCoffe',
     niche: 'Empresa de software',
-    quote: 'O Ledger Louis trouxe uma clareza financeira que nunca tivemos. Interface muito intuitiva e prática.',
+    quote: 'O Ledger Louis trouxe uma clareza financeira que nunca tivemos. Interface intuitiva e prática.',
     image: gitcoffeImg,
   },
   {
     name: 'HealthUp',
     niche: 'Saúde e bem-estar',
-    quote: 'Gerenciar os custos fixos ficou muito mais simples. Um benefício real para o nosso dia a dia.',
+    quote: 'Gerenciar os custos fixos ficou muito mais simples no nosso dia a dia.',
     image: healthupImg,
-  },
-  {
-    name: 'AQUA',
-    niche: 'Dados hidrometeorológicos',
-    quote:
-      'A melhor ferramenta para controle de fluxo de caixa que já utilizamos nos últimos anos. Ganhamos o Hackathon por causa dela.',
-    image: aquaImg,
   },
 ];
 </script>
@@ -30,13 +29,22 @@ const testimonials = [
 <template>
   <section class="section">
     <header class="section-heading">
-      <p class="section-eyebrow">Depoimentos</p>
       <h2>Empresas que já usam o <span class="gradient-text">Ledger Louis</span></h2>
     </header>
 
-    <div class="testimonials">
-      <figure v-for="item in testimonials" :key="item.name" class="testimonial">
-        <Quote :size="22" class="testimonial-quote-icon" />
+    <div class="voices">
+      <figure v-reveal class="voice voice--featured">
+        <blockquote>{{ featured.quote }}</blockquote>
+        <figcaption>
+          <img :src="featured.image" :alt="`Logo ${featured.name}`" loading="lazy" />
+          <div>
+            <strong>{{ featured.name }}</strong>
+            <span>{{ featured.niche }}</span>
+          </div>
+        </figcaption>
+      </figure>
+
+      <figure v-for="(item, index) in others" :key="item.name" v-reveal="index + 1" class="voice">
         <blockquote>{{ item.quote }}</blockquote>
         <figcaption>
           <img :src="item.image" :alt="`Logo ${item.name}`" loading="lazy" />
@@ -51,62 +59,62 @@ const testimonials = [
 </template>
 
 <style scoped>
-/* Mobile: carrossel com scroll-snap; desktop: grade de 3 colunas. */
-.testimonials {
+/* Um depoimento em destaque (2 linhas) e dois menores empilhados ao lado. */
+.voices {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: min(85%, 340px);
   gap: var(--space-4);
-  margin: 0 calc(var(--space-5) * -1);
-  padding: 4px var(--space-5) var(--space-4);
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
 }
 
 @media (min-width: 900px) {
-  .testimonials {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin: 0;
-    padding: 0;
-    overflow: visible;
+  .voices {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  }
+
+  .voice--featured {
+    grid-row: span 2;
   }
 }
 
-.testimonial {
+.voice {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  justify-content: space-between;
+  gap: var(--space-6);
   padding: var(--space-6);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-xs);
-  scroll-snap-align: start;
+  background: linear-gradient(180deg, var(--color-surface-2), var(--color-surface));
 }
 
-.testimonial-quote-icon {
-  color: var(--color-primary);
+.voice--featured {
+  padding: clamp(var(--space-6), 4vw, var(--space-10));
+  background: var(--gradient-panel);
+  border-color: var(--color-primary-ring);
 }
 
 blockquote {
-  flex: 1;
-  line-height: 1.7;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
   color: var(--color-text);
+}
+
+.voice--featured blockquote {
+  font-size: clamp(1.4rem, 3vw, 2.15rem);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.035em;
 }
 
 figcaption {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border);
 }
 
 figcaption img {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
   object-fit: cover;
 }
@@ -118,6 +126,7 @@ figcaption div {
 
 figcaption strong {
   font-size: var(--text-sm);
+  font-weight: 600;
 }
 
 figcaption span {

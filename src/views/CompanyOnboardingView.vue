@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { ArrowRight, Building2, Plus } from 'lucide-vue-next';
+import { ArrowRight, Building2 } from 'lucide-vue-next';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import { useCompanyStore } from '@/stores/CompanyStore';
 import type { UserCompanyDto } from '@/services/companyService';
@@ -57,7 +57,6 @@ onMounted(async () => {
 
       <section class="option-group">
         <RouterLink :to="{ name: 'companyCreate' }" class="option option--create">
-          <span class="icon-tile icon-tile--solid"><Plus :size="20" /></span>
           <span class="option-copy">
             <strong>Criar nova empresa</strong>
             <span>Configure sua empresa no Ledger Louis em menos de um minuto.</span>

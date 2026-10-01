@@ -161,7 +161,7 @@ const handleSubmit = async () => {
   content: '';
   position: absolute;
   inset: 0 0 auto;
-  height: 4px;
+  height: 2px;
   background: var(--gradient-primary);
 }
 
@@ -177,7 +177,7 @@ const handleSubmit = async () => {
 
 .entry-header h1 {
   font-size: var(--text-xl);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .amount-field {
@@ -189,21 +189,26 @@ const handleSubmit = async () => {
 .amount-input {
   display: flex;
   align-items: baseline;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-2);
-  transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+  gap: var(--space-3);
+  padding: var(--space-2) 2px 0;
+  border-bottom: 1px solid var(--color-border-strong);
+  background-image: linear-gradient(var(--color-primary), var(--color-primary));
+  background-repeat: no-repeat;
+  background-position: 50% 100%;
+  background-size: 0% 2px;
+  background-origin: border-box;
+  transition: background-size 460ms var(--ease-out);
 }
 
 .amount-input:focus-within {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 4px var(--color-primary-soft);
+  background-size: 100% 2px;
+  border-bottom-color: transparent;
 }
 
 .amount-field.is-invalid .amount-input {
-  border-color: var(--color-danger);
+  background-image: linear-gradient(var(--color-danger), var(--color-danger));
+  background-size: 100% 2px;
+  border-bottom-color: transparent;
 }
 
 .amount-input span {
@@ -219,10 +224,10 @@ const handleSubmit = async () => {
   border: none;
   background: transparent;
   outline: none;
-  font-family: var(--font-display);
-  font-size: 2rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-family: var(--font-mono);
+  font-size: 2.25rem;
+  font-weight: 400;
+  letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
 }
 

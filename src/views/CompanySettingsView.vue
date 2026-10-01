@@ -7,14 +7,11 @@ import {
   Fingerprint,
   LogOut,
   Mail,
-  MailCheck,
   Phone,
   ReceiptText,
   RefreshCw,
   Repeat,
   Tag,
-  UserPlus,
-  Users,
 } from 'lucide-vue-next';
 import { useCompanyStore } from '@/stores/CompanyStore';
 import CompanyService, { type CompanyRole } from '@/services/companyService';
@@ -218,7 +215,6 @@ onMounted(async () => {
 
       <nav class="shortcut-grid" aria-label="Gerenciamento da empresa">
         <RouterLink v-for="shortcut in shortcuts" :key="shortcut.title" :to="shortcut.to" class="shortcut">
-          <span class="icon-tile"><component :is="shortcut.icon" :size="19" /></span>
           <span class="shortcut-copy">
             <strong>{{ shortcut.title }}</strong>
             <span>{{ shortcut.description }}</span>
@@ -230,13 +226,12 @@ onMounted(async () => {
       <section class="card">
         <header class="card-header">
           <div>
-            <h2 class="card-title"><Building2 :size="18" /> Dados da empresa</h2>
+            <h2 class="card-title">Dados da empresa</h2>
           </div>
         </header>
 
         <dl class="info-grid">
           <div v-for="info in companyInfo" :key="info.label" class="info-tile">
-            <component :is="info.icon" :size="16" class="info-icon" />
             <div>
               <dt>{{ info.label }}</dt>
               <dd :class="{ 'is-empty': !info.value }">{{ info.value || 'Não informado' }}</dd>
@@ -248,7 +243,7 @@ onMounted(async () => {
       <section class="card">
         <header class="card-header">
           <div>
-            <h2 class="card-title"><Users :size="18" /> Membros</h2>
+            <h2 class="card-title">Membros</h2>
             <p class="card-subtitle">Quem tem acesso às finanças desta empresa.</p>
           </div>
           <BaseButton variant="ghost" size="sm" :loading="membersLoading" @click="loadMembers">
@@ -273,7 +268,7 @@ onMounted(async () => {
         </ul>
 
         <form class="invite-form" @submit.prevent="handleCreateInvitation">
-          <p class="invite-title"><UserPlus :size="16" /> Convidar pessoa</p>
+          <p class="invite-title">Convidar pessoa</p>
           <div class="invite-row">
             <BaseInput
               id="memberEmail"
@@ -300,7 +295,7 @@ onMounted(async () => {
       <section class="card">
         <header class="card-header">
           <div>
-            <h2 class="card-title"><MailCheck :size="18" /> Convites pendentes</h2>
+            <h2 class="card-title">Convites pendentes</h2>
             <p class="card-subtitle">Convites enviados que ainda não foram aceitos.</p>
           </div>
           <BaseButton variant="ghost" size="sm" :loading="invitationsLoading" @click="loadInvitations">
@@ -547,10 +542,6 @@ onMounted(async () => {
   margin-bottom: var(--space-3);
   font-size: var(--text-sm);
   font-weight: 700;
-}
-
-.invite-title svg {
-  color: var(--color-primary);
 }
 
 .invite-row {

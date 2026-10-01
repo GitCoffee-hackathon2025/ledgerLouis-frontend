@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
-import { ArrowDownToLine, ArrowUpFromLine, Plus, ReceiptText, WalletMinimal } from 'lucide-vue-next';
+import { computed, onMounted, ref } from 'vue';
+import { ArrowDownToLine, ArrowUpFromLine, Plus, ReceiptText } from 'lucide-vue-next';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import ExportMenu from '@/components/ui/ExportMenu.vue';
+import BalanceHero from '@/components/dashboard/BalanceHero.vue';
 import DashboardCard from '@/components/dashboard/DashboardCard.vue';
 import RecentTransactions from '@/components/dashboard/RecentTransactions.vue';
 import RevenueChart from '@/components/dashboard/RevenueChart.vue';
@@ -14,6 +15,7 @@ import { useTransactionStore } from '@/stores/transactionStore';
 import { useCompanyStore } from '@/stores/CompanyStore';
 import { useTagStore } from '@/stores/tagStore';
 import { exportTransactionsCsv, exportTransactionsPdf } from '@/utils/exportTransactions';
+import { useGsapScope } from '@/composables/useGsapScope';
 import { formatCurrency } from '@/utils/format';
 
 const SPARKLINE_MONTHS = 6;
@@ -62,6 +64,21 @@ const percentChange = (now: number, before: number) => (before === 0 ? null : ((
 
 const accountValue = computed(() => transactionStore.accountValue);
 
+const monthLabels = computed(() =>
+  monthKeys.value.map((key) => {
+    const [year, month] = key.split('-').map(Number);
+    return new Date(year!, month! - 1, 1).toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+  }),
+);
+
+const monthsNet = computed(() => monthly.value.map((m, i) => ({ label: monthLabels.value[i]!, net: m.income - m.expense })));
+
+// Entrada em cascata dos blocos: o olhar desce do saldo para o detalhe.
+const root = ref<HTMLElement>();
+useGsapScope(root, ({ gsap }) => {
+  gsap.from('.stage', { opacity: 0, y: 22, duration: 0.8, stagger: 0.09, ease: 'power3.out', clearProps: 'all' });
+});
+
 const tagSuffix = computed(() => (activeTagName.value ? ` · ${activeTagName.value}` : ''));
 
 const handleExport = (format: 'csv' | 'pdf') => {
@@ -74,9 +91,10 @@ const handleExport = (format: 'csv' | 'pdf') => {
 </script>
 
 <template>
-  <div class="page">
+  <div ref="root" class="page">
     <div class="page-shell">
       <PageHeader
+        class="stage"
         eyebrow="Relatórios"
         title="Visão geral"
         :description="`Saldo, entradas e saídas de ${companyStore.company.name || 'sua empresa'} em uma leitura rápida.`"
@@ -90,74 +108,86 @@ const handleExport = (format: 'csv' | 'pdf') => {
         </template>
       </PageHeader>
 
-      <TagFilterChips />
+      <TagFilterChips class="stage" />
 
-      <section class="metrics-grid" aria-label="Resumo financeiro">
-        <DashboardCard
-          title="Saldo total"
-          :value="formatCurrency(accountValue)"
-          :icon="WalletMinimal"
-          :tone="accountValue >= 0 ? 'positive' : 'negative'"
-          description="Saldo disponível"
-          :series="monthly.map((m) => m.income - m.expense)"
+      <section class="overview stage" aria-label="Resumo financeiro">
+        <BalanceHero
+          :balance="accountValue"
+          :income="current.income"
+          :expense="current.expense"
+          :months="monthsNet"
         />
-        <DashboardCard
-          title="Entradas do mês"
-          :value="formatCurrency(current.income)"
-          :icon="ArrowDownToLine"
-          tone="positive"
-          :trend="percentChange(current.income, previous.income)"
-          :description="`vs mês anterior${tagSuffix}`"
-          :series="monthly.map((m) => m.income)"
-        />
-        <DashboardCard
-          title="Saídas do mês"
-          :value="formatCurrency(current.expense)"
-          :icon="ArrowUpFromLine"
-          tone="negative"
-          invert-trend
-          :trend="percentChange(current.expense, previous.expense)"
-          :description="`vs mês anterior${tagSuffix}`"
-          :series="monthly.map((m) => m.expense)"
-        />
-        <DashboardCard
-          title="Transações do mês"
-          :value="current.count.toString()"
-          :icon="ReceiptText"
-          :trend="percentChange(current.count, previous.count)"
-          :description="`vs mês anterior${tagSuffix}`"
-          :series="monthly.map((m) => m.count)"
-        />
+
+        <div class="metric-stack card list-divided">
+          <DashboardCard
+            title="Entradas do mês"
+            :value="formatCurrency(current.income)"
+            :icon="ArrowDownToLine"
+            tone="positive"
+            :trend="percentChange(current.income, previous.income)"
+            :description="`vs mês anterior${tagSuffix}`"
+            :series="monthly.map((m) => m.income)"
+          />
+          <DashboardCard
+            title="Saídas do mês"
+            :value="formatCurrency(current.expense)"
+            :icon="ArrowUpFromLine"
+            tone="negative"
+            invert-trend
+            :trend="percentChange(current.expense, previous.expense)"
+            :description="`vs mês anterior${tagSuffix}`"
+            :series="monthly.map((m) => m.expense)"
+          />
+          <DashboardCard
+            title="Transações do mês"
+            :value="current.count.toString()"
+            :icon="ReceiptText"
+            :trend="percentChange(current.count, previous.count)"
+            :description="`vs mês anterior${tagSuffix}`"
+            :series="monthly.map((m) => m.count)"
+          />
+        </div>
       </section>
 
-      <section class="charts-grid" aria-label="Gráficos financeiros">
+      <section class="charts-grid stage" aria-label="Gráficos financeiros">
         <RevenueChart :transactions="filteredTransactions" />
         <TagsDistributionCard :transactions="filteredTransactions" />
       </section>
 
-      <ExpenseInsightsCard />
+      <ExpenseInsightsCard class="stage" />
 
-      <RecentTransactions :transactions="filteredTransactions" />
+      <RecentTransactions class="stage" :transactions="filteredTransactions" />
     </div>
   </div>
 </template>
 
 <style scoped>
-.metrics-grid,
+.overview,
 .charts-grid {
   display: grid;
   gap: var(--space-4);
 }
 
-@media (min-width: 640px) {
-  .metrics-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+/* Metricas empilhadas em um unico painel: lidas como um bloco, divididas por filetes. */
+.metric-stack {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0;
+}
+
+.metric-stack > :deep(*) {
+  flex: 1;
+}
+
+.metric-stack > :deep(* + *) {
+  border-top: 1px solid var(--color-border);
 }
 
 @media (min-width: 1100px) {
-  .metrics-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .overview {
+    grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr);
+    align-items: stretch;
   }
 
   .charts-grid {

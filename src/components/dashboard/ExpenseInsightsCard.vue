@@ -235,7 +235,7 @@ const tagSparklineOptions = (tagId: string) => ({
             <div class="stat-tile stat-tile--forecast">
               <span class="stat-tile-label">Previsão próx. mês</span>
               <strong class="stat-tile-value">
-                {{ overall.forecastNextMonth !== null ? formatCurrency(overall.forecastNextMonth) : '—' }}
+                {{ overall.forecastNextMonth !== null ? formatCurrency(overall.forecastNextMonth) : '-' }}
               </strong>
             </div>
           </div>
@@ -286,7 +286,7 @@ const tagSparklineOptions = (tagId: string) => ({
             </div>
             <div>
               <span>Previsão</span>
-              <strong>{{ stat.forecastNextMonth !== null ? formatCurrency(stat.forecastNextMonth) : '—' }}</strong>
+              <strong>{{ stat.forecastNextMonth !== null ? formatCurrency(stat.forecastNextMonth) : '-' }}</strong>
             </div>
           </div>
         </li>

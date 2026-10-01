@@ -1,20 +1,17 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { Bell, Camera, Lock, LogOut, Moon, Palette, Sun, User } from 'lucide-vue-next';
+import { Bell, Camera, Lock, LogOut, User } from 'lucide-vue-next';
 import UserService from '@/services/userService';
 import { useUserStore } from '@/stores/userStore';
-import { useThemeStore } from '@/stores/themeStore';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import BaseButton from '@/components/ui/BaseButton.vue';
-import BaseSwitch from '@/components/ui/BaseSwitch.vue';
 import { useToast } from '@/composables/useToast';
 import { useConfirm } from '@/composables/useConfirm';
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
 const userStore = useUserStore();
-const themeStore = useThemeStore();
 const router = useRouter();
 const toast = useToast();
 const { confirm } = useConfirm();
@@ -27,11 +24,6 @@ const isUploading = ref(false);
 const fileInput = ref<HTMLInputElement>();
 
 const displayAvatarUrl = computed(() => userStore.avatar || userInfo.avatar);
-
-const isDark = computed({
-  get: () => themeStore.theme === 'dark',
-  set: (value) => themeStore.setTheme(value ? 'dark' : 'light'),
-});
 
 const upcoming = [
   { icon: Lock, title: 'Segurança', description: 'Senha e autenticação' },
@@ -146,21 +138,7 @@ onMounted(loadUserInfo);
       </section>
 
       <section class="card settings-list">
-        <div class="setting-row">
-          <span class="icon-tile icon-tile--neutral"><Palette :size="18" /></span>
-          <div class="setting-copy">
-            <strong>Aparência</strong>
-            <span>Tema {{ isDark ? 'escuro' : 'claro' }}</span>
-          </div>
-          <div class="theme-toggle">
-            <Sun :size="16" :class="{ 'is-on': !isDark }" />
-            <BaseSwitch v-model="isDark" label="Alternar modo escuro" />
-            <Moon :size="16" :class="{ 'is-on': isDark }" />
-          </div>
-        </div>
-
         <div v-for="item in upcoming" :key="item.title" class="setting-row is-disabled" aria-disabled="true">
-          <span class="icon-tile icon-tile--neutral"><component :is="item.icon" :size="18" /></span>
           <div class="setting-copy">
             <strong>{{ item.title }}</strong>
             <span>{{ item.description }}</span>
@@ -291,17 +269,6 @@ onMounted(loadUserInfo);
 .setting-copy span {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
-}
-
-.theme-toggle {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-text-subtle);
-}
-
-.theme-toggle .is-on {
-  color: var(--color-primary);
 }
 
 @media (max-width: 520px) {

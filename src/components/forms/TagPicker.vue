@@ -62,8 +62,6 @@ onMounted(() => {
         :aria-pressed="isSelected(tag.id)"
         @click="toggleTag(tag.id)"
       >
-        <Check v-if="isSelected(tag.id)" :size="13" />
-        <span v-else class="dot" :style="{ backgroundColor: colorForTag(tag.id) }" />
         {{ tag.name }}
       </button>
 
@@ -95,7 +93,7 @@ onMounted(() => {
 
     <p v-if="createError" class="field-error">{{ createError }}</p>
     <p v-else-if="tagStore.tags.length === 0 && !showCreate" class="field-hint">
-      Nenhuma tag ainda — crie a primeira para catalogar este lançamento.
+      Nenhuma tag ainda. Crie a primeira para catalogar este lançamento.
     </p>
   </fieldset>
 </template>
@@ -117,16 +115,6 @@ onMounted(() => {
   gap: var(--space-2);
 }
 
-.chip.is-selected {
-  border-color: var(--tag-color);
-  background: color-mix(in srgb, var(--tag-color) 12%, transparent);
-  color: var(--color-text);
-}
-
-.chip.is-selected svg {
-  color: var(--tag-color);
-}
-
 .tag-create {
   display: inline-flex;
   align-items: center;
@@ -135,7 +123,6 @@ onMounted(() => {
 
 .tag-create .input {
   width: 150px;
-  border-radius: var(--radius-full);
 }
 
 .round-btn {
@@ -145,17 +132,15 @@ onMounted(() => {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 1px solid var(--color-border);
+  background: var(--color-surface-3);
   color: var(--color-text-muted);
 }
 
 .round-btn:hover {
   color: var(--color-text);
-  border-color: var(--color-border-strong);
 }
 
 .round-btn--confirm {
-  border-color: var(--color-primary);
   background: var(--color-primary);
   color: var(--color-on-primary);
 }

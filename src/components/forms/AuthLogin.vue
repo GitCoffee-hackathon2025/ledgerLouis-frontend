@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { Lock, Mail } from 'lucide-vue-next';
 import BaseInput from '../ui/BaseInput.vue';
 import BaseButton from '../ui/BaseButton.vue';
 import UserService from '../../services/userService';
@@ -64,6 +65,7 @@ const handleLogin = async () => {
       id="loginEmail"
       v-model="loginData.email"
       label="E-mail"
+      :icon="Mail"
       type="email"
       placeholder="voce@empresa.com"
       autocomplete="email"
@@ -72,6 +74,7 @@ const handleLogin = async () => {
       id="loginPassword"
       v-model="loginData.password"
       label="Senha"
+      :icon="Lock"
       type="password"
       placeholder="••••••••"
       autocomplete="current-password"

@@ -1,15 +1,15 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ inverted?: boolean }>(), { inverted: false });
+withDefaults(defineProps<{ markOnly?: boolean }>(), { markOnly: false });
 </script>
 
 <template>
-  <span class="logo" :class="{ 'logo--inverted': inverted }">
+  <span class="logo">
     <span class="logo-mark" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
         <path d="M5 17V7M10 17V11M15 17V4M20 17V9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" />
       </svg>
     </span>
-    <span class="logo-text">Ledger<span class="logo-accent">Louis</span></span>
+    <span v-if="!markOnly" class="logo-text">Ledger<span class="logo-accent">Louis</span></span>
   </span>
 </template>
 
@@ -33,24 +33,15 @@ withDefaults(defineProps<{ inverted?: boolean }>(), { inverted: false });
 }
 
 .logo-text {
-  font-family: var(--font-display);
   font-size: 1.05rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  letter-spacing: -0.04em;
   color: var(--color-text);
 }
 
 .logo-accent {
-  margin-left: 3px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-}
-
-.logo--inverted .logo-text {
-  color: #fff;
-}
-
-.logo--inverted .logo-accent {
-  color: rgba(255, 255, 255, 0.6);
+  margin-left: 2px;
+  font-weight: 400;
+  color: var(--color-text-subtle);
 }
 </style>

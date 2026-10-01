@@ -1,43 +1,32 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useChartTheme } from '@/utils/chartTheme';
+import { smoothPath, toPoints } from '@/utils/sparkPath';
 
-const props = withDefaults(
-  defineProps<{ data: number[]; tone?: 'positive' | 'negative' | 'neutral' }>(),
-  { tone: 'positive' },
-);
-
-const { colors } = useChartTheme();
-
-const color = computed(() => {
-  if (props.tone === 'negative') return colors.value.expense;
-  if (props.tone === 'neutral') return colors.value.axis;
-  return colors.value.income;
+const props = withDefaults(defineProps<{ data: number[]; tone?: 'positive' | 'negative' | 'neutral' }>(), {
+  tone: 'positive',
 });
 
-const series = computed(() => [{ name: 'Movimento', data: props.data }]);
+const W = 120;
+const H = 36;
 
-const options = computed(() => ({
-  chart: { type: 'area', sparkline: { enabled: true }, animations: { enabled: false } },
-  colors: [color.value],
-  stroke: { curve: 'smooth', width: 2 },
-  fill: {
-    type: 'gradient',
-    gradient: { shadeIntensity: 0.4, opacityFrom: 0.22, opacityTo: 0, stops: [0, 95, 100] },
-  },
-  tooltip: { enabled: false },
-}));
+const stroke = computed(() => {
+  if (props.tone === 'negative') return 'var(--color-danger)';
+  if (props.tone === 'neutral') return 'var(--color-text-subtle)';
+  return 'var(--color-primary)';
+});
+
+const path = computed(() => smoothPath(toPoints(props.data, W, H, 4)));
 </script>
 
 <template>
-  <div class="sparkline">
-    <apexchart type="area" height="56" :options="options" :series="series" />
-  </div>
+  <svg class="sparkline" :viewBox="`0 0 ${W} ${H}`" preserveAspectRatio="none" aria-hidden="true">
+    <path :d="path" fill="none" :stroke="stroke" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linecap="round" />
+  </svg>
 </template>
 
 <style scoped>
 .sparkline {
-  min-height: 56px;
-  margin-top: var(--space-2);
+  width: 96px;
+  height: 36px;
 }
 </style>

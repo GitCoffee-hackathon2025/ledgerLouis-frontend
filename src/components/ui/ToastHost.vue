@@ -26,7 +26,7 @@ const icons = { success: CircleCheck, error: CircleAlert, info: Info };
 <style scoped>
 .toast-region {
   position: fixed;
-  z-index: 3000;
+  z-index: var(--z-toast);
   top: calc(var(--topbar-height) + 12px);
   left: 50%;
   transform: translateX(-50%);
@@ -54,11 +54,12 @@ const icons = { success: CircleCheck, error: CircleAlert, info: Info };
   gap: 10px;
   width: 100%;
   padding: 12px 12px 12px 14px;
-  border: 1px solid var(--color-border);
-  border-left: 3px solid var(--tone);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-surface-2) 92%, transparent);
   box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .toast[data-tone='success'] {
@@ -81,7 +82,7 @@ const icons = { success: CircleCheck, error: CircleAlert, info: Info };
 .toast-message {
   flex: 1;
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-text);
 }
 

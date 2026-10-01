@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { Plus, Tag as TagIcon } from 'lucide-vue-next';
+import { Plus } from 'lucide-vue-next';
 import TagListItem from './TagListItem.vue';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import { useTagStore } from '@/stores/tagStore';
@@ -74,7 +74,7 @@ onMounted(() => {
         v-model="newTagName"
         type="text"
         class="input"
-        placeholder="Nova tag — ex: Fornecedores, Marketing..."
+        placeholder="Nova tag, ex: Fornecedores, Marketing..."
         autocomplete="off"
       />
       <BaseButton type="submit" :loading="creating" :disabled="!newTagName.trim()">
@@ -88,7 +88,6 @@ onMounted(() => {
     </div>
 
     <div v-else-if="tagStore.tags.length === 0" class="empty-state">
-      <TagIcon :size="26" />
       Nenhuma tag cadastrada ainda. Crie a primeira acima.
     </div>
 
@@ -107,8 +106,9 @@ onMounted(() => {
 <style scoped>
 .tag-create {
   display: flex;
-  gap: var(--space-2);
-  margin-bottom: var(--space-5);
+  align-items: flex-end;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
 }
 
 .tag-create .input {
@@ -118,7 +118,6 @@ onMounted(() => {
 .tags-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
 }
 
 .list-enter-active,

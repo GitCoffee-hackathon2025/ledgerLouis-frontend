@@ -68,7 +68,7 @@ const goBack = () => {
   padding: 6px 12px 6px 8px;
   border-radius: var(--radius-full);
   font-size: var(--text-sm);
-  font-weight: 700;
+  font-weight: 500;
   color: var(--color-text-muted);
   transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease;
 }
@@ -79,29 +79,17 @@ const goBack = () => {
 }
 
 .eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
   margin-bottom: var(--space-2);
+  font-family: var(--font-mono);
   font-size: var(--text-xs);
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--color-primary-strong);
-}
-
-.eyebrow::before {
-  content: '';
-  width: 14px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--color-primary);
+  font-weight: 500;
+  color: var(--color-primary);
 }
 
 .title {
   font-size: var(--text-2xl);
-  font-weight: 800;
-  letter-spacing: -0.025em;
+  font-weight: 600;
+  letter-spacing: -0.04em;
 }
 
 .description {

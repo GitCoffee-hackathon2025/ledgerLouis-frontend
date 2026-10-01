@@ -20,7 +20,7 @@ const isIncome = computed(() => props.transaction.entryType === 'credit');
 
     <div class="transaction-copy">
       <strong>{{ transaction.description }}</strong>
-      <span>{{ isIncome ? 'Entrada' : 'Saída' }} · {{ formatRelativeDate(transaction.date, withYear) }}</span>
+      <span>{{ isIncome ? 'Entrada' : 'Saída' }}, {{ formatRelativeDate(transaction.date, withYear) }}</span>
     </div>
 
     <strong class="transaction-amount tabular" :class="isIncome ? 'text-income' : 'text-expense'">
@@ -34,7 +34,14 @@ const isIncome = computed(() => props.transaction.entryType === 'credit');
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) 0;
+  margin: 0 calc(var(--space-3) * -1);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  transition: background-color var(--duration-fast) ease;
+}
+
+.transaction:hover {
+  background: var(--color-surface-3);
 }
 
 .transaction-copy {
@@ -45,7 +52,7 @@ const isIncome = computed(() => props.transaction.entryType === 'credit');
 }
 
 .transaction-copy strong {
-  font-weight: 700;
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -53,11 +60,13 @@ const isIncome = computed(() => props.transaction.entryType === 'credit');
 
 .transaction-copy span {
   font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-subtle);
 }
 
 .transaction-amount {
   flex-shrink: 0;
-  font-weight: 700;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: -0.03em;
 }
 </style>

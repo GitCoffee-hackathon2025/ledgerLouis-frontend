@@ -5,6 +5,7 @@ import DashboardSparkline from './DashboardSparkline.vue';
 
 type Tone = 'positive' | 'negative' | 'neutral';
 
+/** Metrica em linha: rotulo, valor em destaque, tendencia e o tracado dos ultimos meses. */
 const props = withDefaults(
   defineProps<{
     title: string;
@@ -21,7 +22,6 @@ const props = withDefaults(
   { tone: 'neutral', description: undefined, trend: null, invertTrend: false, series: undefined },
 );
 
-// Série toda zerada vira só uma linha no rodapé do card; nesse caso não desenha.
 const hasSeries = computed(() => !!props.series && props.series.length > 1 && props.series.some((v) => v !== 0));
 
 const trendLabel = computed(() => {
@@ -43,20 +43,20 @@ const trendIcon = computed(() => {
 </script>
 
 <template>
-  <article class="metric-card" :data-tone="tone">
-    <header class="metric-top">
-      <p class="metric-title">{{ title }}</p>
-      <span class="metric-icon"><component :is="icon" :size="18" /></span>
-    </header>
-
-    <p class="metric-value tabular">{{ value }}</p>
-
-    <div class="metric-footer">
-      <span v-if="trendLabel" class="trend" :data-tone="trendTone">
-        <component :is="trendIcon" :size="13" />
-        {{ trendLabel }}
-      </span>
-      <span class="metric-description">{{ description }}</span>
+  <article v-spotlight class="metric spotlight" :data-tone="tone">
+    <div class="metric-main">
+      <p class="metric-title">
+        <component :is="icon" :size="15" :stroke-width="1.75" />
+        {{ title }}
+      </p>
+      <p class="metric-value figure">{{ value }}</p>
+      <p class="metric-footer">
+        <span v-if="trendLabel" class="trend" :data-tone="trendTone">
+          <component :is="trendIcon" :size="12" />
+          {{ trendLabel }}
+        </span>
+        <span class="metric-description">{{ description }}</span>
+      </p>
     </div>
 
     <DashboardSparkline v-if="hasSeries" :data="series ?? []" :tone="tone" class="metric-spark" />
@@ -64,70 +64,55 @@ const trendIcon = computed(() => {
 </template>
 
 <style scoped>
-.metric-card {
+.metric {
   --tone-color: var(--color-text-muted);
-  --tone-soft: var(--color-surface-3);
 
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  min-height: 100%;
-  padding: var(--space-5);
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-xs);
-}
-
-.metric-card[data-tone='positive'] {
-  --tone-color: var(--color-primary);
-  --tone-soft: var(--color-primary-soft);
-}
-
-.metric-card[data-tone='negative'] {
-  --tone-color: var(--color-danger);
-  --tone-soft: var(--color-danger-soft);
-}
-
-.metric-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+}
+
+.metric[data-tone='positive'] {
+  --tone-color: var(--color-primary);
+}
+
+.metric[data-tone='negative'] {
+  --tone-color: var(--color-danger);
+}
+
+.metric-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
 }
 
 .metric-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: var(--text-sm);
-  font-weight: 600;
   color: var(--color-text-muted);
 }
 
-.metric-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: var(--radius-sm);
-  background: var(--tone-soft);
+.metric-title svg {
   color: var(--tone-color);
 }
 
 .metric-value {
-  font-family: var(--font-display);
-  font-size: clamp(1.35rem, 2.4vw, 1.75rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
+  font-size: clamp(1.4rem, 2.4vw, 1.85rem);
+  font-weight: 500;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
 }
 
 .metric-footer {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px 10px;
+  gap: 4px 8px;
   font-size: var(--text-xs);
 }
 
@@ -135,9 +120,10 @@ const trendIcon = computed(() => {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 2px 8px 2px 6px;
+  padding: 1px 7px 1px 5px;
   border-radius: var(--radius-full);
-  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 11px;
   background: var(--color-surface-3);
   color: var(--color-text-muted);
 }
@@ -154,10 +140,9 @@ const trendIcon = computed(() => {
 
 .metric-description {
   color: var(--color-text-subtle);
-  font-weight: 600;
 }
 
 .metric-spark {
-  margin: auto calc(var(--space-5) * -1) calc(var(--space-5) * -1);
+  flex-shrink: 0;
 }
 </style>

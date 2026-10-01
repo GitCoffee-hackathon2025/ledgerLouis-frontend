@@ -1,23 +1,14 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
   <head>
     <meta charset="UTF-8">
     <link rel="icon" href="/favicon.ico">
     <link rel="manifest" href="/manifest.webmanifest">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#ffffff">
-    <meta name="description" content="Ledger Louis — gestão financeira simples para pequenas empresas.">
+    <meta name="theme-color" content="#0a0b0b">
+    <meta name="description" content="Ledger Louis, gestão financeira simples para pequenas empresas.">
     <!-- Quando estiver-mos com as páginas já criadas, é bom fazer o "Open Graph", para ficar mais profissional - William -->
     <title>Ledger Louis</title>
-    <script>
-      (function () {
-        var saved = localStorage.getItem('theme');
-        var theme = saved === 'dark' || saved === 'light'
-          ? saved
-          : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        document.documentElement.setAttribute('data-theme', theme);
-      })();
-    </script>
   </head>
   <body>
     <div id="app"></div>

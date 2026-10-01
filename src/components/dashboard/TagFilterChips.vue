@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue';
-import { Tags } from 'lucide-vue-next';
 import { useTagStore } from '@/stores/tagStore';
 import { useTransactionStore } from '@/stores/transactionStore';
 import { colorForTag } from '@/utils/tagColor';
@@ -48,7 +47,6 @@ const selectTag = (id: string | null) => {
 <template>
   <section v-if="visibleTags.length > 0" class="tag-filter" aria-label="Filtrar transações por tag">
     <div class="tag-filter-head">
-      <Tags :size="15" />
       <span>Filtrar por tag</span>
       <RouterLink class="link tag-filter-manage" :to="{ name: 'tags' }">Gerenciar tags</RouterLink>
     </div>
@@ -70,10 +68,10 @@ const selectTag = (id: string | null) => {
         type="button"
         class="chip"
         :class="{ 'is-active': tagStore.activeTagId === tag.id }"
+        :style="{ '--tag-color': colorForTag(tag.id) }"
         :aria-pressed="tagStore.activeTagId === tag.id"
         @click="selectTag(tag.id)"
       >
-        <span class="dot" :style="{ backgroundColor: colorForTag(tag.id) }" />
         {{ tag.name }}
         <span class="chip-count">{{ tagCounts.get(tag.id) ?? 0 }}</span>
       </button>
@@ -115,16 +113,8 @@ const selectTag = (id: string | null) => {
 }
 
 .chip-count {
-  padding: 0 6px;
-  border-radius: var(--radius-full);
-  background: var(--color-surface-3);
+  font-family: var(--font-mono);
   font-size: 11px;
-  font-weight: 700;
-  color: var(--color-text-muted);
-}
-
-.chip.is-active .chip-count {
-  background: color-mix(in srgb, var(--color-surface) 20%, transparent);
-  color: inherit;
+  opacity: 0.6;
 }
 </style>

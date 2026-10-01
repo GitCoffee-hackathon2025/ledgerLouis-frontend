@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { Compass } from 'lucide-vue-next';
 import BaseButton from '@/components/ui/BaseButton.vue';
 
 const route = useRoute();
@@ -16,7 +15,6 @@ const description = computed(
   <div class="page placeholder-page">
     <div class="placeholder">
       <span class="code" aria-hidden="true">404</span>
-      <span class="icon-tile icon-tile--solid"><Compass :size="22" /></span>
       <h1>{{ title }}</h1>
       <p>{{ description }}</p>
       <BaseButton to="/" size="lg">Voltar ao início</BaseButton>

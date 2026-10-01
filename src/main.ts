@@ -7,7 +7,7 @@ import { registerSW } from 'virtual:pwa-register';
 import App from './App.vue';
 import router from './router';
 import { useUserStore } from './stores/userStore.ts';
-import { useThemeStore } from './stores/themeStore.ts';
+import { registerDirectives } from './directives';
 
 const updateSW = registerSW({
   onNeedRefresh() {
@@ -24,11 +24,10 @@ const app = createApp(App);
 app.use(createPinia());
 app.use(router);
 app.use(VueApexCharts);
+registerDirectives(app);
 
 
 app.mount('#app');
-
-useThemeStore().initTheme();
 
 const userStore = useUserStore();
 const savedAcessToken = localStorage.getItem('token')

@@ -3,157 +3,176 @@ import { useRoute } from 'vue-router';
 import { ArrowDown, ArrowUp } from 'lucide-vue-next';
 import { useCompanyStore } from '@/stores/CompanyStore';
 import { isNavItemActive, mainNav } from '@/router/navigation';
+import AppLogo from './AppLogo.vue';
 
 const route = useRoute();
 const companyStore = useCompanyStore();
 </script>
 
 <template>
-  <!-- Trilho fixo de 76px; no hover/foco a sidebar expande por cima do conteúdo, sem empurrá-lo. -->
-  <aside class="sidebar" aria-label="Navegação principal">
-    <nav class="sidebar-nav">
+  <!-- Trilho fixo e silencioso: so icones; o rotulo aparece como dica ao lado no hover/foco. -->
+  <aside class="rail" aria-label="Navegação principal">
+    <RouterLink to="/" class="rail-logo" aria-label="Ledger Louis, início">
+      <AppLogo mark-only />
+    </RouterLink>
+
+    <nav class="rail-nav">
       <RouterLink
         v-for="item in mainNav"
         :key="item.name"
         :to="{ name: item.name }"
-        class="sidebar-item"
+        class="rail-item"
         :class="{ 'is-active': isNavItemActive(item, route.name) }"
-        :title="item.label"
+        :aria-label="item.label"
       >
-        <component :is="item.icon" :size="20" />
-        <span class="sidebar-label">{{ item.label }}</span>
+        <component :is="item.icon" :size="20" :stroke-width="1.75" />
+        <span class="rail-tip" aria-hidden="true">{{ item.label }}</span>
       </RouterLink>
     </nav>
 
-    <div v-if="companyStore.company.hasCompany" class="sidebar-actions">
-      <RouterLink :to="{ name: 'addIncome' }" class="quick-action quick-action--income" title="Nova entrada">
-        <ArrowUp :size="18" />
-        <span class="sidebar-label">Entrada</span>
+    <div v-if="companyStore.company.hasCompany" class="rail-actions">
+      <RouterLink :to="{ name: 'addIncome' }" class="rail-action rail-action--income" aria-label="Nova entrada">
+        <ArrowUp :size="18" :stroke-width="2" />
+        <span class="rail-tip" aria-hidden="true">Nova entrada</span>
       </RouterLink>
-      <RouterLink :to="{ name: 'addExpense' }" class="quick-action quick-action--expense" title="Nova saída">
-        <ArrowDown :size="18" />
-        <span class="sidebar-label">Saída</span>
+      <RouterLink :to="{ name: 'addExpense' }" class="rail-action rail-action--expense" aria-label="Nova saída">
+        <ArrowDown :size="18" :stroke-width="2" />
+        <span class="rail-tip" aria-hidden="true">Nova saída</span>
       </RouterLink>
     </div>
   </aside>
 </template>
 
 <style scoped>
-.sidebar {
+.rail {
   display: none;
 }
 
 @media (min-width: 1024px) {
-  .sidebar {
+  .rail {
     position: fixed;
-    top: var(--topbar-height);
-    bottom: 0;
-    left: 0;
-    z-index: 900;
+    inset: 0 auto 0 0;
+    z-index: var(--z-nav);
     display: flex;
     flex-direction: column;
-    width: var(--sidebar-width);
-    padding: var(--space-5) 12px;
-    overflow: hidden;
-    background: var(--color-surface);
-    border-right: 1px solid var(--color-border);
-    transition:
-      width var(--duration) var(--ease-out),
-      box-shadow var(--duration) ease;
-  }
-
-  .sidebar:hover,
-  .sidebar:focus-within {
-    width: var(--sidebar-width-open);
-    box-shadow: var(--shadow-lg);
-  }
-
-  .sidebar-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex: 1;
-  }
-
-  .sidebar-item,
-  .quick-action {
-    display: flex;
     align-items: center;
-    gap: 14px;
-    height: 46px;
-    /* (76 - 2*12 - 20) / 2 = 16px: centraliza o ícone no trilho fechado */
-    padding: 0 16px;
-    border-radius: var(--radius-sm);
-    font-weight: 600;
-    white-space: nowrap;
-    transition:
-      background-color var(--duration-fast) ease,
-      color var(--duration-fast) ease;
+    gap: var(--space-6);
+    width: var(--sidebar-width);
+    padding: var(--space-5) 0;
+    border-right: 1px solid var(--color-border);
+    background: color-mix(in srgb, var(--color-bg) 70%, transparent);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
   }
+}
 
-  .sidebar-item {
-    position: relative;
-    color: var(--color-text-muted);
-  }
+.rail-logo {
+  display: flex;
+  padding: 4px;
+}
 
-  .sidebar-item:hover {
-    background: var(--color-surface-3);
-    color: var(--color-text);
-  }
+.rail-nav,
+.rail-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
 
-  .sidebar-item.is-active {
-    background: var(--color-primary-soft);
-    color: var(--color-primary-strong);
-  }
+.rail-nav {
+  flex: 1;
+}
 
-  .sidebar-item.is-active::before {
-    content: '';
-    position: absolute;
-    left: -12px;
-    top: 12px;
-    bottom: 12px;
-    width: 3px;
-    border-radius: 0 3px 3px 0;
-    background: var(--color-primary);
-  }
+.rail-item,
+.rail-action {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-subtle);
+  transition:
+    background-color var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    transform var(--duration) var(--ease-out);
+}
 
-  .sidebar-label {
-    opacity: 0;
-    transition: opacity var(--duration-fast) ease;
-  }
+.rail-item:hover {
+  background: var(--color-surface-3);
+  color: var(--color-text);
+}
 
-  .sidebar:hover .sidebar-label,
-  .sidebar:focus-within .sidebar-label {
-    opacity: 1;
-  }
+.rail-item.is-active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary-ring) inset;
+}
 
-  .sidebar-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding-top: var(--space-4);
-    border-top: 1px solid var(--color-border);
-  }
+/* Marcador de pagina atual: a luz do trilho acende encostada na borda. */
+.rail-item.is-active::before {
+  content: '';
+  position: absolute;
+  left: -16px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--color-primary);
+  box-shadow: 0 0 12px 0 rgba(52, 181, 133, 0.7);
+}
 
-  .quick-action {
-    padding: 0 15px;
-    border-radius: var(--radius-full);
-    color: #fff;
-  }
+.rail-action {
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+}
 
-  .quick-action:hover {
-    filter: brightness(1.06);
-  }
+.rail-action--income {
+  color: var(--color-primary);
+}
 
-  .quick-action--income {
-    background: var(--gradient-primary);
-    color: var(--color-on-primary);
-    box-shadow: var(--shadow-primary);
-  }
+.rail-action--income:hover {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary-ring);
+  transform: translateY(-2px);
+}
 
-  .quick-action--expense {
-    background: var(--gradient-danger);
-    box-shadow: var(--shadow-danger);
-  }
+.rail-action--expense {
+  color: var(--color-danger);
+}
+
+.rail-action--expense:hover {
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger-ring);
+  transform: translateY(2px);
+}
+
+.rail-tip {
+  position: absolute;
+  left: calc(100% + 14px);
+  padding: 6px 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  box-shadow: var(--shadow-md);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-text);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-4px);
+  pointer-events: none;
+  transition:
+    opacity var(--duration-fast) ease,
+    transform var(--duration) var(--ease-out);
+}
+
+.rail-item:hover .rail-tip,
+.rail-item:focus-visible .rail-tip,
+.rail-action:hover .rail-tip,
+.rail-action:focus-visible .rail-tip {
+  opacity: 1;
+  transform: none;
 }
 </style>

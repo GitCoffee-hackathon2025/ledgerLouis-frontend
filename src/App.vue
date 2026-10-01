@@ -1,7 +1,8 @@
 <template>
-  <div class="app-layout">
+  <div class="app-layout" :class="{ 'has-shell': isAuthed }">
+    <AppBackdrop />
     <TopNav />
-    <SideNav />
+    <SideNav v-if="isAuthed" />
 
     <main class="app-main">
       <RouterView v-slot="{ Component }">
@@ -11,14 +12,15 @@
       </RouterView>
     </main>
 
-    <BottomNav />
+    <BottomNav v-if="isAuthed" />
+    <CommandPalette v-if="isAuthed" />
     <ToastHost />
     <ConfirmHost />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCompanyStore } from './stores/CompanyStore';
 import { useUserStore } from './stores/userStore';
@@ -29,6 +31,8 @@ import { useRecurringTransactionStore } from './stores/recurringTransactionStore
 import TopNav from './components/layout/TopNav.vue';
 import SideNav from './components/layout/SideNav.vue';
 import BottomNav from './components/layout/BottomNav.vue';
+import AppBackdrop from './components/layout/AppBackdrop.vue';
+import CommandPalette from './components/ui/CommandPalette.vue';
 import ToastHost from './components/ui/ToastHost.vue';
 import ConfirmHost from './components/ui/ConfirmHost.vue';
 
@@ -39,6 +43,8 @@ const transactionStore = useTransactionStore();
 const tagStore = useTagStore();
 const analyticsStore = useAnalyticsStore();
 const recurringTransactionStore = useRecurringTransactionStore();
+
+const isAuthed = computed(() => !!userStore.accessToken);
 
 onMounted(async () => {
   if (userStore.accessToken) {
@@ -74,17 +80,20 @@ watch(
 
 <style scoped>
 .app-layout {
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .app-main {
   min-width: 0;
   padding-top: var(--topbar-height);
+}
+
+.has-shell .app-main {
   padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom));
 }
 
 @media (min-width: 1024px) {
-  .app-main {
+  .has-shell .app-main {
     margin-left: var(--sidebar-width);
     padding-bottom: 0;
   }

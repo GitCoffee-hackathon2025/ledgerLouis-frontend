@@ -60,7 +60,7 @@ const summary = computed(() => [
   },
   {
     label: 'Próximo lançamento',
-    value: nextRun.value ? formatIsoDate(nextRun.value.nextRunDate) : '—',
+    value: nextRun.value ? formatIsoDate(nextRun.value.nextRunDate) : '-',
     icon: CalendarClock,
     tone: 'neutral',
   },
@@ -130,12 +130,6 @@ onMounted(() => {
 
       <section class="summary-grid" aria-label="Resumo">
         <div v-for="stat in summary" :key="stat.label" class="summary-tile">
-          <span
-            class="icon-tile"
-            :class="{ 'icon-tile--danger': stat.tone === 'danger', 'icon-tile--neutral': stat.tone === 'neutral' }"
-          >
-            <component :is="stat.icon" :size="18" />
-          </span>
           <div>
             <p class="summary-label">{{ stat.label }}</p>
             <p class="summary-value tabular">{{ stat.value }}</p>

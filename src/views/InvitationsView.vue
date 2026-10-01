@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { Building2, Clock, Inbox, Mail } from 'lucide-vue-next';
 import CompanyService, { type UserInvitationDto } from '@/services/companyService';
 import { useCompanyStore } from '@/stores/CompanyStore';
 import PageHeader from '@/components/ui/PageHeader.vue';
@@ -111,27 +110,24 @@ onMounted(async () => {
 
       <ul v-else-if="tokenInvitation" class="invitation-list">
         <li class="invitation">
-          <span class="icon-tile"><Building2 :size="20" /></span>
           <div class="invitation-copy">
             <div class="invitation-title">
               <strong>Convite para participar de uma empresa</strong>
               <span class="badge" data-tone="success">{{ tokenInvitation.role }}</span>
             </div>
-            <p><Mail :size="14" /> {{ tokenInvitation.email }}</p>
-            <p><Clock :size="14" /> Expira em {{ formatDateTime(tokenInvitation.expiresAt) }}</p>
+            <p>{{ tokenInvitation.email }}</p>
+            <p>Expira em {{ formatDateTime(tokenInvitation.expiresAt) }}</p>
           </div>
           <BaseButton :loading="acceptingId !== null" @click="handleTokenAccept">Aceitar convite</BaseButton>
         </li>
       </ul>
 
       <div v-else-if="invitations.length === 0" class="empty-state">
-        <Inbox :size="28" />
         Você não tem convites pendentes no momento.
       </div>
 
       <ul v-else class="invitation-list">
         <li v-for="invitation in invitations" :key="invitation.id" class="invitation">
-          <span class="icon-tile"><Building2 :size="20" /></span>
           <div class="invitation-copy">
             <div class="invitation-title">
               <strong>Convite para empresa</strong>
@@ -139,8 +135,8 @@ onMounted(async () => {
                 {{ invitation.role }}
               </span>
             </div>
-            <p><Mail :size="14" /> {{ invitation.email }}</p>
-            <p><Clock :size="14" /> Expira em {{ formatDateTime(invitation.expiresAt) }}</p>
+            <p>{{ invitation.email }}</p>
+            <p>Expira em {{ formatDateTime(invitation.expiresAt) }}</p>
           </div>
           <BaseButton :loading="acceptingId === invitation.id" @click="handleAccept(invitation)">
             Aceitar convite

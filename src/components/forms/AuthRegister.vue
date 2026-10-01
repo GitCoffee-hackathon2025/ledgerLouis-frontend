@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { Lock, Mail, User } from 'lucide-vue-next';
 import BaseInput from '../ui/BaseInput.vue';
 import BaseButton from '../ui/BaseButton.vue';
 import UserService from '../../services/userService';
@@ -50,6 +51,7 @@ const handleRegister = async () => {
       id="registerName"
       v-model="formData.name"
       label="Nome completo"
+      :icon="User"
       placeholder="Como devemos te chamar?"
       autocomplete="name"
     />
@@ -57,6 +59,7 @@ const handleRegister = async () => {
       id="registerEmail"
       v-model="formData.email"
       label="E-mail"
+      :icon="Mail"
       type="email"
       placeholder="voce@empresa.com"
       autocomplete="email"
@@ -65,6 +68,7 @@ const handleRegister = async () => {
       id="registerPassword"
       v-model="formData.password"
       label="Senha"
+      :icon="Lock"
       type="password"
       placeholder="••••••••"
       autocomplete="new-password"

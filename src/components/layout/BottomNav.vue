@@ -45,7 +45,7 @@ watch(
         class="nav-item"
         :class="{ 'is-active': isNavItemActive(item, route.name) }"
       >
-        <span class="nav-icon"><component :is="item.icon" :size="22" /></span>
+        <span class="nav-icon"><component :is="item.icon" :size="21" :stroke-width="1.75" /></span>
         <span class="nav-label">{{ item.label }}</span>
       </RouterLink>
 
@@ -56,7 +56,7 @@ watch(
         aria-label="Adicionar lançamento"
         @click="isMenuOpen = !isMenuOpen"
       >
-        <span class="fab" :class="{ 'is-open': isMenuOpen }"><Plus :size="26" /></span>
+        <span class="fab" :class="{ 'is-open': isMenuOpen }"><Plus :size="24" :stroke-width="2" /></span>
       </button>
 
       <RouterLink
@@ -66,7 +66,7 @@ watch(
         class="nav-item"
         :class="{ 'is-active': isNavItemActive(item, route.name) }"
       >
-        <span class="nav-icon"><component :is="item.icon" :size="22" /></span>
+        <span class="nav-icon"><component :is="item.icon" :size="21" :stroke-width="1.75" /></span>
         <span class="nav-label">{{ item.label }}</span>
       </RouterLink>
     </nav>
@@ -77,20 +77,20 @@ watch(
 .nav-overlay {
   position: fixed;
   inset: 0;
-  z-index: 998;
+  z-index: var(--z-nav);
   background: var(--color-overlay);
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(6px);
 }
 
 .quick-menu {
   position: fixed;
   left: 50%;
-  bottom: calc(var(--bottom-nav-height) + 16px + env(safe-area-inset-bottom));
-  z-index: 999;
+  bottom: calc(var(--bottom-nav-height) + 12px + env(safe-area-inset-bottom));
+  z-index: var(--z-overlay);
   display: flex;
   flex-direction: column;
   gap: 10px;
-  width: 230px;
+  width: 220px;
   transform: translateX(-50%);
 }
 
@@ -99,21 +99,20 @@ watch(
   align-items: center;
   justify-content: center;
   gap: 10px;
-  height: 52px;
+  height: 50px;
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-full);
-  font-weight: 700;
-  color: #fff;
+  background: var(--color-surface-2);
+  box-shadow: var(--shadow-lg);
+  font-weight: 600;
 }
 
 .quick-action--income {
-  background: var(--gradient-primary);
-  color: var(--color-on-primary);
-  box-shadow: var(--shadow-primary);
+  color: var(--color-primary);
 }
 
 .quick-action--expense {
-  background: var(--gradient-danger);
-  box-shadow: var(--shadow-danger);
+  color: var(--color-danger);
 }
 
 .sheet-enter-active,
@@ -129,19 +128,24 @@ watch(
   transform: translate(-50%, 16px);
 }
 
+/* Doca flutuante: pilula separada das bordas, com o botao + no centro. */
 .bottom-nav {
   position: fixed;
-  inset: auto 0 0;
-  z-index: 1000;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: var(--z-overlay);
   display: flex;
   align-items: center;
   justify-content: space-around;
-  height: calc(var(--bottom-nav-height) - 12px + env(safe-area-inset-bottom));
-  padding: 0 6px env(safe-area-inset-bottom);
-  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
-  border-top: 1px solid var(--color-border);
-  backdrop-filter: saturate(1.6) blur(14px);
-  -webkit-backdrop-filter: saturate(1.6) blur(14px);
+  height: 64px;
+  padding: 0 6px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: saturate(1.4) blur(20px);
+  -webkit-backdrop-filter: saturate(1.4) blur(20px);
 }
 
 @media (min-width: 1024px) {
@@ -155,7 +159,7 @@ watch(
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
   color: var(--color-text-subtle);
   -webkit-tap-highlight-color: transparent;
@@ -165,8 +169,8 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 30px;
+  width: 46px;
+  height: 28px;
   border-radius: var(--radius-full);
   transition:
     background-color var(--duration) ease,
@@ -174,8 +178,8 @@ watch(
 }
 
 .nav-label {
-  font-size: 10.5px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 500;
   white-space: nowrap;
 }
 
@@ -185,20 +189,19 @@ watch(
 
 .nav-item.is-active .nav-icon {
   background: var(--color-primary-soft);
-  color: var(--color-primary-strong);
+  color: var(--color-primary);
 }
 
 .fab {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 50px;
-  height: 50px;
-  margin-top: -18px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: var(--gradient-primary);
   color: var(--color-on-primary);
-  box-shadow: var(--shadow-primary), 0 0 0 5px var(--color-surface);
+  box-shadow: var(--shadow-primary);
   transition:
     transform var(--duration) var(--ease-out),
     background var(--duration) ease;
@@ -206,7 +209,8 @@ watch(
 
 .fab.is-open {
   transform: rotate(45deg);
-  background: var(--color-text);
-  color: var(--color-surface);
+  background: var(--color-surface-3);
+  color: var(--color-text);
+  box-shadow: 0 0 0 1px var(--color-border-strong) inset;
 }
 </style>

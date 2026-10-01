@@ -36,7 +36,7 @@ const groups = [
       </nav>
     </div>
 
-    <p class="footer-bottom">© {{ year }} Ledger Louis · Feito pela equipe GitCoffee.</p>
+    <p class="footer-bottom">© {{ year }} Ledger Louis. Feito pela equipe GitCoffee.</p>
   </footer>
 </template>
 
@@ -44,7 +44,6 @@ const groups = [
 .footer {
   padding: var(--space-10) var(--space-5) var(--space-6);
   border-top: 1px solid var(--color-border);
-  background: var(--color-surface);
 }
 
 .footer-inner {
@@ -75,23 +74,20 @@ const groups = [
 
 .footer-title {
   margin-bottom: var(--space-1);
-  font-size: var(--text-xs);
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: var(--text-sm);
+  font-weight: 500;
   color: var(--color-text-subtle);
 }
 
 .footer-links a {
   width: fit-content;
   font-size: var(--text-sm);
-  font-weight: 600;
   color: var(--color-text-muted);
   transition: color var(--duration-fast) ease;
 }
 
 .footer-links a:hover {
-  color: var(--color-primary-strong);
+  color: var(--color-primary);
 }
 
 .footer-bottom {

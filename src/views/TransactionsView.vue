@@ -38,6 +38,28 @@ const filteredTransactions = computed(() => {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 });
 
+// Linha do tempo: um bloco por dia, com o resultado liquido do dia no cabecalho.
+const dayGroups = computed(() => {
+  const groups = new Map<string, { key: string; label: string; net: number; items: typeof filteredTransactions.value }>();
+  for (const t of filteredTransactions.value) {
+    const key = t.date.slice(0, 10);
+    let group = groups.get(key);
+    if (!group) {
+      const label = new Date(`${key}T12:00:00`).toLocaleDateString('pt-BR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+      group = { key, label, net: 0, items: [] };
+      groups.set(key, group);
+    }
+    group.net += t.entryType === 'credit' ? t.amount : -t.amount;
+    group.items.push(t);
+  }
+  return [...groups.values()];
+});
+
 const netTotal = computed(() =>
   filteredTransactions.value.reduce((sum, t) => sum + (t.entryType === 'credit' ? t.amount : -t.amount), 0),
 );
@@ -56,7 +78,7 @@ const handleExport = (format: 'csv' | 'pdf') => {
     <div class="page-shell page-shell--narrow">
       <PageHeader
         back
-        eyebrow="Histórico completo"
+        eyebrow="Histórico"
         title="Transações"
         description="Consulte, filtre e exporte todas as movimentações registradas."
       >
@@ -104,14 +126,24 @@ const handleExport = (format: 'csv' | 'pdf') => {
           Nenhuma transação encontrada com esses filtros.
         </div>
 
-        <ul v-else class="list-divided">
-          <TransactionItem
-            v-for="transaction in filteredTransactions"
-            :key="transaction.id"
-            :transaction="transaction"
-            with-year
-          />
-        </ul>
+        <div v-else class="timeline">
+          <section v-for="group in dayGroups" :key="group.key" class="day">
+            <header class="day-head">
+              <h2>{{ group.label }}</h2>
+              <span class="figure" :class="group.net >= 0 ? 'text-income' : 'text-expense'">
+                {{ formatCurrency(group.net) }}
+              </span>
+            </header>
+            <ul class="list-divided">
+              <TransactionItem
+                v-for="transaction in group.items"
+                :key="transaction.id"
+                :transaction="transaction"
+                with-year
+              />
+            </ul>
+          </section>
+        </div>
       </section>
     </div>
   </div>
@@ -134,14 +166,43 @@ const handleExport = (format: 'csv' | 'pdf') => {
 
 .search svg {
   position: absolute;
-  left: 14px;
+  left: 2px;
   color: var(--color-text-subtle);
   pointer-events: none;
 }
 
 .search .input {
-  padding-left: 42px;
-  border-radius: var(--radius-full);
+  padding-left: 30px;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.day-head {
+  position: sticky;
+  top: var(--topbar-height);
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  background: var(--color-surface);
+  font-size: var(--text-sm);
+}
+
+.day-head h2 {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  letter-spacing: 0;
+}
+
+.day-head h2::first-letter {
+  text-transform: uppercase;
 }
 
 .list-summary {
