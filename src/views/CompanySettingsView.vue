@@ -1,189 +1,308 @@
 <template>
   <main class="settings-page">
     <div class="settings-container">
-      <header class="page-header">
-        <div class="identity">
-          <div class="avatar">{{ companyName.charAt(0).toUpperCase() }}</div>
+      <!-- Cabeçalho da Empresa -->
+      <header class="company-header">
+        <div class="company-identity">
+          <div class="company-avatar" aria-hidden="true">
+            {{ companyName.charAt(0).toUpperCase() }}
+          </div>
           <div>
-            <p class="kicker">Sua empresa</p>
-            <h1>{{ companyName }}</h1>
+            <span class="kicker">Gestão da empresa</span>
+            <h1 class="company-title">{{ companyName }}</h1>
           </div>
         </div>
-        <PrimaryButton variant="danger" compact @click="leaveCompany">
-          <LogOut :size="15" />
-          Sair da empresa
-        </PrimaryButton>
+
+        <div class="header-actions">
+          <button
+            type="button"
+            class="leave-btn"
+            title="Desconectar-se desta empresa e voltar à seleção"
+            @click="leaveCompany"
+          >
+            <LogOut :size="15" aria-hidden="true" />
+            <span>Sair da empresa</span>
+          </button>
+        </div>
       </header>
 
-      <section class="panel">
-        <h2 class="panel-title">
-          <Building2 :size="18" />
-          Dados da empresa
-        </h2>
+      <!-- Layout em Duas Colunas: Índice Local + Conteúdo -->
+      <div class="management-grid">
+        <!-- Índice Local (~200px) -->
+        <nav class="local-nav" aria-label="Seções de gestão">
+          <button
+            type="button"
+            class="nav-item"
+            :class="{ active: activeTab === 'empresa' }"
+            @click="activeTab = 'empresa'"
+          >
+            <Building2 :size="16" aria-hidden="true" />
+            <span>Empresa</span>
+          </button>
+          <button
+            type="button"
+            class="nav-item"
+            :class="{ active: activeTab === 'pessoas' }"
+            @click="activeTab = 'pessoas'"
+          >
+            <Users :size="16" aria-hidden="true" />
+            <span>Pessoas</span>
+            <span v-if="members.length > 0" class="counter-badge">{{ members.length }}</span>
+          </button>
+          <button
+            type="button"
+            class="nav-item"
+            :class="{ active: activeTab === 'tags' }"
+            @click="activeTab = 'tags'"
+          >
+            <Tags :size="16" aria-hidden="true" />
+            <span>Tags</span>
+          </button>
+          <button
+            type="button"
+            class="nav-item"
+            :class="{ active: activeTab === 'recorrencias' }"
+            @click="activeTab = 'recorrencias'"
+          >
+            <Repeat :size="16" aria-hidden="true" />
+            <span>Recorrências</span>
+          </button>
+        </nav>
 
-        <div class="info-grid">
-          <div class="info-tile">
-            <div class="info-icon"><Building2 :size="16" /></div>
-            <div>
-              <span class="info-label">Nome</span>
-              <strong class="info-value">{{ companyStore.company.name || 'Não informado' }}</strong>
-            </div>
+        <!-- Conteúdo Principal -->
+        <div class="content-area">
+          <!-- 1. Dados da Empresa -->
+          <section v-if="activeTab === 'empresa'" class="panel" aria-labelledby="company-data-title">
+            <header class="panel-header">
+              <div>
+                <h2 id="company-data-title" class="panel-title">Dados cadastrais</h2>
+                <p class="panel-subtitle">Informações básicas de identificação e contato da organização.</p>
+              </div>
+            </header>
+
+            <dl class="definition-grid">
+              <div class="def-item">
+                <dt>Razão social / Nome</dt>
+                <dd>{{ companyStore.company.name || 'Não informado' }}</dd>
+              </div>
+              <div class="def-item">
+                <dt>CNPJ</dt>
+                <dd class="tabular-num">{{ companyStore.company.cnpj || 'Não informado' }}</dd>
+              </div>
+              <div class="def-item">
+                <dt>Email corporativo</dt>
+                <dd>{{ companyStore.company.email || 'Não informado' }}</dd>
+              </div>
+              <div class="def-item">
+                <dt>Telefone de contato</dt>
+                <dd class="tabular-num">{{ companyStore.company.phone || 'Não informado' }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <!-- 2. Pessoas (Membros + Convites) -->
+          <div v-if="activeTab === 'pessoas'" class="stack-panels">
+            <!-- Painel de Membros -->
+            <section class="panel" aria-labelledby="members-title">
+              <header class="panel-header with-actions">
+                <div>
+                  <h2 id="members-title" class="panel-title">Equipe e membros</h2>
+                  <p class="panel-subtitle">Pessoas com acesso autorizado aos registros desta empresa.</p>
+                </div>
+                <div class="header-btns">
+                  <PrimaryButton
+                    v-if="!showInviteForm"
+                    variant="neutral"
+                    compact
+                    @click="showInviteForm = true"
+                  >
+                    <UserPlus :size="14" aria-hidden="true" />
+                    Convidar membro
+                  </PrimaryButton>
+                  <PrimaryButton variant="neutral" compact title="Recarregar membros" @click="loadMembers">
+                    <RefreshCw :size="14" aria-hidden="true" />
+                  </PrimaryButton>
+                </div>
+              </header>
+
+              <!-- Formulário Inline de Convite -->
+              <div v-if="showInviteForm" class="invite-panel">
+                <div class="invite-header">
+                  <h3>Novo convite de membro</h3>
+                  <button
+                    type="button"
+                    class="close-btn"
+                    aria-label="Fechar convite"
+                    @click="showInviteForm = false"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <form class="invite-form" @submit.prevent="handleCreateInvitation">
+                  <div class="invite-grid">
+                    <div class="form-field flex-2">
+                      <label for="memberEmail">Email do usuário *</label>
+                      <input
+                        id="memberEmail"
+                        v-model="newInvite.email"
+                        type="email"
+                        placeholder="usuario@dominio.com"
+                        required
+                        class="field-input"
+                      />
+                    </div>
+
+                    <div class="form-field flex-1">
+                      <label for="memberRole">Função *</label>
+                      <select id="memberRole" v-model="newInvite.role" class="field-input select-input">
+                        <option value="owner">Owner (proprietário)</option>
+                        <option value="admin">Admin (administrador)</option>
+                        <option value="viewer">Viewer (visualizador)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="invite-actions">
+                    <PrimaryButton
+                      variant="neutral"
+                      compact
+                      type="button"
+                      @click="showInviteForm = false"
+                    >
+                      Cancelar
+                    </PrimaryButton>
+                    <PrimaryButton
+                      type="submit"
+                      compact
+                      :loading="inviteLoading"
+                      :disabled="!companyStore.company.id"
+                    >
+                      Enviar convite
+                    </PrimaryButton>
+                  </div>
+
+                  <p v-if="inviteError" class="field-error" role="alert">{{ inviteError }}</p>
+                </form>
+              </div>
+
+              <!-- Lista de Membros -->
+              <div v-if="membersLoading" class="empty-state">
+                Carregando membros da empresa...
+              </div>
+              <div v-else-if="members.length === 0" class="empty-state">
+                Nenhum membro encontrado para esta empresa.
+              </div>
+              <ul v-else class="members-table">
+                <li v-for="member in members" :key="member.userId" class="member-row">
+                  <div class="member-info">
+                    <strong class="member-name">{{ member.name }}</strong>
+                    <span class="member-email">{{ member.email }}</span>
+                  </div>
+                  <div class="member-meta">
+                    <span class="role-pill" :data-role="member.role">{{ roleLabels[member.role] || member.role }}</span>
+                  </div>
+                </li>
+              </ul>
+            </section>
+
+            <!-- Painel de Convites Pendentes -->
+            <section class="panel" aria-labelledby="invites-title">
+              <header class="panel-header with-actions">
+                <div>
+                  <h2 id="invites-title" class="panel-title">Convites pendentes</h2>
+                  <p class="panel-subtitle">Aguardando aceite pelos usuários convidados.</p>
+                </div>
+                <PrimaryButton variant="neutral" compact title="Recarregar convites" @click="loadInvitations">
+                  <RefreshCw :size="14" aria-hidden="true" />
+                </PrimaryButton>
+              </header>
+
+              <div v-if="invitationsLoading" class="empty-state">
+                Carregando convites pendentes...
+              </div>
+              <div v-else-if="invitations.length === 0" class="empty-state">
+                Nenhum convite pendente no momento.
+              </div>
+              <ul v-else class="invites-list">
+                <li v-for="invitation in invitations" :key="invitation.id" class="invite-row">
+                  <div class="invite-data">
+                    <strong class="invite-email">{{ invitation.email }}</strong>
+                    <div class="invite-subdata">
+                      <span>Função: {{ roleLabels[invitation.role] || invitation.role }}</span>
+                      <span class="separator">·</span>
+                      <span>Expira em: {{ formatDate(invitation.expiresAt) }}</span>
+                    </div>
+                  </div>
+                  <PrimaryButton variant="danger" compact @click="handleRevoke(invitation)">
+                    Revogar
+                  </PrimaryButton>
+                </li>
+              </ul>
+            </section>
           </div>
 
-          <div class="info-tile">
-            <div class="info-icon"><Fingerprint :size="16" /></div>
-            <div>
-              <span class="info-label">CNPJ</span>
-              <strong class="info-value">{{ companyStore.company.cnpj || 'Não informado' }}</strong>
-            </div>
+          <!-- 3. Tags -->
+          <div v-if="activeTab === 'tags'">
+            <TagManager />
           </div>
 
-          <div class="info-tile">
-            <div class="info-icon"><Mail :size="16" /></div>
-            <div>
-              <span class="info-label">Email</span>
-              <strong class="info-value">{{ companyStore.company.email || 'Não informado' }}</strong>
-            </div>
-          </div>
-
-          <div class="info-tile">
-            <div class="info-icon"><Phone :size="16" /></div>
-            <div>
-              <span class="info-label">Telefone</span>
-              <strong class="info-value">{{ companyStore.company.phone || 'Não informado' }}</strong>
-            </div>
+          <!-- 4. Recorrências -->
+          <div v-if="activeTab === 'recorrencias'">
+            <RecurringTransactionManager />
           </div>
         </div>
-      </section>
-
-      <section class="panel">
-        <header class="panel-header">
-          <div>
-            <h2 class="panel-title">
-              <Users :size="18" />
-              Membros
-            </h2>
-            <p class="panel-subtitle">Convide e acompanhe quem faz parte da sua empresa.</p>
-          </div>
-          <PrimaryButton variant="neutral" compact @click="loadMembers">
-            <RefreshCw :size="14" />
-            Atualizar
-          </PrimaryButton>
-        </header>
-
-        <p v-if="membersLoading" class="empty-state">Carregando membros...</p>
-        <p v-else-if="members.length === 0" class="empty-state">Nenhum membro encontrado para esta empresa.</p>
-
-        <ul v-else class="member-list">
-          <li v-for="member in members" :key="member.userId">
-            <div>
-              <strong>{{ member.name }}</strong>
-              <span>{{ member.email }}</span>
-            </div>
-            <span class="role-badge" :data-role="member.role">{{ member.role }}</span>
-          </li>
-        </ul>
-
-        <form class="invite-row" @submit.prevent="handleCreateInvitation">
-          <div class="invite-field">
-            <BaseInput
-              id="memberEmail"
-              label="Email do membro"
-              type="email"
-              placeholder="email@dominio.com"
-              v-model="newInvite.email"
-              :error="errors.email"
-              required
-            />
-          </div>
-
-          <div class="invite-role">
-            <label for="memberRole">Função</label>
-            <select id="memberRole" v-model="newInvite.role">
-              <option value="owner">Owner</option>
-              <option value="admin">Admin</option>
-              <option value="viewer">Viewer</option>
-            </select>
-          </div>
-
-          <PrimaryButton type="submit" :loading="inviteLoading" :disabled="!companyStore.company.id">
-            Convidar
-          </PrimaryButton>
-        </form>
-        <p v-if="inviteError" class="error-message">{{ inviteError }}</p>
-      </section>
-
-      <section class="panel">
-        <header class="panel-header">
-          <div>
-            <h2 class="panel-title">
-              <MailCheck :size="18" />
-              Convites pendentes
-            </h2>
-            <p class="panel-subtitle">Gerencie convites enviados.</p>
-          </div>
-          <PrimaryButton variant="neutral" compact @click="loadInvitations">
-            <RefreshCw :size="14" />
-            Atualizar
-          </PrimaryButton>
-        </header>
-
-        <p v-if="invitationsLoading" class="empty-state">Carregando convites...</p>
-        <p v-else-if="invitations.length === 0" class="empty-state">Nenhum convite pendente.</p>
-
-        <ul v-else class="member-list">
-          <li v-for="invitation in invitations" :key="invitation.id">
-            <div>
-              <strong>{{ invitation.email }}</strong>
-              <span>Função: {{ invitation.role }}</span>
-              <p class="invitation-meta">Expira em: {{ formatDate(invitation.expiresAt) }}</p>
-            </div>
-            <PrimaryButton variant="danger" compact @click="handleRevoke(invitation)">Revogar</PrimaryButton>
-          </li>
-        </ul>
-      </section>
-
-      <section class="management-section">
-        <header class="section-header">
-          <div class="section-icon"><SlidersHorizontal :size="18" /></div>
-          <div>
-            <h2 class="section-title">Gerenciamento</h2>
-            <p class="section-subtitle">Organize tags e configure lançamentos que se repetem automaticamente.</p>
-          </div>
-        </header>
-
-        <div class="management-stack">
-          <TagManager />
-          <RecurringTransactionManager />
-        </div>
-      </section>
+      </div>
     </div>
   </main>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { LogOut, RefreshCw, Building2, Fingerprint, Mail, Phone, Users, MailCheck, SlidersHorizontal } from 'lucide-vue-next';
+import { useRouter, useRoute } from 'vue-router';
+import {
+  LogOut,
+  RefreshCw,
+  Building2,
+  Users,
+  Tags,
+  Repeat,
+  UserPlus,
+} from 'lucide-vue-next';
 import { useCompanyStore } from '@/stores/CompanyStore';
 import CompanyService, { type CompanyRole } from '@/services/companyService';
 import RecurringTransactionManager from '@/components/company/RecurringTransactionManager.vue';
 import TagManager from '@/components/company/TagManager.vue';
-import BaseInput from '@/components/ui/BaseInput.vue';
 import PrimaryButton from '@/components/ui/PrimaryButton.vue';
 
 const router = useRouter();
+const route = useRoute();
 const companyStore = useCompanyStore();
 const service = new CompanyService();
 
 const companyName = computed(() => companyStore.company.name || 'Minha Empresa');
+
+// Aba ativa: 'empresa' | 'pessoas' | 'tags' | 'recorrencias'
+const validTabs = ['empresa', 'pessoas', 'tags', 'recorrencias'] as const;
+type TabType = typeof validTabs[number];
+
+const activeTab = ref<TabType>(
+  validTabs.includes(route.query.tab as TabType) ? (route.query.tab as TabType) : 'empresa',
+);
+
+const roleLabels: Record<string, string> = {
+  owner: 'Proprietário (Owner)',
+  admin: 'Administrador (Admin)',
+  viewer: 'Visualizador (Viewer)',
+};
+
+const showInviteForm = ref(false);
 const membersLoading = ref(false);
 const inviteLoading = ref(false);
 const inviteError = ref('');
 
-const members = ref([] as Array<{ userId: string; name: string; email: string; role: CompanyRole; createdAt: string }>);
+const members = ref<Array<{ userId: string; name: string; email: string; role: CompanyRole; createdAt: string }>>([]);
 const newInvite = reactive<{ email: string; role: CompanyRole }>({ email: '', role: 'viewer' });
-const errors = reactive({ email: false });
 const invitations = ref<Array<{ id: string; email: string; role: CompanyRole; expiresAt: string }>>([]);
 const invitationsLoading = ref(false);
 
@@ -243,11 +362,10 @@ const loadInvitations = async () => {
 };
 
 const handleCreateInvitation = async () => {
-  errors.email = false;
   inviteError.value = '';
 
   if (!newInvite.email.trim()) {
-    errors.email = true;
+    inviteError.value = 'Por favor, informe o email do usuário.';
     return;
   }
 
@@ -261,7 +379,7 @@ const handleCreateInvitation = async () => {
     await service.createInvitation(companyStore.company.id, newInvite.email.trim(), newInvite.role);
     newInvite.email = '';
     newInvite.role = 'viewer';
-    inviteError.value = '';
+    showInviteForm.value = false;
     await loadInvitations();
   } catch (error) {
     console.error('Erro ao criar convite:', error);
@@ -305,14 +423,11 @@ const leaveCompany = () => {
   router.replace({ name: 'company' });
 };
 
-onMounted(() => {
+onMounted(async () => {
   if (!companyStore.company.hasCompany) {
     router.replace({ name: 'company' });
+    return;
   }
-});
-
-onMounted(async () => {
-  if (!companyStore.company.hasCompany) return;
   await ensureCompanyId();
   await loadMembers();
   await loadInvitations();
@@ -321,65 +436,156 @@ onMounted(async () => {
 
 <style scoped>
 .settings-page {
-  min-height: calc(100vh - 65px);
-  padding: 48px 20px 64px;
+  min-height: calc(100vh - 80px);
+  padding: 32px 20px 64px;
   background: var(--color-bg);
 }
 
 .settings-container {
-  max-width: 760px;
+  max-width: 1120px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
-.page-header {
+/* Cabeçalho Limpo */
+.company-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.identity {
+.company-identity {
   display: flex;
   align-items: center;
-  gap: 18px;
-  min-width: 0;
+  gap: 16px;
 }
 
-.avatar {
-  flex-shrink: 0;
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  background: var(--color-success-gradient);
-  color: var(--color-surface);
+.company-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 800;
+  font-size: 20px;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .kicker {
-  font-size: 12.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--color-primary);
-  margin-bottom: 4px;
+  color: var(--color-text-secondary);
+  margin-bottom: 2px;
 }
 
-h1 {
+.company-title {
   font-family: var(--font-display);
-  font-size: 1.6rem;
-  font-weight: 800;
+  font-size: 24px;
+  font-weight: 700;
   color: var(--color-text);
   margin: 0;
 }
 
+.leave-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  min-height: 40px;
+  transition: all 0.15s ease;
+}
+
+.leave-btn:hover {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft, #fef2f2);
+}
+
+/* Grade de Gestão: Índice Lateral (~200px) + Conteúdo */
+.management-grid {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.local-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: sticky;
+  top: 24px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 10px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.nav-item:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.nav-item.active {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.counter-badge {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 2px 7px;
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-text-secondary);
+}
+
+.stack-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Painéis de Conteúdo */
 .panel {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -388,282 +594,257 @@ h1 {
 }
 
 .panel-header {
+  margin-bottom: 24px;
+}
+
+.panel-header.with-actions {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 16px;
-  margin-bottom: 18px;
+  flex-wrap: wrap;
 }
 
 .panel-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   font-family: var(--font-display);
-  font-size: 1.1rem;
-  font-weight: 800;
+  font-size: 18px;
+  font-weight: 600;
   color: var(--color-text);
-  margin: 0 0 18px;
-}
-
-.panel-header .panel-title {
   margin: 0;
 }
 
-.panel-title svg {
-  color: var(--color-primary);
-  flex-shrink: 0;
-}
-
 .panel-subtitle {
-  margin-top: 4px;
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.info-tile {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  border-radius: 14px;
-  background: var(--color-surface-soft);
-  min-width: 0;
-}
-
-.info-icon {
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-primary-glow);
-  color: var(--color-primary);
-}
-
-.info-label {
-  display: block;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-text-secondary);
-  margin-bottom: 4px;
-}
-
-.info-value {
-  display: block;
-  font-size: 14.5px;
-  font-weight: 700;
-  color: var(--color-text);
-  overflow-wrap: anywhere;
-}
-
-.empty-state {
-  padding: 16px;
-  border-radius: 12px;
-  border: 1px dashed var(--color-border);
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
-  margin-bottom: 20px;
-}
-
-.member-list {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 24px;
-  display: flex;
-  flex-direction: column;
-}
-
-.member-list li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.member-list li:first-child {
-  border-top: 1px solid var(--color-border);
-}
-
-.member-list:last-child {
-  margin-bottom: 0;
-}
-
-.member-list strong {
-  display: block;
-  color: var(--color-text);
-  font-size: 14.5px;
-}
-
-.member-list span {
-  color: var(--color-text-secondary);
   font-size: 13px;
-}
-
-.invitation-meta {
-  margin: 4px 0 0;
-  font-size: 12px;
   color: var(--color-text-secondary);
+  margin-top: 4px;
 }
 
-.role-badge {
-  flex-shrink: 0;
-  padding: 5px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: capitalize;
-  background: var(--color-surface-alt);
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-border);
-}
-
-.role-badge[data-role='owner'] {
-  background: var(--color-primary-glow);
-  color: var(--color-primary);
-  border-color: transparent;
-}
-
-.invite-row {
+.header-btns {
   display: flex;
-  align-items: flex-end;
-  gap: 16px;
-  flex-wrap: wrap;
-  padding-top: 20px;
-  border-top: 1px solid var(--color-border);
-}
-
-.invite-field {
-  flex: 1;
-  min-width: 220px;
-}
-
-.invite-role {
-  display: flex;
-  flex-direction: column;
   gap: 8px;
 }
 
-.invite-role label {
-  font-size: 0.85rem;
-  color: var(--color-placeholder);
+/* Grade de Definição 2x2 para Dados da Empresa */
+.definition-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px 24px;
+}
+
+.def-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.def-item dt {
+  font-size: 12px;
   font-weight: 600;
-  margin-left: 12px;
+  color: var(--color-text-secondary);
 }
 
-select {
-  min-height: 52px;
-  border: 2px solid transparent;
-  border-radius: var(--radius-input);
-  padding: 14px 16px;
-  background: var(--color-bg);
+.def-item dd {
+  font-size: 15px;
+  font-weight: 500;
   color: var(--color-text);
-  font-family: var(--font-body);
-  font-size: 1rem;
 }
 
-select:focus {
+.tabular-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Formulário de Convite Inline */
+.invite-panel {
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.invite-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.invite-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.invite-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.invite-grid {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.flex-2 { flex: 2; min-width: 220px; }
+.flex-1 { flex: 1; min-width: 160px; }
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.field-input {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.field-input:focus {
   outline: none;
   border-color: var(--color-primary);
 }
 
-.error-message {
+.invite-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.field-error {
+  font-size: 12px;
   color: var(--color-danger);
-  font-size: 0.9rem;
-  margin: 12px 0 0;
+  margin-top: 4px;
 }
 
-.management-section {
-  border-radius: 20px;
-  padding: 24px;
-  background: linear-gradient(180deg, var(--color-primary-glow) 0%, transparent 140px);
-  border: 1px solid var(--color-border);
-}
-
-.section-header {
+/* Listas de Membros e Convites */
+.members-table,
+.invites-list {
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  margin-bottom: 20px;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.section-icon {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+.member-row,
+.invite-row {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  background: var(--color-success-gradient);
-  color: white;
+  padding: 12px 16px;
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  gap: 16px;
 }
 
-.section-title {
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-  font-weight: 800;
+.member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.member-name {
+  font-size: 14px;
+  font-weight: 600;
   color: var(--color-text);
 }
 
-.section-subtitle {
-  margin-top: 4px;
+.member-email {
+  font-size: 13px;
   color: var(--color-text-secondary);
-  font-size: 0.9rem;
 }
 
-.management-stack {
+.role-pill {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.role-pill[data-role="owner"] {
+  border-color: var(--color-primary);
+  color: var(--color-success-dark);
+}
+
+.invite-data {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 2px;
 }
 
-/* Responsividade */
-@media (max-width: 640px) {
-  .settings-page {
-    padding: 32px 16px 48px;
-  }
+.invite-email {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
 
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+.invite-subdata {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  display: flex;
+  gap: 6px;
+}
 
-  .page-header :deep(.primary-btn) {
-    align-self: stretch;
-  }
+.separator {
+  color: var(--color-text-tertiary);
+}
 
-  .panel {
-    padding: 22px;
-  }
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
 
-  .info-grid {
+@media (max-width: 768px) {
+  .management-grid {
     grid-template-columns: 1fr;
   }
 
-  .management-section {
-    padding: 18px;
+  .local-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    position: static;
+    padding-bottom: 4px;
   }
 
-  .invite-row {
-    flex-direction: column;
-    align-items: stretch;
+  .nav-item {
+    min-width: fit-content;
+    padding: 8px 12px;
   }
 
-  .invite-row :deep(.primary-btn) {
-    width: 100%;
+  .definition-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
