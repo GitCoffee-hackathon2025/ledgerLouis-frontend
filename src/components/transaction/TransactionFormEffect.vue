@@ -181,7 +181,7 @@ const chartOptions = computed<ApexOptions>(() => {
         </div>
 
         <!-- Barra Comparativa Neutra -->
-        <div class="balance-bars-wrapper" aria-hidden="true">
+        <div class="lg-inset balance-bars-wrapper" aria-hidden="true">
           <div class="bar-line">
             <span class="bar-label">Hoje</span>
             <div class="bar-track">
@@ -221,12 +221,12 @@ const chartOptions = computed<ApexOptions>(() => {
           </div>
         </div>
 
-        <div v-if="balanceError" class="balance-fallback-box" style="margin-top: 12px;">
+        <div v-if="balanceError" class="lg-inset balance-fallback-box" style="margin-top: 12px;">
           <p class="lg-note">{{ balanceError }}</p>
           <button
             type="button"
-            class="lg-btn lg-btn--quiet"
-            style="margin-top: 6px;"
+            class="lg-btn"
+            style="margin-top: 8px;"
             @click="$emit('retry-balance')"
           >
             Tentar carregar saldo
@@ -238,7 +238,7 @@ const chartOptions = computed<ApexOptions>(() => {
     <!-- Cenário B: Lançamento Recorrente -->
     <div v-else class="recurring-effect-content">
       <!-- Próximas 6 datas -->
-      <div class="upcoming-dates-block">
+      <div class="lg-inset upcoming-dates-block">
         <h3 class="upcoming-title">Próximas 6 execuções</h3>
 
         <div v-if="nextDates.length === 0" class="lg-empty" style="padding: 12px 0;">
@@ -327,10 +327,6 @@ const chartOptions = computed<ApexOptions>(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 16px;
-  background: var(--lg-sunken);
-  border-radius: var(--lg-radius-sm);
-  border: 1px solid var(--lg-line);
 }
 
 .bar-line {
@@ -402,11 +398,13 @@ const chartOptions = computed<ApexOptions>(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  background: var(--lg-sunken);
-  border: 1px solid var(--lg-line);
-  border-radius: var(--lg-radius-sm);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--lg-line);
   font-size: 0.8125rem;
+}
+
+.upcoming-item:last-child {
+  border-bottom: none;
 }
 
 .upcoming-date {

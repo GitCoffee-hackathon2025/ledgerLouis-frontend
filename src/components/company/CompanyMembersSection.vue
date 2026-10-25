@@ -150,7 +150,7 @@ const handleRevoke = async (invitation: { id: string }) => {
       <!-- Formulário inline de novo convite (Apenas Owner) -->
       <form
         v-if="isOwner && showInviteForm"
-        class="invite-form-box"
+        class="lg-inset invite-form-box"
         @submit.prevent="handleCreateInvitation"
       >
         <div class="invite-form-grid">
@@ -202,11 +202,11 @@ const handleRevoke = async (invitation: { id: string }) => {
         Carregando lista de membros...
       </div>
 
-      <div v-else-if="membersError" class="lg-empty">
+      <div v-else-if="membersError" class="lg-inset" style="margin-top: 12px;">
         <p class="lg-error">{{ membersError }}</p>
         <button
           type="button"
-          class="lg-btn lg-btn--quiet"
+          class="lg-btn"
           style="margin-top: 8px;"
           @click="$emit('refresh-members')"
         >
@@ -276,11 +276,11 @@ const handleRevoke = async (invitation: { id: string }) => {
         Carregando histórico de convites...
       </div>
 
-      <div v-else-if="invitationsError" class="lg-empty">
+      <div v-else-if="invitationsError" class="lg-inset" style="margin-top: 12px;">
         <p class="lg-error">{{ invitationsError }}</p>
         <button
           type="button"
-          class="lg-btn lg-btn--quiet"
+          class="lg-btn"
           style="margin-top: 8px;"
           @click="$emit('refresh-invitations')"
         >
@@ -345,10 +345,6 @@ const handleRevoke = async (invitation: { id: string }) => {
 }
 
 .invite-form-box {
-  padding: 18px;
-  background: var(--lg-sunken);
-  border: 1px solid var(--lg-line);
-  border-radius: var(--lg-radius-sm);
   margin-bottom: 24px;
 }
 

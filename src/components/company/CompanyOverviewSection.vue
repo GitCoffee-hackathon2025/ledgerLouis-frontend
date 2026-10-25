@@ -154,11 +154,11 @@ const chartOptions = computed<ApexOptions>(() => {
         Carregando projeções recorrentes...
       </div>
 
-      <div v-else-if="recurringStore.error" class="lg-empty">
+      <div v-else-if="recurringStore.error" class="lg-inset" style="margin-top: 12px;">
         <p class="lg-error">{{ recurringStore.error }}</p>
         <button
           type="button"
-          class="lg-btn lg-btn--quiet"
+          class="lg-btn"
           style="margin-top: 8px;"
           @click="recurringStore.fetchRecurringTransactions()"
         >
