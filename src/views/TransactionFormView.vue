@@ -902,9 +902,9 @@ const handleSubmit = async (e: Event) => {
 }
 
 .field-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-glow, rgba(29, 205, 108, 0.25));
+  outline: 2px solid var(--color-focus-ring, #047857);
+  outline-offset: 1px;
+  border-color: var(--color-focus-ring, #047857);
 }
 
 .amount-input-wrap {
@@ -1126,7 +1126,8 @@ const handleSubmit = async (e: Event) => {
 /* Ação principal: sólida, contrastante */
 .btn-primary {
   background: var(--color-primary);
-  color: #111827;
+  color: #062e1e;
+  font-weight: 700;
 }
 
 .btn-primary:hover:not(:disabled) {

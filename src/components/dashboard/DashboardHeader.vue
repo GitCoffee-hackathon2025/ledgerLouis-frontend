@@ -193,7 +193,6 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   outline: 2px solid var(--color-primary);
   outline-offset: 1px;
 }
-}
 
 .export-dropdown button:hover {
   background: var(--color-surface-soft);

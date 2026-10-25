@@ -117,26 +117,21 @@ const overallChartOptions = computed(() => ({
     toolbar: { show: false },
     fontFamily: 'var(--font-body)',
   },
-  colors: ['#27B969', '#f59e0b'],
+  colors: isDark.value ? ['#6EE7B7', '#FBBF24'] : ['#065F46', '#D97706'],
   stroke: {
-    curve: 'smooth',
-    width: [3, 3],
-    dashArray: [0, 6],
+    curve: 'straight',
+    width: [2, 2],
+    dashArray: [0, 5],
   },
   markers: {
-    size: [4, 7],
-    strokeWidth: [0, 2],
+    size: [3, 4],
+    strokeWidth: [0, 1],
     strokeColors: '#fff',
-    hover: { size: 9 },
+    hover: { size: 6 },
   },
   fill: {
-    type: ['gradient', 'solid'],
-    gradient: {
-      shadeIntensity: 0.4,
-      opacityFrom: 0.28,
-      opacityTo: 0.02,
-    },
-    opacity: [1, 0],
+    type: ['solid', 'solid'],
+    opacity: [0.08, 0],
   },
   dataLabels: {
     enabled: true,
@@ -395,7 +390,7 @@ h2 {
   color: var(--color-text-secondary);
   font-size: 13px;
   background: var(--color-surface-soft);
-  border-radius: 18px;
+  border-radius: 12px;
   border: 1px dashed var(--color-border);
 }
 
@@ -408,15 +403,17 @@ h2 {
 
 .stat-tile {
   padding: 12px 14px;
-  border-radius: 18px;
+  border-radius: 12px;
   background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
 .stat-tile--forecast {
-  background: rgba(29, 205, 108, 0.1);
+  background: var(--color-surface-soft);
+  border-left: 3px solid var(--color-primary);
 }
 
 .stat-tile-label {

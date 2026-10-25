@@ -35,98 +35,102 @@ defineEmits(['click']);
 </script>
 
 <style scoped>
-/* Único componente de botão do app: sempre pill (999px), largura pelo
-   conteúdo. "variant" muda só a cor; "compact"/"iconOnly" só o tamanho —
-   nunca a forma, pra manter um visual consistente em qualquer contexto. */
+/* Componente de botão padronizado: sólido, contido, acessível */
 .primary-btn {
   align-self: center;
   width: auto;
-  padding: 14px 28px;
-  background: var(--color-success-gradient);
-  color: white;
+  padding: 10px 20px;
+  background: var(--color-primary);
+  color: #062e1e;
   font-family: var(--font-body);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  border: none;
-  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+  border-radius: 10px;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease,
-    border-color 0.2s ease, background 0.2s ease;
-  box-shadow: 0 4px 18px var(--color-primary-glow);
+  transition: all 0.15s ease;
+  box-shadow: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 48px;
+  min-height: 44px;
   white-space: nowrap;
 }
 
 .primary-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 26px var(--color-primary-glow);
+  filter: brightness(0.95);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .primary-btn:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 3px 12px var(--color-primary-glow);
+  transform: none;
+}
+
+.primary-btn:focus-visible {
+  outline: 2px solid var(--color-focus-ring, #047857);
+  outline-offset: 2px;
 }
 
 .primary-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
   transform: none;
 }
 
 .primary-btn--danger {
-  background: var(--color-danger-gradient);
-  box-shadow: 0 4px 18px rgba(229, 33, 36, 0.22);
+  background: var(--color-danger);
+  color: #ffffff;
+  border-color: var(--color-danger);
 }
 
 .primary-btn--danger:hover:not(:disabled) {
-  box-shadow: 0 8px 26px rgba(229, 33, 36, 0.3);
+  filter: brightness(0.92);
 }
 
 .primary-btn--neutral {
   background: var(--color-surface);
-  color: var(--color-text-secondary);
-  border: 1.5px solid var(--color-border);
-  box-shadow: none;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 .primary-btn--neutral:hover:not(:disabled) {
+  background: var(--color-surface-soft);
   color: var(--color-text);
-  border-color: var(--color-text-tertiary);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
 }
 
 .primary-btn--compact {
-  padding: 9px 18px;
-  min-height: 38px;
-  font-size: 13.5px;
+  padding: 8px 14px;
+  min-height: 44px;
+  font-size: 13px;
   gap: 6px;
 }
 
 .primary-btn--icon {
   padding: 0;
-  width: 48px;
-  min-height: 48px;
+  width: 44px;
+  min-height: 44px;
 }
 
 .primary-btn--icon.primary-btn--compact {
-  width: 36px;
-  min-height: 36px;
+  width: 44px;
+  min-height: 44px;
 }
 
 .spinner {
-  width: 18px;
-  height: 18px;
-  border: 2.5px solid rgba(255, 255, 255, 0.35);
-  border-top-color: white;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(6, 46, 30, 0.35);
+  border-top-color: #062e1e;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   display: inline-block;
+}
+
+.primary-btn--danger .spinner {
+  border-color: rgba(255, 255, 255, 0.35);
+  border-top-color: white;
 }
 
 .primary-btn--neutral .spinner {

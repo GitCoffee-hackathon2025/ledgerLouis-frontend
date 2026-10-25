@@ -262,8 +262,8 @@ const handleExport = (format: 'csv' | 'pdf') => {
 }
 
 .metric-footnote {
-  font-size: 11px;
-  color: var(--color-text-tertiary);
+  font-size: 12px;
+  color: var(--color-text-secondary);
   margin-top: 2px;
 }
 

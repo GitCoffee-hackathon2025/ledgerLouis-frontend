@@ -798,8 +798,9 @@ onMounted(async () => {
 }
 
 .field-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, #047857);
+  outline-offset: 1px;
+  border-color: var(--color-focus-ring, #047857);
 }
 
 .invite-actions {

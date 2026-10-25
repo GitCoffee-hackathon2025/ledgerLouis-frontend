@@ -310,34 +310,53 @@ export default {
 
 .status-badge {
   font-size: 0.75rem;
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 999px;
   font-weight: 600;
 }
 
 .status-badge.active {
-  background: var(--color-primary-glow);
-  color: var(--color-primary);
+  background: #d1fae5;
+  color: #065f46;
+}
+
+[data-theme='dark'] .status-badge.active {
+  background: rgba(110, 231, 183, 0.2);
+  color: #6ee7b7;
 }
 
 .status-badge.paused {
-  background: rgba(234, 179, 8, 0.15);
-  color: #ca8a04;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+[data-theme='dark'] .status-badge.paused {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fde68a;
 }
 
 .status-badge.finished {
-  background: rgba(148, 163, 184, 0.15);
-  color: #64748b;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+[data-theme='dark'] .status-badge.finished {
+  background: rgba(148, 163, 184, 0.2);
+  color: #e2e8f0;
 }
 
 .item-value .amount {
-  font-weight: 800;
+  font-weight: 700;
   font-size: 1rem;
   font-variant-numeric: tabular-nums;
 }
 
 .item-value .amount.credit {
-  color: var(--color-primary);
+  color: var(--color-success-dark, #065f46);
+}
+
+[data-theme='dark'] .item-value .amount.credit {
+  color: #6ee7b7;
 }
 
 .item-value .amount.debit {

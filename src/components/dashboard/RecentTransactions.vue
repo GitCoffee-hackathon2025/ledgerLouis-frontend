@@ -72,11 +72,11 @@ const formattedDate = (dateString: string) => {
 
 <style scoped>
 .transactions-card {
-  padding: 18px;
-  border-radius: 28px;
+  padding: 24px;
+  border-radius: 16px;
   border: 1px solid var(--color-border);
-  background: rgba(var(--color-surface-rgb), 0.96);
-  box-shadow: 0 18px 52px rgba(15, 23, 42, 0.06);
+  background: var(--color-surface);
+  box-shadow: none;
 }
 
 .transactions-header {
@@ -102,12 +102,25 @@ h2 {
 
 .transactions-action {
   border: 1px solid var(--color-border);
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--color-surface-soft);
   color: var(--color-text);
-  min-height: 40px;
-  padding: 0 14px;
-  font-weight: 700;
+  min-height: 44px;
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.transactions-action:hover {
+  background: var(--color-surface);
+  border-color: var(--color-text-secondary);
+}
+
+.transactions-action:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .transactions-list {
