@@ -5,6 +5,7 @@ import { createPinia } from 'pinia';
 import VueApexCharts from 'vue3-apexcharts';
 import { registerSW } from 'virtual:pwa-register';
 import '@/assets/global/Global.css'
+import '@/assets/ui/ledger.css'
 import App from './App.vue';
 import router from './router';
 import { useUserStore } from './stores/userStore.ts';
