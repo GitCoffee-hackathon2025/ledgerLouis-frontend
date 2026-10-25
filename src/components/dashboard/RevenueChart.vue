@@ -122,19 +122,25 @@ const periodData = computed(() => {
       expenseData.push(dayExpense);
     }
   } else if (selectedPeriod.value === 'weekly') {
-    // Últimas 4 semanas
+    // Últimas 4 semanas com limites explícitos de calendário
     categories = ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'];
     incomeData = [0, 0, 0, 0];
     expenseData = [0, 0, 0, 0];
 
-    source.value.forEach((t) => {
-      const txDate = new Date(t.date);
-      const diffTime = Math.abs(now.getTime() - txDate.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      const weekIndex = Math.min(Math.floor(diffDays / 7), 3);
+    const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const todayTime = todayLocal.getTime();
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-      if (weekIndex < 4) {
-        const reverseIndex = 3 - weekIndex;
+    source.value.forEach((t) => {
+      const parts = t.date.split('T')[0].split('-');
+      if (parts.length !== 3) return;
+      const txLocal = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 0, 0, 0, 0);
+      const diffDays = Math.floor((todayTime - txLocal.getTime()) / MS_PER_DAY);
+
+      // Limite estrito de 28 dias: passado distante (>=28) e futuro (<0) não entram. Sem Math.abs nem clamp.
+      if (diffDays >= 0 && diffDays < 28) {
+        const weekBucket = Math.floor(diffDays / 7); // 0 = mais recente (Semana 4), 3 = mais antiga (Semana 1)
+        const reverseIndex = 3 - weekBucket;
         if (t.entryType === 'credit') {
           incomeData[reverseIndex] = (incomeData[reverseIndex] ?? 0) + t.amount;
         } else {
