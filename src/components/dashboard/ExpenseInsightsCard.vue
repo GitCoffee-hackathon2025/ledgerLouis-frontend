@@ -2,7 +2,7 @@
 import { computed, onMounted } from 'vue';
 import type { ApexOptions } from 'apexcharts';
 import { useAnalyticsStore } from '@/stores/analyticsStore';
-import { useChartTheme, brl } from '@/utils/chartTheme';
+import { useChartTheme, brl, brlExact } from '@/utils/chartTheme';
 import MoneyValue from '@/components/ui/MoneyValue.vue';
 
 const analyticsStore = useAnalyticsStore();
@@ -65,8 +65,14 @@ const chartOptions = computed<ApexOptions>(() => {
     colors: [colors.expense, colors.projection],
     stroke: {
       width: [2.5, 2.5],
-      curve: 'smooth',
+      curve: 'straight',
       dashArray: [0, 5],
+    },
+    tooltip: {
+      ...base.tooltip,
+      y: {
+        formatter: (val: number | null) => (val == null ? '-' : brlExact(val)),
+      },
     },
     markers: {
       size: [4, 5],
@@ -80,7 +86,7 @@ const chartOptions = computed<ApexOptions>(() => {
           borderColor: colors.muted,
           strokeDashArray: 4,
           label: {
-            text: `Média: ${brl(meanVal)}`,
+            text: `Média: ${brlExact(meanVal)}`,
             position: 'right',
             offsetX: -8,
             style: {

@@ -4,7 +4,7 @@ import type { ApexOptions } from 'apexcharts';
 import type { TransactionDto } from '@/services/transactionService';
 import MoneyValue from '@/components/ui/MoneyValue.vue';
 import { useTagStore } from '@/stores/tagStore';
-import { useChartTheme, brl } from '@/utils/chartTheme';
+import { useChartTheme, brl, brlExact } from '@/utils/chartTheme';
 
 const props = defineProps<{
   transactions?: TransactionDto[];
@@ -49,23 +49,26 @@ const tagExpenses = computed<TagExpenseItem[]>(() => {
     .sort((a, b) => b.total - a.total);
 });
 
-const totalTaggedExpense = computed(() =>
-  tagExpenses.value.reduce((sum, item) => sum + item.total, 0),
+// Total de despesas categorizadas com deduplicação de transações que têm múltiplas tags
+const uniqueTaggedDebitTxs = computed(() => {
+  const txs = props.transactions ?? [];
+  return txs.filter(
+    (t) => t.entryType === 'debit' && (tagStore.transactionTagsMap[t.id]?.length ?? 0) > 0,
+  );
+});
+
+const totalCategorizedExpense = computed(() =>
+  uniqueTaggedDebitTxs.value.reduce((sum, t) => sum + t.amount, 0),
 );
 
 const topTag = computed(() => tagExpenses.value[0] ?? null);
-
-const topTagPercentage = computed(() => {
-  if (!topTag.value || totalTaggedExpense.value === 0) return 0;
-  return Math.round((topTag.value.total / totalTaggedExpense.value) * 100);
-});
 
 // Exibe as 6 maiores tags no gráfico horizontal
 const chartTags = computed(() => tagExpenses.value.slice(0, 6));
 
 const series = computed(() => [
   {
-    name: 'Despesas',
+    name: 'Valor associado',
     data: chartTags.value.map((t) => t.total),
   },
 ]);
@@ -85,6 +88,10 @@ const chartOptions = computed<ApexOptions>(() => {
         borderRadius: 4,
         barHeight: '50%',
       },
+    },
+    tooltip: {
+      ...base.tooltip,
+      y: { formatter: brlExact },
     },
     xaxis: {
       ...base.xaxis,
@@ -108,12 +115,12 @@ const chartOptions = computed<ApexOptions>(() => {
   <section class="lg-section" aria-labelledby="tags-dist-title">
     <div class="lg-section-head">
       <div>
-        <h2 id="tags-dist-title" class="lg-h2">Para onde vai o dinheiro</h2>
-        <p class="lg-note">Distribuição das despesas por etiqueta</p>
+        <h2 id="tags-dist-title" class="lg-h2">Valores associados por tag</h2>
+        <p class="lg-note">Despesas por etiqueta (valores com sobreposição quando há mais de uma tag por lançamento)</p>
       </div>
 
-      <div class="lg-legend" aria-label="Legenda de despesas por etiqueta">
-        <span class="is-expense">Total: <MoneyValue :value="totalTaggedExpense" /></span>
+      <div class="lg-legend" aria-label="Legenda de despesas categorizadas">
+        <span class="is-expense">Despesas categorizadas: <MoneyValue :value="totalCategorizedExpense" /></span>
       </div>
     </div>
 
@@ -133,21 +140,20 @@ const chartOptions = computed<ApexOptions>(() => {
 
     <!-- Resumo textual -->
     <p v-if="topTag" class="lg-note" aria-live="polite">
-      A maior despesa identificada foi em <strong>{{ topTag.name }}</strong> com
-      <MoneyValue :value="topTag.total" />, representando {{ topTagPercentage }}% das despesas categorizadas.
+      A etiqueta com maior montante vinculado foi <strong>{{ topTag.name }}</strong>, com
+      <MoneyValue :value="topTag.total" /> em {{ topTag.count }} lançamentos.
     </p>
 
     <!-- Tabela Acessível -->
     <details v-if="tagExpenses.length > 0" class="lg-details">
       <summary>Ver lista completa de etiquetas em tabela</summary>
       <table class="lg-table">
-        <caption class="sr-only">Despesas divididas por etiqueta</caption>
+        <caption class="sr-only">Despesas associadas a cada etiqueta</caption>
         <thead>
           <tr>
             <th scope="col">Etiqueta</th>
-            <th scope="col">Lançamentos</th>
-            <th scope="col" class="lg-num">Total gasto</th>
-            <th scope="col" class="lg-num">Participação</th>
+            <th scope="col">Lançamentos vinculados</th>
+            <th scope="col" class="lg-num">Valor associado</th>
           </tr>
         </thead>
         <tbody>
@@ -157,6 +163,7 @@ const chartOptions = computed<ApexOptions>(() => {
                 type="button"
                 class="tag-table-filter-btn"
                 :class="{ 'is-active': tagStore.activeTagId === tag.id }"
+                :aria-pressed="tagStore.activeTagId === tag.id"
                 @click="tagStore.setActiveTag(tagStore.activeTagId === tag.id ? null : tag.id)"
               >
                 {{ tag.name }}
@@ -165,9 +172,6 @@ const chartOptions = computed<ApexOptions>(() => {
             <td>{{ tag.count }}</td>
             <td class="lg-num is-expense">
               <MoneyValue :value="tag.total" />
-            </td>
-            <td class="lg-num">
-              {{ totalTaggedExpense > 0 ? Math.round((tag.total / totalTaggedExpense) * 100) : 0 }}%
             </td>
           </tr>
         </tbody>

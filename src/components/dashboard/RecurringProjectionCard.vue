@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import type { ApexOptions } from 'apexcharts';
 import { useRecurringTransactionStore } from '@/stores/recurringTransactionStore';
 import { projectRecurring } from '@/utils/recurrence';
-import { useChartTheme, brl } from '@/utils/chartTheme';
+import { useChartTheme, brl, brlExact } from '@/utils/chartTheme';
 import MoneyValue from '@/components/ui/MoneyValue.vue';
 
 const recurringStore = useRecurringTransactionStore();
@@ -38,6 +38,12 @@ const chartOptions = computed<ApexOptions>(() => {
       stacked: true,
     },
     colors: [colors.income, colors.expense],
+    tooltip: {
+      ...base.tooltip,
+      y: {
+        formatter: (val: number) => brlExact(val),
+      },
+    },
     plotOptions: {
       bar: {
         horizontal: false,

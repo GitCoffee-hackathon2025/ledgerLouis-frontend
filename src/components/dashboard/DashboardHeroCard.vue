@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import type { ApexOptions } from 'apexcharts';
 import type { TransactionDto } from '@/services/transactionService';
 import MoneyValue from '@/components/ui/MoneyValue.vue';
-import { useChartTheme, brl } from '@/utils/chartTheme';
+import { useChartTheme, brl, brlExact } from '@/utils/chartTheme';
 import { formatShortDate, formatDateBr } from '@/utils/dateUtils';
 
 const props = defineProps<{
@@ -87,7 +87,7 @@ const chartOptions = computed<ApexOptions>(() => {
       sparkline: { enabled: false },
     },
     stroke: {
-      curve: 'smooth',
+      curve: 'straight',
       width: 2.5,
       colors: [colors.ink],
     },
@@ -95,6 +95,10 @@ const chartOptions = computed<ApexOptions>(() => {
     fill: {
       type: 'solid',
       opacity: 0.12,
+    },
+    tooltip: {
+      ...base.tooltip,
+      y: { formatter: brlExact },
     },
     xaxis: {
       ...base.xaxis,
@@ -139,7 +143,7 @@ const maxBalance = computed(() =>
     <div class="lg-section-head">
       <div>
         <h2 id="hero-balance-title" class="lg-h2">Evolução do saldo no período</h2>
-        <p class="lg-note">Visão consolidada da conta e fluxo acumulado no recorte selecionado</p>
+        <p class="lg-note">Visão consolidada da conta e fluxo acumulado ({{ periodLabel }})</p>
       </div>
       <div class="lg-legend" aria-label="Legenda do gráfico de saldo">
         <span class="is-income">Saldo acumulado</span>

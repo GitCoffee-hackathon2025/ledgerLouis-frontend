@@ -70,10 +70,9 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
           type="button"
           class="lg-btn"
           :aria-expanded="exportMenuOpen"
-          aria-haspopup="true"
           aria-controls="export-dropdown"
           @click="exportMenuOpen = !exportMenuOpen"
-          @keydown.esc="closeExportMenu(false)"
+          @keydown.esc="closeExportMenu(true)"
         >
           <Download :size="16" aria-hidden="true" />
           <span>Exportar</span>
@@ -83,13 +82,12 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
           v-if="exportMenuOpen"
           id="export-dropdown"
           class="export-dropdown"
-          role="menu"
           @keydown.esc.stop="closeExportMenu(true)"
         >
-          <button type="button" class="export-opt" role="menuitem" @click="pickFormat('csv')">
+          <button type="button" class="export-opt" @click="pickFormat('csv')">
             Exportar CSV
           </button>
-          <button type="button" class="export-opt" role="menuitem" @click="pickFormat('pdf')">
+          <button type="button" class="export-opt" @click="pickFormat('pdf')">
             Exportar PDF
           </button>
         </div>

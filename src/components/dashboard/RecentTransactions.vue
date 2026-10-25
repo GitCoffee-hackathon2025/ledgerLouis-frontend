@@ -55,7 +55,8 @@ const formattedDate = (dateString: string) => {
         <div class="lg-row-main">
           <div class="lg-row-title">{{ t.description || 'Lançamento sem descrição' }}</div>
           <div class="lg-row-meta">
-            {{ formattedDate(t.date) }} · {{ t.entryType === 'credit' ? 'Entrada' : 'Saída' }}
+            <span>{{ formattedDate(t.date) }}</span>
+            <span>{{ t.entryType === 'credit' ? 'Entrada' : 'Saída' }}</span>
           </div>
         </div>
 
