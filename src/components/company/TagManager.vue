@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
-import { Plus, Tag as TagIcon, X } from 'lucide-vue-next';
+import { Plus } from 'lucide-vue-next';
 import TagListItem from './TagListItem.vue';
-import PrimaryButton from '@/components/ui/PrimaryButton.vue';
 import { useTagStore } from '@/stores/tagStore';
 import { useCompanyStore } from '@/stores/CompanyStore';
 
@@ -26,7 +25,7 @@ const notify = (status: 'success' | 'error', text: string) => {
   message.show = true;
   setTimeout(() => {
     message.show = false;
-  }, 2500);
+  }, 3000);
 };
 
 const resetForm = () => {
@@ -36,36 +35,36 @@ const resetForm = () => {
 
 const handleAddTag = async () => {
   if (!newTagName.value.trim()) {
-    notify('error', 'Digite um nome para a tag');
+    notify('error', 'Digite um nome para a tag.');
     return;
   }
 
   try {
     await tagStore.createTag(newTagName.value.trim());
-    notify('success', 'Tag criada com sucesso!');
+    notify('success', 'Tag criada com sucesso.');
     resetForm();
   } catch (error) {
     const code = extractErrorCode(error);
-    notify('error', code === 'TAG_ALREADY_EXISTS' ? 'Já existe uma tag com esse nome' : 'Erro ao criar tag');
+    notify('error', code === 'TAG_ALREADY_EXISTS' ? 'Já existe uma tag com esse nome.' : 'Erro ao criar tag.');
   }
 };
 
 const handleRenameTag = async (id: string, name: string) => {
   try {
     await tagStore.renameTag(id, name);
-    notify('success', 'Tag atualizada!');
+    notify('success', 'Tag atualizada com sucesso.');
   } catch (error) {
     const code = extractErrorCode(error);
-    notify('error', code === 'TAG_ALREADY_EXISTS' ? 'Já existe uma tag com esse nome' : 'Erro ao renomear tag');
+    notify('error', code === 'TAG_ALREADY_EXISTS' ? 'Já existe uma tag com esse nome.' : 'Erro ao renomear tag.');
   }
 };
 
 const handleDeleteTag = async (id: string) => {
   try {
     await tagStore.deleteTag(id);
-    notify('success', 'Tag removida!');
+    notify('success', 'Tag removida com sucesso.');
   } catch {
-    notify('error', 'Erro ao remover tag');
+    notify('error', 'Erro ao remover tag.');
   }
 };
 
@@ -83,53 +82,68 @@ export default {
 </script>
 
 <template>
-  <div class="panel">
-    <div class="panel-header">
+  <div class="lg-section">
+    <header class="lg-section-head">
       <div>
-        <h2 class="panel-title">
-          <TagIcon :size="18" />
-          Tags
-        </h2>
-        <p class="panel-subtitle">Use tags para catalogar transações com um ou mais rótulos livres.</p>
+        <h2 class="lg-h2">Tags</h2>
+        <p class="lg-note">Rótulos livres para catalogar e filtrar lançamentos financeiros.</p>
       </div>
 
-      <PrimaryButton v-if="!showForm" variant="neutral" compact @click="showForm = true">
-        <Plus :size="15" />
-        Nova Tag
-      </PrimaryButton>
-    </div>
+      <button
+        v-if="!showForm"
+        type="button"
+        class="lg-btn lg-btn--primary"
+        @click="showForm = true"
+      >
+        <Plus :size="16" aria-hidden="true" />
+        <span>Nova tag</span>
+      </button>
+    </header>
 
-    <div v-if="message.show" class="message" :class="message.status">
+    <div
+      v-if="message.show"
+      :class="message.status === 'error' ? 'lg-error' : 'is-income'"
+      class="tag-feedback"
+      role="alert"
+      aria-live="polite"
+    >
       {{ message.text }}
     </div>
 
-    <div v-if="showForm" class="form-container">
-      <div class="form-group">
-        <label>Nome da Tag</label>
+    <!-- Formulário inline de nova tag -->
+    <form
+      v-if="showForm"
+      class="new-tag-form"
+      @submit.prevent="handleAddTag"
+    >
+      <div class="lg-field tag-name-field">
+        <label for="new-tag-name-input" class="lg-label">Nome da nova tag</label>
         <input
+          id="new-tag-name-input"
           v-model="newTagName"
           type="text"
-          placeholder="Ex: Fornecedores"
-          class="input"
+          class="lg-input"
+          placeholder="Ex: Fornecedores, Alimentação, Clientes"
           autofocus
-          @keyup.enter="handleAddTag"
+          required
         />
       </div>
 
-      <div class="form-actions">
-        <PrimaryButton compact :loading="tagStore.loading" @click="handleAddTag">Adicionar</PrimaryButton>
-        <PrimaryButton variant="neutral" compact @click="resetForm">
-          <X :size="15" />
+      <div class="lg-actions tag-form-actions">
+        <button type="submit" class="lg-btn lg-btn--primary">
+          Salvar tag
+        </button>
+        <button type="button" class="lg-btn lg-btn--quiet" @click="resetForm">
           Cancelar
-        </PrimaryButton>
+        </button>
       </div>
+    </form>
+
+    <div v-if="tagStore.tags.length === 0" class="lg-empty">
+      Nenhuma tag cadastrada ainda nesta empresa.
     </div>
 
-    <p v-if="!tagStore.loading && tagStore.tags.length === 0" class="empty-state">
-      Nenhuma tag cadastrada ainda. Crie tags para organizar suas transações.
-    </p>
-
-    <div class="tags-list" v-else>
+    <ul v-else class="lg-rows" role="list">
       <TagListItem
         v-for="tag in tagStore.tags"
         :key="tag.id"
@@ -137,116 +151,34 @@ export default {
         @rename="handleRenameTag"
         @delete="handleDeleteTag"
       />
-    </div>
+    </ul>
   </div>
 </template>
 
 <style scoped>
-.panel {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  padding: 28px;
+.tag-feedback {
+  margin-bottom: 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
-.panel-header {
+.new-tag-form {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 18px;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  padding-bottom: 20px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--lg-line);
 }
 
-.panel-title {
-  font-family: var(--font-display);
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: var(--color-text);
-  margin: 0;
+.tag-name-field {
+  flex: 1;
+  min-width: 240px;
+}
+
+.tag-form-actions {
   display: flex;
-  align-items: center;
   gap: 8px;
-}
-
-.panel-subtitle {
-  margin-top: 4px;
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
-}
-
-.message {
-  padding: 12px 16px;
-  border-radius: 12px;
-  margin-bottom: 16px;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.message.success {
-  background: var(--color-primary-glow);
-  color: var(--color-success-dark);
-}
-
-.message.error {
-  background: var(--color-danger-soft);
-  color: var(--color-danger);
-}
-
-.form-container {
-  background: var(--color-surface-soft);
-  padding: 20px;
-  border-radius: 14px;
-  margin-bottom: 20px;
-  border: 1px solid var(--color-border);
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--color-text-secondary);
-}
-
-.input {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-input);
-  font-size: 0.95rem;
-  font-family: inherit;
-  background: var(--color-surface);
-  color: var(--color-text);
-  transition: border-color 0.2s;
-}
-
-.input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-glow);
-}
-
-.form-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.empty-state {
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
-  padding: 16px;
-  background: var(--color-surface-soft);
-  border-radius: 12px;
-  border: 1px dashed var(--color-border);
-}
-
-.tags-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 </style>

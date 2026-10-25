@@ -3,7 +3,6 @@ import { ref } from 'vue';
 import type { TagDto } from '@/services/tagService';
 import { Check, Pencil, Trash2, X } from 'lucide-vue-next';
 import { colorForTag } from '@/utils/tagColor';
-import PrimaryButton from '@/components/ui/PrimaryButton.vue';
 
 interface Props {
   tag: TagDto;
@@ -45,112 +44,91 @@ export default {
 </script>
 
 <template>
-  <div class="tag-item">
-    <div class="tag-content">
-      <span class="tag-dot" :style="{ backgroundColor: colorForTag(tag.id) }" aria-hidden="true"></span>
-
-      <div class="tag-info" v-if="!isEditing">
-        <h5>{{ tag.name }}</h5>
+  <li class="lg-row">
+    <div class="lg-row-main">
+      <div v-if="!isEditing" class="lg-row-title tag-label-row">
+        <span
+          class="tag-dot"
+          :style="{ backgroundColor: colorForTag(tag.id) }"
+          aria-hidden="true"
+        ></span>
+        <span>{{ tag.name }}</span>
       </div>
 
-      <input
-        v-else
-        v-model="draftName"
-        type="text"
-        class="tag-edit-input"
-        autofocus
-        @keyup.enter="confirmEdit"
-        @keyup.escape="cancelEdit"
-      />
+      <div v-else class="tag-edit-wrap">
+        <input
+          v-model="draftName"
+          type="text"
+          class="lg-input"
+          autofocus
+          :aria-label="`Editar nome da tag ${tag.name}`"
+          @keyup.enter="confirmEdit"
+          @keyup.escape="cancelEdit"
+        />
+      </div>
     </div>
 
-    <div class="item-actions">
+    <div class="lg-actions">
       <template v-if="isEditing">
-        <PrimaryButton icon-only compact title="Salvar" @click="confirmEdit">
-          <Check :size="15" />
-        </PrimaryButton>
-        <PrimaryButton icon-only compact variant="neutral" title="Cancelar" @click="cancelEdit">
-          <X :size="15" />
-        </PrimaryButton>
+        <button
+          type="button"
+          class="lg-btn lg-btn--icon lg-btn--primary"
+          title="Salvar alteração"
+          aria-label="Salvar alteração"
+          @click="confirmEdit"
+        >
+          <Check :size="16" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          class="lg-btn lg-btn--icon lg-btn--quiet"
+          title="Cancelar edição"
+          aria-label="Cancelar edição"
+          @click="cancelEdit"
+        >
+          <X :size="16" aria-hidden="true" />
+        </button>
       </template>
+
       <template v-else>
-        <PrimaryButton icon-only compact variant="neutral" title="Renomear" @click="startEdit">
-          <Pencil :size="14" />
-        </PrimaryButton>
-        <PrimaryButton
-          icon-only
-          compact
-          variant="danger"
+        <button
+          type="button"
+          class="lg-btn lg-btn--icon lg-btn--quiet"
+          :title="`Renomear ${tag.name}`"
+          :aria-label="`Renomear tag ${tag.name}`"
+          @click="startEdit"
+        >
+          <Pencil :size="15" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          class="lg-btn lg-btn--icon lg-btn--quiet lg-btn--danger"
           :title="`Remover ${tag.name}`"
+          :aria-label="`Remover tag ${tag.name}`"
           @click="$emit('delete', tag.id)"
         >
-          <Trash2 :size="14" />
-        </PrimaryButton>
+          <Trash2 :size="15" aria-hidden="true" />
+        </button>
       </template>
     </div>
-  </div>
+  </li>
 </template>
 
 <style scoped>
-.tag-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  background: var(--color-surface-soft);
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.tag-item:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.tag-content {
+.tag-label-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex: 1;
-  min-width: 0;
+  gap: 10px;
 }
 
 .tag-dot {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 999px;
   flex-shrink: 0;
 }
 
-.tag-info h5 {
-  margin: 0;
-  font-size: 0.95rem;
-  color: var(--color-text);
-  font-weight: 600;
-}
-
-.tag-edit-input {
-  flex: 1;
-  padding: 8px 10px;
-  border: 1.5px solid var(--color-primary);
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-family: inherit;
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-
-.tag-edit-input:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--color-primary-glow);
-}
-
-.item-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
+.tag-edit-wrap {
+  max-width: 320px;
 }
 </style>

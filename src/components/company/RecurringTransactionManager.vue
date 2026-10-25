@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, computed } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { Plus, Trash2, Play, Pause, PlayCircle } from 'lucide-vue-next';
+import { Pause, Play, PlayCircle, Plus, Trash2 } from 'lucide-vue-next';
 import { useRecurringTransactionStore } from '@/stores/recurringTransactionStore';
 import { useCompanyStore } from '@/stores/CompanyStore';
 import type { RecurringFrequency } from '@/services/recurringTransactionService';
-import PrimaryButton from '@/components/ui/PrimaryButton.vue';
+import MoneyValue from '@/components/ui/MoneyValue.vue';
 import { formatDateBr } from '@/utils/dateUtils';
 
 const router = useRouter();
@@ -24,23 +24,9 @@ const frequencyLabels: Record<RecurringFrequency, string> = {
   yearly: 'Anual',
 };
 
-const statusLabels: Record<string, string> = {
-  active: 'Ativo',
-  paused: 'Pausado',
-  finished: 'Finalizado',
-};
-
 const sortedItems = computed(() =>
   [...store.items].sort((a, b) => a.nextRunDate.localeCompare(b.nextRunDate)),
 );
-
-const formatDate = (value: string | null) => {
-  if (!value) return '—';
-  return formatDateBr(value);
-};
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
 const notify = (status: 'success' | 'error', text: string) => {
   message.status = status;
@@ -58,7 +44,7 @@ const handleDelete = async (id: string) => {
   }
   try {
     await store.deleteRecurringTransaction(id);
-    notify('success', 'Lançamento recorrente removido!');
+    notify('success', 'Lançamento recorrente removido.');
   } catch (err: any) {
     notify('error', err?.response?.data?.message || 'Erro ao remover lançamento recorrente.');
   }
@@ -73,6 +59,7 @@ const handleToggleStatus = async (id: string, currentStatus: string) => {
     await store.updateRecurringTransaction(id, {
       status: currentStatus === 'active' ? 'paused' : 'active',
     });
+    notify('success', currentStatus === 'active' ? 'Recorrência pausada.' : 'Recorrência retomada.');
   } catch (err: any) {
     notify('error', err?.response?.data?.message || 'Erro ao atualizar status.');
   }
@@ -88,7 +75,7 @@ const handleRunNow = async (id: string) => {
     const result = await store.runNow(id);
     notify(
       'success',
-      result.created > 0 ? 'Lançamento gerado com sucesso!' : 'Nada vencido para lançar ainda.',
+      result.created > 0 ? 'Lançamento gerado com sucesso.' : 'Nada vencido para lançar no momento.',
     );
   } catch (err: any) {
     notify('error', err?.response?.data?.message || 'Erro ao lançar agora.');
@@ -109,300 +96,144 @@ export default {
 </script>
 
 <template>
-  <div class="panel">
-    <div class="panel-header">
+  <div class="lg-section">
+    <header class="lg-section-head">
       <div>
-        <h2 class="panel-title">Lançamentos Recorrentes</h2>
-        <p class="panel-subtitle">Entradas e saídas que se repetem — a cobrança é lançada automaticamente quando a data chegar.</p>
+        <h2 class="lg-h2">Recorrências</h2>
+        <p class="lg-note">Lançamentos automáticos programados para execução futura.</p>
       </div>
-      <PrimaryButton variant="neutral" compact @click="router.push('/add/expense?repetir=1')">
-        <Plus :size="15" />
-        Nova recorrente
-      </PrimaryButton>
-    </div>
 
-    <div v-if="message.show" class="message" :class="message.status">
+      <button
+        type="button"
+        class="lg-btn lg-btn--primary"
+        @click="router.push({ name: 'addExpense', query: { repetir: '1' } })"
+      >
+        <Plus :size="16" aria-hidden="true" />
+        <span>Nova recorrente</span>
+      </button>
+    </header>
+
+    <div
+      v-if="message.show"
+      :class="message.status === 'error' ? 'lg-error' : 'is-income'"
+      class="recurring-feedback"
+      role="alert"
+      aria-live="polite"
+    >
       {{ message.text }}
     </div>
 
-    <div class="items-list" v-if="sortedItems.length > 0">
-      <div v-for="item in sortedItems" :key="item.id" class="item-card">
-        <div class="item-header">
-          <div class="item-title">
-            <span class="entry-dot" :class="item.entryType"></span>
-            <h5>{{ item.description || 'Lançamento recorrente' }}</h5>
-            <span class="status-badge" :class="item.status">{{ statusLabels[item.status] }}</span>
-          </div>
-          <div class="item-value">
-            <span class="amount" :class="item.entryType">
-              {{ item.entryType === 'credit' ? '+' : '-' }} {{ formatCurrency(item.amount) }}
+    <p v-if="!canManage" class="lg-note" style="margin-bottom: 16px;">
+      Visualização apenas: seu papel não possui permissão para editar ou excluir recorrências.
+    </p>
+
+    <div v-if="sortedItems.length === 0" class="lg-empty">
+      Nenhum lançamento recorrente criado ainda nesta empresa.
+    </div>
+
+    <ul v-else class="lg-rows" role="list">
+      <li v-for="item in sortedItems" :key="item.id" class="lg-row">
+        <div class="lg-row-main">
+          <div class="recurring-title-line">
+            <span class="lg-row-title">{{ item.description }}</span>
+            <span
+              v-if="item.status === 'active'"
+              class="lg-badge is-income"
+            >
+              Ativo
+            </span>
+            <span
+              v-else-if="item.status === 'paused'"
+              class="lg-badge"
+            >
+              Pausado
+            </span>
+            <span
+              v-else
+              class="lg-badge is-muted"
+            >
+              Finalizado
             </span>
           </div>
-        </div>
 
-        <div class="item-details">
-          <div class="detail-item">
-            <span class="detail-label">Frequência</span>
-            <span class="detail-value">{{ frequencyLabels[item.frequency] }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Próximo lançamento</span>
-            <span class="detail-value">{{ formatDate(item.nextRunDate) }}</span>
-          </div>
-          <div v-if="item.lastRunDate" class="detail-item">
-            <span class="detail-label">Último lançamento</span>
-            <span class="detail-value">{{ formatDate(item.lastRunDate) }}</span>
-          </div>
-          <div v-if="item.endDate" class="detail-item">
-            <span class="detail-label">Termina em</span>
-            <span class="detail-value">{{ formatDate(item.endDate) }}</span>
+          <div class="lg-row-meta recurring-meta-line">
+            <span>{{ frequencyLabels[item.frequency] }}</span>
+            <span>· Próximo: {{ formatDateBr(item.nextRunDate) }}</span>
+            <span v-if="item.lastRunDate">· Último: {{ formatDateBr(item.lastRunDate) }}</span>
+            <span v-if="item.endDate">· Término: {{ formatDateBr(item.endDate) }}</span>
           </div>
         </div>
 
-        <div class="item-actions">
-          <PrimaryButton
+        <div class="recurring-value" :class="item.entryType === 'credit' ? 'is-income' : 'is-expense'">
+          <MoneyValue
+            :value="item.entryType === 'credit' ? item.amount : -item.amount"
+            :signed="true"
+          />
+        </div>
+
+        <div class="lg-actions">
+          <button
             v-if="isOwner && item.status !== 'finished'"
-            variant="neutral"
-            compact
-            :loading="runningId === item.id"
+            type="button"
+            class="lg-btn lg-btn--icon lg-btn--quiet"
+            :disabled="runningId === item.id"
+            :title="`Lançar agora ${item.description}`"
+            :aria-label="`Lançar agora ${item.description}`"
             @click="handleRunNow(item.id)"
           >
-            <PlayCircle :size="14" />
-            Lançar agora
-          </PrimaryButton>
+            <PlayCircle :size="16" aria-hidden="true" />
+          </button>
 
-          <PrimaryButton
+          <button
             v-if="canManage && item.status !== 'finished'"
-            variant="neutral"
-            compact
+            type="button"
+            class="lg-btn lg-btn--icon lg-btn--quiet"
+            :title="item.status === 'active' ? `Pausar ${item.description}` : `Retomar ${item.description}`"
+            :aria-label="item.status === 'active' ? `Pausar ${item.description}` : `Retomar ${item.description}`"
             @click="handleToggleStatus(item.id, item.status)"
           >
-            <Pause v-if="item.status === 'active'" :size="14" />
-            <Play v-else :size="14" />
-            {{ item.status === 'active' ? 'Pausar' : 'Retomar' }}
-          </PrimaryButton>
+            <Pause v-if="item.status === 'active'" :size="16" aria-hidden="true" />
+            <Play v-else :size="16" aria-hidden="true" />
+          </button>
 
-          <PrimaryButton
+          <button
             v-if="canManage"
-            icon-only
-            compact
-            variant="danger"
-            class="delete-action"
-            title="Remover"
+            type="button"
+            class="lg-btn lg-btn--icon lg-btn--quiet lg-btn--danger"
+            :title="`Remover ${item.description}`"
+            :aria-label="`Remover ${item.description}`"
             @click="handleDelete(item.id)"
           >
-            <Trash2 :size="14" />
-          </PrimaryButton>
-
-          <span v-if="!canManage" class="readonly-badge">
-            Somente leitura
-          </span>
+            <Trash2 :size="16" aria-hidden="true" />
+          </button>
         </div>
-      </div>
-    </div>
-
-    <div v-else class="empty-state">
-      Nenhum lançamento recorrente criado ainda.
-    </div>
+      </li>
+    </ul>
   </div>
 </template>
 
 <style scoped>
-.panel {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  padding: 28px;
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.panel-title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: var(--color-text);
-}
-
-.panel-subtitle {
-  margin-top: 4px;
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
-  max-width: 44ch;
-}
-
-.message {
-  padding: 12px 16px;
-  border-radius: var(--radius-input);
+.recurring-feedback {
   margin-bottom: 16px;
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
-.message.success {
-  background: var(--color-primary-glow);
-  color: var(--color-primary);
-}
-
-.message.error {
-  background: var(--color-danger-soft);
-  color: var(--color-danger);
-}
-
-.items-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.item-card {
-  background: var(--color-surface-soft);
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  padding: 16px;
-}
-
-.item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.item-title {
+.recurring-title-line {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
-.entry-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  flex-shrink: 0;
-}
-
-.entry-dot.credit {
-  background: var(--color-primary);
-}
-
-.entry-dot.debit {
-  background: var(--color-danger);
-}
-
-.item-title h5 {
-  margin: 0;
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: var(--color-text);
-}
-
-.status-badge {
-  font-size: 0.75rem;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-weight: 600;
-}
-
-.status-badge.active {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-[data-theme='dark'] .status-badge.active {
-  background: rgba(110, 231, 183, 0.2);
-  color: #6ee7b7;
-}
-
-.status-badge.paused {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-[data-theme='dark'] .status-badge.paused {
-  background: rgba(245, 158, 11, 0.2);
-  color: #fde68a;
-}
-
-.status-badge.finished {
-  background: #f1f5f9;
-  color: #334155;
-}
-
-[data-theme='dark'] .status-badge.finished {
-  background: rgba(148, 163, 184, 0.2);
-  color: #e2e8f0;
-}
-
-.item-value .amount {
-  font-weight: 700;
-  font-size: 1rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.item-value .amount.credit {
-  color: var(--color-success-dark, #065f46);
-}
-
-[data-theme='dark'] .item-value .amount.credit {
-  color: #6ee7b7;
-}
-
-.item-value .amount.debit {
-  color: var(--color-danger);
-}
-
-.item-details {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.detail-item {
+.recurring-meta-line {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-wrap: wrap;
+  gap: 4px 6px;
 }
 
-.detail-label {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
+.recurring-value {
+  font-size: 1.125rem;
   font-weight: 600;
-}
-
-.detail-value {
-  font-size: 0.85rem;
-  color: var(--color-text);
-  font-weight: 600;
-}
-
-.item-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.delete-action:hover {
-  background: var(--color-danger-soft) !important;
-  color: var(--color-danger) !important;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 32px 16px;
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
 }
 </style>
