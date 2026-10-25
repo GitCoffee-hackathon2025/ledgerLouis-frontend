@@ -1,33 +1,35 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useTagStore } from '@/stores/tagStore';
-import { useTransactionStore } from '@/stores/transactionStore';
+import type { ApexOptions } from 'apexcharts';
 import type { TransactionDto } from '@/services/transactionService';
+import MoneyValue from '@/components/ui/MoneyValue.vue';
+import { useTagStore } from '@/stores/tagStore';
+import { useChartTheme, brl } from '@/utils/chartTheme';
 
-const props = defineProps<{ transactions?: TransactionDto[] }>();
+const props = defineProps<{
+  transactions?: TransactionDto[];
+}>();
 
 const tagStore = useTagStore();
-const transactionStore = useTransactionStore();
-const source = computed(() => props.transactions ?? transactionStore.transactions);
+const theme = useChartTheme();
 
-interface TagRankItem {
+interface TagExpenseItem {
   id: string;
   name: string;
   total: number;
   count: number;
 }
 
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+const tagExpenses = computed<TagExpenseItem[]>(() => {
+  const txs = props.transactions ?? [];
+  const debitTxs = txs.filter((t) => t.entryType === 'debit');
 
-const tagRankings = computed<TagRankItem[]>(() => {
   const totals = new Map<string, { total: number; count: number }>();
-
-  for (const transaction of source.value) {
-    const tags = tagStore.transactionTagsMap[transaction.id] ?? [];
+  for (const t of debitTxs) {
+    const tags = tagStore.transactionTagsMap[t.id] ?? [];
     for (const tag of tags) {
       const current = totals.get(tag.id) ?? { total: 0, count: 0 };
-      current.total += transaction.amount;
+      current.total += t.amount;
       current.count += 1;
       totals.set(tag.id, current);
     }
@@ -47,225 +49,147 @@ const tagRankings = computed<TagRankItem[]>(() => {
     .sort((a, b) => b.total - a.total);
 });
 
-const maxTotal = computed(() => {
-  if (!tagRankings.value.length) return 1;
-  return Math.max(...tagRankings.value.map((t) => t.total), 1);
+const totalTaggedExpense = computed(() =>
+  tagExpenses.value.reduce((sum, item) => sum + item.total, 0),
+);
+
+const topTag = computed(() => tagExpenses.value[0] ?? null);
+
+const topTagPercentage = computed(() => {
+  if (!topTag.value || totalTaggedExpense.value === 0) return 0;
+  return Math.round((topTag.value.total / totalTaggedExpense.value) * 100);
+});
+
+// Exibe as 6 maiores tags no gráfico horizontal
+const chartTags = computed(() => tagExpenses.value.slice(0, 6));
+
+const series = computed(() => [
+  {
+    name: 'Despesas',
+    data: chartTags.value.map((t) => t.total),
+  },
+]);
+
+const chartOptions = computed<ApexOptions>(() => {
+  const { colors, base } = theme.value;
+  return {
+    ...base,
+    chart: {
+      ...base.chart,
+      type: 'bar',
+    },
+    colors: [colors.expense],
+    plotOptions: {
+      bar: {
+        horizontal: true,
+        borderRadius: 4,
+        barHeight: '50%',
+      },
+    },
+    xaxis: {
+      ...base.xaxis,
+      categories: chartTags.value.map((t) => t.name),
+      labels: {
+        formatter: brl,
+        style: { fontSize: '11px', colors: [colors.muted] },
+      },
+    },
+    yaxis: {
+      ...base.yaxis,
+      labels: {
+        style: { fontSize: '12px', colors: [colors.muted] },
+      },
+    },
+  };
 });
 </script>
 
 <template>
-  <section class="tag-ranking-card" aria-labelledby="tag-ranking-title">
-    <header class="card-header">
+  <section class="lg-section" aria-labelledby="tags-dist-title">
+    <div class="lg-section-head">
       <div>
-        <p class="card-kicker">Distribuição por etiquetas</p>
-        <h2 id="tag-ranking-title" class="card-title">Valores associados por tag</h2>
+        <h2 id="tags-dist-title" class="lg-h2">Para onde vai o dinheiro</h2>
+        <p class="lg-note">Distribuição das despesas por etiqueta</p>
       </div>
-    </header>
 
-    <div v-if="tagRankings.length === 0" class="empty-state">
-      Nenhuma tag vinculada às transações filtradas.
+      <div class="lg-legend" aria-label="Legenda de despesas por etiqueta">
+        <span class="is-expense">Total: <MoneyValue :value="totalTaggedExpense" /></span>
+      </div>
     </div>
 
-    <div v-else class="ranking-content">
-      <ul class="ranking-list" role="list">
-        <li
-          v-for="(item, index) in tagRankings"
-          :key="item.id"
-          class="ranking-item"
-        >
-          <button
-            type="button"
-            class="ranking-row-btn"
-            :class="{ 'is-selected': tagStore.activeTagId === item.id }"
-            :aria-pressed="tagStore.activeTagId === item.id"
-            @click="tagStore.setActiveTag(tagStore.activeTagId === item.id ? null : item.id)"
-          >
-            <div class="row-header">
-              <span class="tag-position" aria-hidden="true">{{ index + 1 }}</span>
-              <strong class="tag-name">{{ item.name }}</strong>
-              <span class="tag-count">{{ item.count }} {{ item.count === 1 ? 'lançamento' : 'lançamentos' }}</span>
-              <span class="tag-amount">{{ formatCurrency(item.total) }}</span>
-            </div>
-
-            <!-- Barra de proporção horizontal -->
-            <div class="bar-track" aria-hidden="true">
-              <div
-                class="bar-fill"
-                :style="{ width: `${Math.round((item.total / maxTotal) * 100)}%` }"
-              ></div>
-            </div>
-          </button>
-        </li>
-      </ul>
-
-      <footer class="card-footer">
-        <p class="footnote">
-          Nota: Um lançamento pode conter múltiplas tags simultâneas; os valores acima refletem o montante associado a cada tag individualmente.
-        </p>
-      </footer>
+    <!-- Gráfico Horizontal -->
+    <div v-if="tagExpenses.length > 0" class="lg-chart">
+      <apexchart
+        type="bar"
+        height="280"
+        :options="chartOptions"
+        :series="series"
+      />
     </div>
+
+    <div v-else class="lg-empty">
+      Nenhuma despesa associada a etiquetas no período.
+    </div>
+
+    <!-- Resumo textual -->
+    <p v-if="topTag" class="lg-note" aria-live="polite">
+      A maior despesa identificada foi em <strong>{{ topTag.name }}</strong> com
+      <MoneyValue :value="topTag.total" />, representando {{ topTagPercentage }}% das despesas categorizadas.
+    </p>
+
+    <!-- Tabela Acessível -->
+    <details v-if="tagExpenses.length > 0" class="lg-details">
+      <summary>Ver lista completa de etiquetas em tabela</summary>
+      <table class="lg-table">
+        <caption class="sr-only">Despesas divididas por etiqueta</caption>
+        <thead>
+          <tr>
+            <th scope="col">Etiqueta</th>
+            <th scope="col">Lançamentos</th>
+            <th scope="col" class="lg-num">Total gasto</th>
+            <th scope="col" class="lg-num">Participação</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="tag in tagExpenses" :key="tag.id">
+            <td>
+              <button
+                type="button"
+                class="tag-table-filter-btn"
+                :class="{ 'is-active': tagStore.activeTagId === tag.id }"
+                @click="tagStore.setActiveTag(tagStore.activeTagId === tag.id ? null : tag.id)"
+              >
+                {{ tag.name }}
+              </button>
+            </td>
+            <td>{{ tag.count }}</td>
+            <td class="lg-num is-expense">
+              <MoneyValue :value="tag.total" />
+            </td>
+            <td class="lg-num">
+              {{ totalTaggedExpense > 0 ? Math.round((tag.total / totalTaggedExpense) * 100) : 0 }}%
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </details>
   </section>
 </template>
 
 <style scoped>
-.tag-ranking-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.card-header {
-  margin-bottom: 20px;
-}
-
-.card-kicker {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
-  margin-bottom: 4px;
-}
-
-.card-title {
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--color-text);
-  margin: 0;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 40px 16px;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ranking-content {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  flex: 1;
-}
-
-.ranking-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.ranking-item {
-  list-style: none;
-}
-
-.ranking-row-btn {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  cursor: pointer;
+.tag-table-filter-btn {
   background: transparent;
-  border: 1px solid transparent;
-  width: 100%;
-  text-align: left;
-  font-family: inherit;
-  min-height: 44px;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.ranking-row-btn:hover {
-  background: var(--color-surface-soft);
-}
-
-.ranking-row-btn.is-selected {
-  background: var(--color-surface-soft);
-  border-color: var(--color-primary);
-  border-left-width: 3px;
-}
-
-.ranking-row-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.row-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-}
-
-.tag-position {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--color-text-secondary);
-  min-width: 16px;
-}
-
-.tag-name {
-  color: var(--color-text);
+  border: none;
+  padding: 0;
+  color: var(--lg-ink);
+  font: inherit;
   font-weight: 600;
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
-.tag-count {
-  font-size: 11px;
-  color: var(--color-text-secondary);
-}
-
-.tag-amount {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-text);
-  margin-left: 8px;
-}
-
-.bar-track {
-  width: 100%;
-  height: 6px;
-  background: var(--color-border);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.bar-fill {
-  height: 100%;
-  background: var(--color-text-secondary);
-  border-radius: 999px;
-  transition: width 0.3s ease;
-}
-
-.ranking-row.is-selected .bar-fill {
-  background: var(--color-primary);
-}
-
-.card-footer {
-  margin-top: 20px;
-  padding-top: 12px;
-  border-top: 1px solid var(--color-border);
-}
-
-.footnote {
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--color-text-secondary);
-  margin: 0;
+.tag-table-filter-btn.is-active {
+  color: var(--lg-projection);
 }
 </style>

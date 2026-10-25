@@ -1,63 +1,15 @@
-<template>
-  <section class="dashboard-header">
-    <div class="header-copy">
-      <p class="eyebrow">Desempenho financeiro · {{ companyName }}</p>
-      <h1 class="header-title">Relatórios</h1>
-      <p class="subtitle">
-        Acompanhe saldo global, movimentação de entradas e saídas e o detalhamento por categorias.
-      </p>
-    </div>
-
-    <div class="header-actions">
-      <!-- Menu de Exportação (Disclosure simples operável por teclado) -->
-      <div ref="exportMenuRef" class="export-menu">
-        <button
-          class="action-button action-button--neutral"
-          type="button"
-          :aria-expanded="exportMenuOpen"
-          aria-controls="export-dropdown-options"
-          @click="exportMenuOpen = !exportMenuOpen"
-          @keydown.esc="exportMenuOpen = false"
-        >
-          <Download :size="16" aria-hidden="true" />
-          <span>Exportar</span>
-        </button>
-
-        <div
-          v-if="exportMenuOpen"
-          id="export-dropdown-options"
-          class="export-dropdown"
-          @keydown.esc="exportMenuOpen = false"
-        >
-          <button type="button" class="export-dropdown-btn" @click="pickFormat('csv')">Exportar CSV</button>
-          <button type="button" class="export-dropdown-btn" @click="pickFormat('pdf')">Exportar PDF</button>
-        </div>
-      </div>
-
-      <!-- Botão Novo Lançamento -->
-      <button
-        class="action-button action-button--primary"
-        type="button"
-        @click="router.push({ name: 'addExpense' })"
-      >
-        <Plus :size="16" aria-hidden="true" />
-        <span>Novo lançamento</span>
-      </button>
-    </div>
-  </section>
-</template>
-
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { Download, Plus } from 'lucide-vue-next';
-import { useCompanyStore } from '@/stores/CompanyStore';
 
-const router = useRouter();
-const companyStore = useCompanyStore();
-const companyName = computed(() => companyStore.company.name || 'Sua empresa');
+defineProps<{
+  period: string;
+}>();
 
-const emit = defineEmits<{ export: [format: 'csv' | 'pdf'] }>();
+const emit = defineEmits<{
+  'update:period': [value: string];
+  export: [format: 'csv' | 'pdf'];
+}>();
 
 const exportMenuOpen = ref(false);
 const exportMenuRef = ref<HTMLElement | null>(null);
@@ -77,124 +29,106 @@ onMounted(() => document.addEventListener('click', handleClickOutside));
 onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside));
 </script>
 
+<template>
+  <header class="lg-page-head">
+    <div>
+      <h1 class="lg-title">Relatórios</h1>
+      <p class="lg-lede">Acompanhe saldo acumulado, fluxo por período e projeções da sua empresa.</p>
+    </div>
+
+    <div class="lg-actions">
+      <!-- Seletor de período -->
+      <label for="report-period" class="sr-only">Período analisado</label>
+      <select
+        id="report-period"
+        class="lg-select period-select"
+        :value="period"
+        @change="emit('update:period', ($event.target as HTMLSelectElement).value)"
+      >
+        <option value="weekly">Últimas 4 semanas</option>
+        <option value="monthly">Últimos 6 meses</option>
+        <option value="daily">Últimos 7 dias</option>
+        <option value="annual">Últimos 5 anos</option>
+        <option value="all">Todo o histórico</option>
+      </select>
+
+      <!-- Menu de Exportação -->
+      <div ref="exportMenuRef" class="export-menu-wrap">
+        <button
+          type="button"
+          class="lg-btn"
+          :aria-expanded="exportMenuOpen"
+          aria-haspopup="true"
+          aria-controls="export-dropdown"
+          @click="exportMenuOpen = !exportMenuOpen"
+          @keydown.esc="exportMenuOpen = false"
+        >
+          <Download :size="16" aria-hidden="true" />
+          <span>Exportar</span>
+        </button>
+
+        <div
+          v-if="exportMenuOpen"
+          id="export-dropdown"
+          class="export-dropdown"
+          role="menu"
+          @keydown.esc="exportMenuOpen = false"
+        >
+          <button type="button" class="export-opt" role="menuitem" @click="pickFormat('csv')">
+            Exportar CSV
+          </button>
+          <button type="button" class="export-opt" role="menuitem" @click="pickFormat('pdf')">
+            Exportar PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Novo lançamento -->
+      <router-link :to="{ name: 'addExpense' }" class="lg-btn lg-btn--primary">
+        <Plus :size="16" aria-hidden="true" />
+        <span>Novo lançamento</span>
+      </router-link>
+    </div>
+  </header>
+</template>
+
 <style scoped>
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--color-border);
-  flex-wrap: wrap;
+.period-select {
+  width: auto;
+  min-width: 170px;
 }
 
-.eyebrow {
-  color: var(--color-text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  margin-bottom: 4px;
-}
-
-.header-title {
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 6px 0;
-  line-height: 1.15;
-}
-
-.subtitle {
-  max-width: 60ch;
-  color: var(--color-text-secondary);
-  font-size: 14px;
-  line-height: 1.5;
-  margin: 0;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.action-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 42px;
-  padding: 8px 16px;
-  border-radius: 10px;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid var(--color-border);
-  transition: all 0.15s ease;
-}
-
-.action-button--neutral {
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-
-.action-button--neutral:hover {
-  background: var(--color-surface-soft);
-}
-
-.action-button--primary {
-  background: var(--color-primary);
-  color: #111827;
-  border-color: var(--color-primary);
-}
-
-.action-button--primary:hover {
-  filter: brightness(0.95);
-}
-
-.export-menu {
+.export-menu-wrap {
   position: relative;
 }
 
 .export-dropdown {
   position: absolute;
   right: 0;
-  top: calc(100% + 6px);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  padding: 6px;
+  top: calc(100% + 4px);
+  z-index: 20;
+  min-width: 150px;
+  background: var(--lg-paper);
+  border: 1px solid var(--lg-line);
+  border-radius: var(--lg-radius-sm);
   display: flex;
   flex-direction: column;
-  min-width: 140px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  z-index: 50;
+  padding: 4px;
 }
 
-.export-dropdown button {
-  background: transparent;
+.export-opt {
   border: none;
-  border-radius: 6px;
-  padding: 8px 12px;
+  background: transparent;
+  color: var(--lg-ink);
+  padding: 10px 14px;
   text-align: left;
-  font-size: 13px;
-  color: var(--color-text);
+  font: inherit;
+  font-size: 0.875rem;
   cursor: pointer;
-  font-family: inherit;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  transition: background 0.15s;
+  border-radius: 6px;
 }
 
-.export-dropdown button:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
-}
-
-.export-dropdown button:hover {
-  background: var(--color-surface-soft);
+.export-opt:hover {
+  background: var(--lg-sunken);
 }
 </style>
