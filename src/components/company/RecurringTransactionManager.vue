@@ -1,26 +1,16 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch, onUnmounted, computed } from 'vue';
-import { Plus, Trash2, Play, Pause, PlayCircle, X } from 'lucide-vue-next';
+import { onMounted, reactive, ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { Plus, Trash2, Play, Pause, PlayCircle } from 'lucide-vue-next';
 import { useRecurringTransactionStore } from '@/stores/recurringTransactionStore';
-import type { RecurringEntryType, RecurringFrequency } from '@/services/recurringTransactionService';
+import type { RecurringFrequency } from '@/services/recurringTransactionService';
 import PrimaryButton from '@/components/ui/PrimaryButton.vue';
 
+const router = useRouter();
 const store = useRecurringTransactionStore();
 
-const showForm = ref(false);
-const isLoading = ref(false);
 const runningId = ref<string | null>(null);
 const message = reactive({ status: '', text: '', show: false });
-
-const formData = reactive({
-  description: '',
-  entryType: 'debit' as RecurringEntryType,
-  unitValue: 0,
-  quantity: 1,
-  frequency: 'monthly' as RecurringFrequency,
-  startDate: new Date().toISOString().slice(0, 10),
-  endDate: '',
-});
 
 const frequencyLabels: Record<RecurringFrequency, string> = {
   weekly: 'Semanal',
@@ -38,8 +28,6 @@ const sortedItems = computed(() =>
   [...store.items].sort((a, b) => a.nextRunDate.localeCompare(b.nextRunDate)),
 );
 
-const totalValue = () => formData.unitValue * formData.quantity;
-
 const formatDate = (value: string | null) => {
   if (!value) return '—';
   const [year, month, day] = value.split('-');
@@ -49,30 +37,6 @@ const formatDate = (value: string | null) => {
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
-const resetForm = () => {
-  formData.description = '';
-  formData.entryType = 'debit';
-  formData.unitValue = 0;
-  formData.quantity = 1;
-  formData.frequency = 'monthly';
-  formData.startDate = new Date().toISOString().slice(0, 10);
-  formData.endDate = '';
-  showForm.value = false;
-};
-
-const handleCloseForm = () => {
-  resetForm();
-  message.show = false;
-};
-
-watch(showForm, (isOpen) => {
-  document.body.style.overflow = isOpen ? 'hidden' : '';
-});
-
-onUnmounted(() => {
-  document.body.style.overflow = '';
-});
-
 const notify = (status: 'success' | 'error', text: string) => {
   message.status = status;
   message.text = text;
@@ -80,43 +44,6 @@ const notify = (status: 'success' | 'error', text: string) => {
   setTimeout(() => {
     message.show = false;
   }, 2500);
-};
-
-const handleCreate = async () => {
-  if (!formData.description.trim()) {
-    notify('error', 'Digite a descrição do lançamento');
-    return;
-  }
-
-  if (formData.unitValue <= 0) {
-    notify('error', 'Digite um valor maior que zero');
-    return;
-  }
-
-  if (formData.quantity < 1) {
-    notify('error', 'Quantidade deve ser maior que zero');
-    return;
-  }
-
-  try {
-    isLoading.value = true;
-
-    await store.createRecurringTransaction({
-      description: formData.description.trim(),
-      amount: totalValue(),
-      entryType: formData.entryType,
-      frequency: formData.frequency,
-      startDate: formData.startDate,
-      endDate: formData.endDate || undefined,
-    });
-
-    notify('success', 'Lançamento recorrente criado com sucesso!');
-    resetForm();
-  } catch (error: any) {
-    notify('error', error?.response?.data?.message || 'Erro ao criar lançamento recorrente');
-  } finally {
-    isLoading.value = false;
-  }
 };
 
 const handleDelete = async (id: string) => {
@@ -171,9 +98,9 @@ export default {
         <h2 class="panel-title">Lançamentos Recorrentes</h2>
         <p class="panel-subtitle">Entradas e saídas que se repetem — a cobrança é lançada automaticamente quando a data chegar.</p>
       </div>
-      <PrimaryButton variant="neutral" compact @click="showForm = true">
+      <PrimaryButton variant="neutral" compact @click="router.push('/add/expense?repetir=1')">
         <Plus :size="15" />
-        Novo lançamento
+        Nova recorrente
       </PrimaryButton>
     </div>
 
@@ -254,105 +181,6 @@ export default {
 
     <div v-else class="empty-state">
       Nenhum lançamento recorrente criado ainda.
-    </div>
-
-    <div v-if="showForm" class="modal-overlay" @click.self="handleCloseForm">
-      <div class="modal-dialog">
-        <div class="modal-header">
-          <h4>Novo lançamento recorrente</h4>
-          <PrimaryButton icon-only compact variant="neutral" aria-label="Fechar" @click="handleCloseForm">
-            <X :size="15" />
-          </PrimaryButton>
-        </div>
-
-        <div class="modal-body">
-          <div class="entry-toggle">
-            <button
-              type="button"
-              class="entry-toggle-btn"
-              :class="{ active: formData.entryType === 'debit' }"
-              @click="formData.entryType = 'debit'"
-            >
-              Saída
-            </button>
-            <button
-              type="button"
-              class="entry-toggle-btn"
-              :class="{ active: formData.entryType === 'credit' }"
-              @click="formData.entryType = 'credit'"
-            >
-              Entrada
-            </button>
-          </div>
-
-          <div class="form-group">
-            <label>Descrição *</label>
-            <input
-              v-model="formData.description"
-              type="text"
-              placeholder="Ex: Aluguel, Salário fixo..."
-              class="input"
-            />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Valor unitário (R$) *</label>
-              <input
-                v-model.number="formData.unitValue"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="1500.00"
-                class="input"
-              />
-            </div>
-
-            <div class="form-group">
-              <label>Quantidade *</label>
-              <input
-                v-model.number="formData.quantity"
-                type="number"
-                step="1"
-                min="1"
-                placeholder="1"
-                class="input"
-              />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Frequência</label>
-            <select v-model="formData.frequency" class="input">
-              <option value="weekly">Semanal</option>
-              <option value="monthly">Mensal</option>
-              <option value="yearly">Anual</option>
-            </select>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Data de início</label>
-              <input v-model="formData.startDate" type="date" class="input" />
-            </div>
-
-            <div class="form-group">
-              <label>Data de término (opcional)</label>
-              <input v-model="formData.endDate" type="date" class="input" />
-            </div>
-          </div>
-
-          <div class="total-preview">
-            <span class="preview-label">Total por ocorrência</span>
-            <span class="preview-value">{{ formatCurrency(totalValue()) }}</span>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <PrimaryButton variant="neutral" @click="handleCloseForm">Cancelar</PrimaryButton>
-          <PrimaryButton :loading="isLoading" @click="handleCreate">Confirmar</PrimaryButton>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -453,17 +281,16 @@ export default {
 
 .item-title h5 {
   margin: 0;
-  color: var(--color-text);
+  font-weight: 700;
   font-size: 0.95rem;
+  color: var(--color-text);
 }
 
 .status-badge {
-  padding: 3px 10px;
+  font-size: 0.75rem;
+  padding: 2px 8px;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  font-weight: 600;
 }
 
 .status-badge.active {
@@ -472,34 +299,34 @@ export default {
 }
 
 .status-badge.paused {
-  background: var(--color-surface-alt);
-  color: var(--color-text-secondary);
+  background: rgba(234, 179, 8, 0.15);
+  color: #ca8a04;
 }
 
 .status-badge.finished {
-  background: var(--color-border);
-  color: var(--color-text-tertiary);
+  background: rgba(148, 163, 184, 0.15);
+  color: #64748b;
 }
 
-.amount {
-  font-weight: 700;
-  font-size: 1.05rem;
+.item-value .amount {
+  font-weight: 800;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
 }
 
-.amount.credit {
+.item-value .amount.credit {
   color: var(--color-primary);
 }
 
-.amount.debit {
+.item-value .amount.debit {
   color: var(--color-danger);
 }
 
 .item-details {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
   margin-bottom: 14px;
-  font-size: 0.85rem;
 }
 
 .detail-item {
@@ -509,193 +336,32 @@ export default {
 }
 
 .detail-label {
-  font-weight: 600;
-  color: var(--color-text-tertiary);
   font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  color: var(--color-text-secondary);
+  font-weight: 600;
 }
 
 .detail-value {
+  font-size: 0.85rem;
   color: var(--color-text);
+  font-weight: 600;
 }
 
 .item-actions {
   display: flex;
-  align-items: center;
+  justify-content: flex-end;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
-.delete-action {
-  margin-left: auto;
+.delete-action:hover {
+  background: var(--color-danger-soft) !important;
+  color: var(--color-danger) !important;
 }
 
 .empty-state {
   text-align: center;
-  padding: 32px;
+  padding: 32px 16px;
   color: var(--color-text-secondary);
-  border: 1px dashed var(--color-border);
-  border-radius: 14px;
-}
-
-.entry-toggle {
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  border-radius: var(--radius-input);
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-border);
-  margin-bottom: 18px;
-}
-
-.entry-toggle-btn {
-  flex: 1;
-  padding: 10px;
-  border: none;
-  border-radius: calc(var(--radius-input) - 4px);
-  background: transparent;
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-}
-
-.entry-toggle-btn.active {
-  background: var(--color-surface);
-  color: var(--color-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 600;
   font-size: 0.9rem;
-  color: var(--color-text-secondary);
-}
-
-.input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-input);
-  font-size: 0.95rem;
-  font-family: inherit;
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-
-.input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.total-preview {
-  background: var(--color-surface-soft);
-  padding: 12px 16px;
-  border-radius: var(--radius-input);
-  border: 1px solid var(--color-primary);
-  margin: 4px 0 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.preview-label {
-  font-weight: 600;
-  color: var(--color-text);
-  font-size: 0.9rem;
-}
-
-.preview-value {
-  font-weight: 800;
-  font-size: 1.1rem;
-  color: var(--color-primary);
-}
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 99999;
-  padding: 20px;
-  overflow-y: auto;
-}
-
-.modal-dialog {
-  display: flex;
-  flex-direction: column;
-  width: min(100%, 720px);
-  max-width: 720px;
-  max-height: calc(100vh - 40px);
-  background: var(--color-surface);
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-.modal-body {
-  padding: 20px 24px;
-  overflow-y: auto;
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  background: var(--color-surface-soft);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.modal-header h4 {
-  margin: 0;
-  font-size: 1.1rem;
-  color: var(--color-text);
-}
-
-.modal-footer {
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  gap: 12px;
-  padding: 16px 24px 24px;
-  background: var(--color-surface-soft);
-  justify-content: flex-end;
-  flex-shrink: 0;
-}
-
-@media (max-width: 768px) {
-  .modal-header,
-  .modal-body,
-  .modal-footer {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .total-preview {
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-start;
-  }
 }
 </style>
