@@ -133,6 +133,9 @@
   gap: 24px;
 }
 
+/* Dentro da grade o espaçamento é o gap, não a margem entre seções vizinhas */
+.lg-grid > .lg-section { margin-top: 0; }
+
 .lg-span-12 { grid-column: span 12; }
 .lg-span-8 { grid-column: span 8; }
 .lg-span-7 { grid-column: span 7; }
@@ -211,7 +214,8 @@
   font-size: 0.8125rem;
 }
 
-.lg-legend span::before {
+/* Só o item direto da legenda ganha a amostra de cor (não os spans internos do MoneyValue) */
+.lg-legend > span::before {
   content: '';
   display: inline-block;
   width: 10px;
@@ -222,10 +226,10 @@
   vertical-align: -1px;
 }
 
-.lg-legend .is-income::before { background: var(--lg-income); }
-.lg-legend .is-expense::before { background: var(--lg-expense); }
-.lg-legend .is-projection::before { background: var(--lg-projection); }
-.lg-legend span { color: var(--lg-ink-2); }
+.lg-legend > .is-income::before { background: var(--lg-income); }
+.lg-legend > .is-expense::before { background: var(--lg-expense); }
+.lg-legend > .is-projection::before { background: var(--lg-projection); }
+.lg-legend > span { color: var(--lg-ink-2); }
 
 /* Tabela alternativa dos gráficos: acessível, recolhida por padrão */
 .lg-details {
@@ -420,6 +424,14 @@
   font: 600 clamp(2rem, 1.6rem + 1.6vw, 2.75rem) / 1 var(--font-display);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.lg-input--amount::-webkit-inner-spin-button,
+.lg-input--amount::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 /* Segmentado com radios nativos (teclado e leitor de tela de graça) */
