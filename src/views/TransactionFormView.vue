@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useTransactionStore } from '@/stores/transactionStore';
 import { useRecurringTransactionStore } from '@/stores/recurringTransactionStore';
 import { useTagStore } from '@/stores/tagStore';
 import type { RecurringFrequency } from '@/services/recurringTransactionService';
 import TagPicker from '@/components/forms/TagPicker.vue';
-import { ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-vue-next';
+import { ArrowLeft, CheckCircle2, AlertCircle, AlertTriangle } from 'lucide-vue-next';
+import { formatDateBr } from '@/utils/dateUtils';
 
 const route = useRoute();
 const router = useRouter();
@@ -18,14 +19,31 @@ const tagStore = useTagStore();
 const isIncomeRoute = computed(() => route.name === 'addIncome' || route.path.includes('/income'));
 const entryType = ref<'debit' | 'credit'>(isIncomeRoute.value ? 'credit' : 'debit');
 
+// Alternador "Repetir lançamento"
+const isRecurring = ref(false);
+
+// Sincronização estrita nos dois sentidos (URL <-> Estado local)
+const syncFromRoute = () => {
+  const isIncome = route.name === 'addIncome' || route.path.includes('/income');
+  entryType.value = isIncome ? 'credit' : 'debit';
+
+  const repetirParam = route.query.repetir;
+  isRecurring.value = repetirParam === '1' || repetirParam === 'true';
+};
+
+onMounted(() => {
+  syncFromRoute();
+});
+
 watch(
-  () => route.path,
+  () => [route.name, route.path, route.query.repetir],
   () => {
-    entryType.value = isIncomeRoute.value ? 'credit' : 'debit';
+    syncFromRoute();
   },
+  { immediate: true },
 );
 
-// Alternar tipo de transação mantendo a rota sincronizada
+// Alternar tipo de transação mantendo a rota e query sincronizadas
 const setEntryType = (type: 'debit' | 'credit') => {
   entryType.value = type;
   const targetRouteName = type === 'credit' ? 'addIncome' : 'addExpense';
@@ -34,26 +52,18 @@ const setEntryType = (type: 'debit' | 'credit') => {
   }
 };
 
-// Alternador "Repetir lançamento"
-const isRecurring = ref(false);
-
-const checkRepeatQuery = () => {
-  const repetirParam = route.query.repetir;
-  if (repetirParam === '1' || repetirParam === 'true') {
-    isRecurring.value = true;
+// Alternar repetição e sincronizar parâmetro ?repetir na URL
+const toggleRecurring = (val: boolean) => {
+  isRecurring.value = val;
+  const nextQuery = { ...route.query };
+  if (val) {
+    nextQuery.repetir = '1';
+  } else {
+    delete nextQuery.repetir;
   }
+  const currentRouteName = route.name || (entryType.value === 'credit' ? 'addIncome' : 'addExpense');
+  router.replace({ name: currentRouteName, query: nextQuery });
 };
-
-onMounted(() => {
-  checkRepeatQuery();
-});
-
-watch(
-  () => route.query.repetir,
-  () => {
-    checkRepeatQuery();
-  },
-);
 
 const formData = reactive({
   amount: '',
@@ -67,14 +77,61 @@ const formData = reactive({
 
 const selectedTagIds = ref<string[]>([]);
 const isSubmitting = ref(false);
+
+// Preservação do ID criado para evitar duplicidade financeira (Achado 2)
+const createdTransactionId = ref<string | null>(null);
+const pendingTagIds = ref<string[]>([]);
+const isRetryingTags = ref(false);
+
 const feedback = reactive<{
-  type: 'success' | 'error' | null;
+  type: 'success' | 'partial' | 'error' | null;
   message: string;
   details?: string;
 }>({
   type: null,
   message: '',
 });
+
+// Erros por campo e referências para foco (Achado 9)
+const fieldErrors = reactive<{
+  amount?: string;
+  description?: string;
+  date?: string;
+  startDate?: string;
+  endDate?: string;
+}>({});
+
+const amountInputRef = ref<HTMLInputElement | null>(null);
+const descInputRef = ref<HTMLInputElement | null>(null);
+const dateInputRef = ref<HTMLInputElement | null>(null);
+const startDateInputRef = ref<HTMLInputElement | null>(null);
+const endDateInputRef = ref<HTMLInputElement | null>(null);
+const successBannerRef = ref<HTMLElement | null>(null);
+const partialBannerRef = ref<HTMLElement | null>(null);
+
+const clearFieldErrors = () => {
+  fieldErrors.amount = undefined;
+  fieldErrors.description = undefined;
+  fieldErrors.date = undefined;
+  fieldErrors.startDate = undefined;
+  fieldErrors.endDate = undefined;
+};
+
+const focusFirstError = () => {
+  nextTick(() => {
+    if (fieldErrors.amount) {
+      amountInputRef.value?.focus();
+    } else if (fieldErrors.description) {
+      descInputRef.value?.focus();
+    } else if (fieldErrors.date) {
+      dateInputRef.value?.focus();
+    } else if (fieldErrors.startDate) {
+      startDateInputRef.value?.focus();
+    } else if (fieldErrors.endDate) {
+      endDateInputRef.value?.focus();
+    }
+  });
+};
 
 const formatBRL = (val: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -88,12 +145,6 @@ const frequencyLabels: Record<RecurringFrequency, string> = {
   weekly: 'Semanal',
   monthly: 'Mensal',
   yearly: 'Anual',
-};
-
-const formatDateBr = (iso?: string | null) => {
-  if (!iso) return '';
-  const [year, month, day] = iso.split('-');
-  return `${day}/${month}/${year}`;
 };
 
 // Resumo humano derivado dos dados
@@ -123,19 +174,91 @@ const handleCancel = () => {
   router.push({ name: 'management' });
 };
 
+const resetFormForNewTransaction = () => {
+  formData.description = '';
+  formData.amount = '';
+  formData.endDate = '';
+  formData.date = new Date().toISOString().split('T')[0];
+  formData.startDate = new Date().toISOString().split('T')[0];
+  selectedTagIds.value = [];
+  createdTransactionId.value = null;
+  pendingTagIds.value = [];
+  feedback.type = null;
+  feedback.message = '';
+  feedback.details = undefined;
+  clearFieldErrors();
+  nextTick(() => {
+    amountInputRef.value?.focus();
+  });
+};
+
+const retryAttachTags = async () => {
+  if (!createdTransactionId.value || pendingTagIds.value.length === 0) return;
+  try {
+    isRetryingTags.value = true;
+    await Promise.all(
+      pendingTagIds.value.map((tagId) => tagStore.attachTag(createdTransactionId.value!, tagId)),
+    );
+    pendingTagIds.value = [];
+    feedback.type = 'success';
+    feedback.message = `${entryType.value === 'credit' ? 'Receita' : 'Despesa'} registrada e tags associadas com sucesso.`;
+    nextTick(() => {
+      successBannerRef.value?.focus();
+    });
+  } catch (err: any) {
+    feedback.type = 'partial';
+    feedback.message = 'Ainda não foi possível associar as tags. O lançamento já está salvo.';
+    nextTick(() => {
+      partialBannerRef.value?.focus();
+    });
+  } finally {
+    isRetryingTags.value = false;
+  }
+};
+
 const handleSubmit = async (e: Event) => {
   e.preventDefault();
+  clearFieldErrors();
+
+  // Se já foi criado o lançamento financeiro e restam tags, tenta só as tags
+  if (createdTransactionId.value && pendingTagIds.value.length > 0) {
+    await retryAttachTags();
+    return;
+  }
+
+  let hasError = false;
 
   if (!parsedAmount.value) {
-    feedback.type = 'error';
-    feedback.message = 'Digite um valor válido e maior que zero.';
-    return;
+    fieldErrors.amount = 'Digite um valor válido e maior que zero.';
+    hasError = true;
   }
 
   const description = formData.description.trim();
   if (!description) {
+    fieldErrors.description = 'Preencha a descrição do lançamento.';
+    hasError = true;
+  }
+
+  if (isRecurring.value) {
+    if (!formData.startDate) {
+      fieldErrors.startDate = 'Informe a data de início da recorrência.';
+      hasError = true;
+    }
+    if (formData.startDate && formData.endDate && formData.endDate < formData.startDate) {
+      fieldErrors.endDate = 'A data de término não pode ser anterior ao início.';
+      hasError = true;
+    }
+  } else {
+    if (!formData.date) {
+      fieldErrors.date = 'Informe a data do lançamento.';
+      hasError = true;
+    }
+  }
+
+  if (hasError) {
     feedback.type = 'error';
-    feedback.message = 'Preencha a descrição do lançamento.';
+    feedback.message = 'Por favor, corrija os erros nos campos destacados.';
+    focusFirstError();
     return;
   }
 
@@ -144,49 +267,59 @@ const handleSubmit = async (e: Event) => {
     feedback.type = null;
 
     if (isRecurring.value) {
-      if (!formData.startDate) {
-        feedback.type = 'error';
-        feedback.message = 'Informe a data de início da recorrência.';
-        isSubmitting.value = false;
-        return;
-      }
-
       await recurringTransactionStore.createRecurringTransaction({
         description,
-        amount: parsedAmount.value,
+        amount: parsedAmount.value!,
         entryType: entryType.value,
         frequency: formData.frequency,
-        startDate: formData.startDate,
+        startDate: formData.startDate!,
         endDate: formData.endDate || undefined,
       });
 
       feedback.type = 'success';
       feedback.message = 'Recorrência criada com sucesso.';
       feedback.details = humanSummary.value;
+      nextTick(() => {
+        successBannerRef.value?.focus();
+      });
     } else {
-      if (!formData.date) {
-        feedback.type = 'error';
-        feedback.message = 'Informe a data do lançamento.';
-        isSubmitting.value = false;
-        return;
+      let txId = createdTransactionId.value;
+      if (!txId) {
+        const created = await transactionStore.createTransaction({
+          amount: parsedAmount.value!,
+          description,
+          entryType: entryType.value,
+          date: formData.date!,
+        });
+        txId = created.id;
+        createdTransactionId.value = created.id;
       }
 
-      const created = await transactionStore.createTransaction({
-        amount: parsedAmount.value,
-        description,
-        entryType: entryType.value,
-        date: formData.date,
-      });
-
       if (selectedTagIds.value.length > 0) {
-        await Promise.all(
-          selectedTagIds.value.map((tagId) => tagStore.attachTag(created.id, tagId)),
-        );
+        pendingTagIds.value = [...selectedTagIds.value];
+        try {
+          await Promise.all(
+            pendingTagIds.value.map((tagId) => tagStore.attachTag(txId!, tagId)),
+          );
+          pendingTagIds.value = [];
+        } catch (tagErr) {
+          // Lançamento já criado: NUNCA duplicar com outro createTransaction
+          feedback.type = 'partial';
+          feedback.message = 'Lançamento salvo, mas ocorreu um erro ao associar as tags.';
+          feedback.details = humanSummary.value;
+          nextTick(() => {
+            partialBannerRef.value?.focus();
+          });
+          return;
+        }
       }
 
       feedback.type = 'success';
       feedback.message = `${entryType.value === 'credit' ? 'Receita' : 'Despesa'} registrada com sucesso.`;
       feedback.details = humanSummary.value;
+      nextTick(() => {
+        successBannerRef.value?.focus();
+      });
     }
   } catch (err: any) {
     feedback.type = 'error';
@@ -213,9 +346,11 @@ const handleSubmit = async (e: Event) => {
       <!-- Mensagem de Sucesso Permanente (não fecha sozinha antes de ler) -->
       <section
         v-if="feedback.type === 'success'"
+        ref="successBannerRef"
         class="feedback-banner success"
         role="status"
         aria-live="polite"
+        tabindex="-1"
       >
         <div class="feedback-icon">
           <CheckCircle2 :size="20" aria-hidden="true" />
@@ -230,11 +365,47 @@ const handleSubmit = async (e: Event) => {
             <button
               type="button"
               class="btn btn-secondary"
-              @click="
-                formData.description = '';
-                formData.amount = '';
-                feedback.type = null;
-              "
+              @click="resetFormForNewTransaction"
+            >
+              Fazer outro lançamento
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Mensagem de Sucesso Parcial (lançamento salvo, tags pendentes - Achado 2) -->
+      <section
+        v-if="feedback.type === 'partial'"
+        ref="partialBannerRef"
+        class="feedback-banner warning"
+        role="alert"
+        aria-live="assertive"
+        tabindex="-1"
+      >
+        <div class="feedback-icon">
+          <AlertTriangle :size="20" aria-hidden="true" />
+        </div>
+        <div class="feedback-body">
+          <h2 class="feedback-title">Lançamento salvo, tags não associadas</h2>
+          <p class="feedback-details">
+            O valor financeiro já foi registrado com sucesso no caixa da empresa. Porém, ocorreu uma falha ao vincular as tags selecionadas.
+          </p>
+          <div class="feedback-actions">
+            <button
+              type="button"
+              class="btn btn-primary"
+              :disabled="isRetryingTags"
+              @click="retryAttachTags"
+            >
+              {{ isRetryingTags ? 'Gravando tags...' : 'Tentar só as tags pendentes' }}
+            </button>
+            <button type="button" class="btn btn-secondary" @click="handleCancel">
+              Concluir sem tags e voltar
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              @click="resetFormForNewTransaction"
             >
               Fazer outro lançamento
             </button>
@@ -243,7 +414,7 @@ const handleSubmit = async (e: Event) => {
       </section>
 
       <!-- Grade Principal: Formulário + Resumo Lateral -->
-      <div v-show="feedback.type !== 'success'" class="grid-layout">
+      <div v-show="feedback.type !== 'success' && feedback.type !== 'partial'" class="grid-layout">
         <!-- Coluna do Formulário -->
         <section class="form-surface" aria-labelledby="form-heading">
           <header class="form-header">
@@ -253,29 +424,34 @@ const handleSubmit = async (e: Event) => {
                 {{ isRecurring ? 'Lançamento recorrente' : (entryType === 'credit' ? 'Nova receita' : 'Nova despesa') }}
               </h1>
 
-              <!-- Seletor de Tipo (Despesa / Receita) -->
-              <div class="type-selector" role="radiogroup" aria-label="Tipo de lançamento">
-                <button
-                  type="button"
-                  role="radio"
-                  :aria-checked="entryType === 'debit'"
-                  class="type-btn"
-                  :class="{ active: entryType === 'debit' }"
-                  @click="setEntryType('debit')"
-                >
-                  Despesa
-                </button>
-                <button
-                  type="button"
-                  role="radio"
-                  :aria-checked="entryType === 'credit'"
-                  class="type-btn"
-                  :class="{ active: entryType === 'credit' }"
-                  @click="setEntryType('credit')"
-                >
-                  Receita
-                </button>
-              </div>
+              <!-- Seletor de Tipo com Controles Nativos (Radio) e Alvo >= 44px (Achado 10) -->
+              <fieldset class="type-selector-fieldset">
+                <legend class="sr-only">Tipo de movimentação</legend>
+                <div class="type-selector-group">
+                  <label class="type-radio-label" :class="{ active: entryType === 'debit' }">
+                    <input
+                      type="radio"
+                      name="entryType"
+                      value="debit"
+                      class="sr-only"
+                      :checked="entryType === 'debit'"
+                      @change="setEntryType('debit')"
+                    />
+                    <span>Despesa</span>
+                  </label>
+                  <label class="type-radio-label" :class="{ active: entryType === 'credit' }">
+                    <input
+                      type="radio"
+                      name="entryType"
+                      value="credit"
+                      class="sr-only"
+                      :checked="entryType === 'credit'"
+                      @change="setEntryType('credit')"
+                    />
+                    <span>Receita</span>
+                  </label>
+                </div>
+              </fieldset>
             </div>
           </header>
 
@@ -295,10 +471,11 @@ const handleSubmit = async (e: Event) => {
               <label for="trans-amount" class="field-label">
                 Valor (R$) <span class="required" aria-hidden="true">*</span>
               </label>
-              <div class="amount-input-wrap">
+              <div class="amount-input-wrap" :class="{ 'has-error': !!fieldErrors.amount }">
                 <span class="currency-prefix" aria-hidden="true">R$</span>
                 <input
                   id="trans-amount"
+                  ref="amountInputRef"
                   v-model="formData.amount"
                   type="number"
                   step="0.01"
@@ -306,9 +483,19 @@ const handleSubmit = async (e: Event) => {
                   required
                   placeholder="0,00"
                   class="field-input amount-input"
+                  :aria-invalid="!!fieldErrors.amount"
+                  :aria-describedby="fieldErrors.amount ? 'amount-error' : undefined"
                   autofocus
                 />
               </div>
+              <span
+                v-if="fieldErrors.amount"
+                id="amount-error"
+                class="field-error-msg"
+                role="alert"
+              >
+                {{ fieldErrors.amount }}
+              </span>
             </div>
 
             <!-- Descrição -->
@@ -318,33 +505,45 @@ const handleSubmit = async (e: Event) => {
               </label>
               <input
                 id="trans-description"
+                ref="descInputRef"
                 v-model="formData.description"
                 type="text"
                 required
                 :placeholder="entryType === 'credit' ? 'Ex: Prestação de serviços, Venda de ativo' : 'Ex: Aluguel do espaço, Energia elétrica, Fornecedor de insumos'"
                 class="field-input"
+                :class="{ 'has-error': !!fieldErrors.description }"
+                :aria-invalid="!!fieldErrors.description"
+                :aria-describedby="fieldErrors.description ? 'description-error' : undefined"
               />
+              <span
+                v-if="fieldErrors.description"
+                id="description-error"
+                class="field-error-msg"
+                role="alert"
+              >
+                {{ fieldErrors.description }}
+              </span>
             </div>
 
-            <!-- Bloco do Alternador "Repetir" -->
-            <div class="repeat-card">
+            <!-- Bloco do Alternador "Repetir" (com checkbox nativo acessível e alvo >= 44px) -->
+            <label class="repeat-card" for="repeat-checkbox">
               <div class="repeat-text">
                 <strong class="repeat-title">Repetir</strong>
                 <span class="repeat-caption">Criar uma recorrência automática para cobranças futuras</span>
               </div>
-              <label class="toggle-control" for="repeat-checkbox">
+              <div class="toggle-control-wrap">
                 <input
                   id="repeat-checkbox"
-                  v-model="isRecurring"
                   type="checkbox"
-                  class="toggle-native"
+                  class="sr-only toggle-native"
+                  :checked="isRecurring"
+                  @change="toggleRecurring(($event.target as HTMLInputElement).checked)"
                 />
                 <span class="toggle-track" aria-hidden="true">
                   <span class="toggle-thumb"></span>
                 </span>
-                <span class="sr-only">Ativar repetição de lançamento</span>
-              </label>
-            </div>
+              </div>
+            </label>
 
             <!-- Seção de Lançamento Único -->
             <div v-if="!isRecurring" class="single-section">
@@ -354,11 +553,23 @@ const handleSubmit = async (e: Event) => {
                 </label>
                 <input
                   id="trans-date"
+                  ref="dateInputRef"
                   v-model="formData.date"
                   type="date"
                   required
                   class="field-input"
+                  :class="{ 'has-error': !!fieldErrors.date }"
+                  :aria-invalid="!!fieldErrors.date"
+                  :aria-describedby="fieldErrors.date ? 'date-error' : undefined"
                 />
+                <span
+                  v-if="fieldErrors.date"
+                  id="date-error"
+                  class="field-error-msg"
+                  role="alert"
+                >
+                  {{ fieldErrors.date }}
+                </span>
               </div>
 
               <!-- Tags com picker -->
@@ -392,11 +603,23 @@ const handleSubmit = async (e: Event) => {
                   </label>
                   <input
                     id="rec-start"
+                    ref="startDateInputRef"
                     v-model="formData.startDate"
                     type="date"
                     required
                     class="field-input"
+                    :class="{ 'has-error': !!fieldErrors.startDate }"
+                    :aria-invalid="!!fieldErrors.startDate"
+                    :aria-describedby="fieldErrors.startDate ? 'start-date-error' : undefined"
                   />
+                  <span
+                    v-if="fieldErrors.startDate"
+                    id="start-date-error"
+                    class="field-error-msg"
+                    role="alert"
+                  >
+                    {{ fieldErrors.startDate }}
+                  </span>
                 </div>
 
                 <div class="form-field">
@@ -405,10 +628,22 @@ const handleSubmit = async (e: Event) => {
                   </label>
                   <input
                     id="rec-end"
+                    ref="endDateInputRef"
                     v-model="formData.endDate"
                     type="date"
                     class="field-input"
+                    :class="{ 'has-error': !!fieldErrors.endDate }"
+                    :aria-invalid="!!fieldErrors.endDate"
+                    :aria-describedby="fieldErrors.endDate ? 'end-date-error' : undefined"
                   />
+                  <span
+                    v-if="fieldErrors.endDate"
+                    id="end-date-error"
+                    class="field-error-msg"
+                    role="alert"
+                  >
+                    {{ fieldErrors.endDate }}
+                  </span>
                 </div>
               </div>
 
@@ -579,7 +814,13 @@ const handleSubmit = async (e: Event) => {
   margin: 0;
 }
 
-.type-selector {
+.type-selector-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.type-selector-group {
   display: inline-flex;
   background: var(--color-surface-soft);
   border: 1px solid var(--color-border);
@@ -588,32 +829,35 @@ const handleSubmit = async (e: Event) => {
   gap: 4px;
 }
 
-.type-btn {
-  min-height: 36px;
-  padding: 6px 16px;
-  border: none;
-  background: transparent;
-  font-family: inherit;
+.type-radio-label {
+  min-height: 44px;
+  min-width: 90px;
+  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 13px;
   font-weight: 600;
   color: var(--color-text-secondary);
   border-radius: 7px;
   cursor: pointer;
   transition: all 0.15s ease;
+  user-select: none;
 }
 
-.type-btn:hover {
+.type-radio-label:hover {
   color: var(--color-text);
 }
 
-.type-btn.active {
+.type-radio-label.active {
   background: var(--color-surface);
   color: var(--color-text);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
-.type-btn:focus-visible {
+.type-radio-label:focus-within {
   outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .main-form {
@@ -708,6 +952,49 @@ const handleSubmit = async (e: Event) => {
   background: var(--color-surface-soft);
   border: 1px solid var(--color-border);
   border-radius: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.repeat-card:focus-within {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.toggle-control-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.field-error-msg {
+  font-size: 12px;
+  color: var(--color-danger, #E52124);
+  margin-top: 4px;
+  display: block;
+}
+
+.has-error {
+  border-color: var(--color-danger, #E52124) !important;
+}
+
+.feedback-banner:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.feedback-banner.warning {
+  background: #fffbeb;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+}
+
+[data-theme='dark'] .feedback-banner.warning {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid #f59e0b;
+  color: #fde68a;
 }
 
 .repeat-title {
