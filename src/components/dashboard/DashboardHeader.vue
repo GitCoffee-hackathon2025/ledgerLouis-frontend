@@ -9,22 +9,28 @@
     </div>
 
     <div class="header-actions">
-      <!-- Menu de Exportação -->
+      <!-- Menu de Exportação (Disclosure simples operável por teclado) -->
       <div ref="exportMenuRef" class="export-menu">
         <button
           class="action-button action-button--neutral"
           type="button"
-          aria-haspopup="true"
           :aria-expanded="exportMenuOpen"
+          aria-controls="export-dropdown-options"
           @click="exportMenuOpen = !exportMenuOpen"
+          @keydown.esc="exportMenuOpen = false"
         >
           <Download :size="16" aria-hidden="true" />
           <span>Exportar</span>
         </button>
 
-        <div v-if="exportMenuOpen" class="export-dropdown" role="menu">
-          <button type="button" role="menuitem" @click="pickFormat('csv')">Exportar CSV</button>
-          <button type="button" role="menuitem" @click="pickFormat('pdf')">Exportar PDF</button>
+        <div
+          v-if="exportMenuOpen"
+          id="export-dropdown-options"
+          class="export-dropdown"
+          @keydown.esc="exportMenuOpen = false"
+        >
+          <button type="button" class="export-dropdown-btn" @click="pickFormat('csv')">Exportar CSV</button>
+          <button type="button" class="export-dropdown-btn" @click="pickFormat('pdf')">Exportar PDF</button>
         </div>
       </div>
 
@@ -177,7 +183,16 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   color: var(--color-text);
   cursor: pointer;
   font-family: inherit;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
   transition: background 0.15s;
+}
+
+.export-dropdown button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
 }
 
 .export-dropdown button:hover {

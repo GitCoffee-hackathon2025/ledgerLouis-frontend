@@ -71,24 +71,30 @@ const maxTotal = computed(() => {
         <li
           v-for="(item, index) in tagRankings"
           :key="item.id"
-          class="ranking-row"
-          :class="{ 'is-selected': tagStore.activeTagId === item.id }"
-          @click="tagStore.setActiveTag(tagStore.activeTagId === item.id ? null : item.id)"
+          class="ranking-item"
         >
-          <div class="row-header">
-            <span class="tag-position" aria-hidden="true">{{ index + 1 }}</span>
-            <strong class="tag-name">{{ item.name }}</strong>
-            <span class="tag-count">{{ item.count }} {{ item.count === 1 ? 'lançamento' : 'lançamentos' }}</span>
-            <span class="tag-amount">{{ formatCurrency(item.total) }}</span>
-          </div>
+          <button
+            type="button"
+            class="ranking-row-btn"
+            :class="{ 'is-selected': tagStore.activeTagId === item.id }"
+            :aria-pressed="tagStore.activeTagId === item.id"
+            @click="tagStore.setActiveTag(tagStore.activeTagId === item.id ? null : item.id)"
+          >
+            <div class="row-header">
+              <span class="tag-position" aria-hidden="true">{{ index + 1 }}</span>
+              <strong class="tag-name">{{ item.name }}</strong>
+              <span class="tag-count">{{ item.count }} {{ item.count === 1 ? 'lançamento' : 'lançamentos' }}</span>
+              <span class="tag-amount">{{ formatCurrency(item.total) }}</span>
+            </div>
 
-          <!-- Barra de proporção horizontal -->
-          <div class="bar-track" aria-hidden="true">
-            <div
-              class="bar-fill"
-              :style="{ width: `${Math.round((item.total / maxTotal) * 100)}%` }"
-            ></div>
-          </div>
+            <!-- Barra de proporção horizontal -->
+            <div class="bar-track" aria-hidden="true">
+              <div
+                class="bar-fill"
+                :style="{ width: `${Math.round((item.total / maxTotal) * 100)}%` }"
+              ></div>
+            </div>
+          </button>
         </li>
       </ul>
 
@@ -160,23 +166,39 @@ const maxTotal = computed(() => {
   margin: 0;
 }
 
-.ranking-row {
+.ranking-item {
+  list-style: none;
+}
+
+.ranking-row-btn {
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding: 8px 10px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  background: transparent;
+  border: 1px solid transparent;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  min-height: 44px;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.ranking-row:hover {
+.ranking-row-btn:hover {
   background: var(--color-surface-soft);
 }
 
-.ranking-row.is-selected {
-  background: var(--color-surface-alt);
-  border-left: 3px solid var(--color-primary);
+.ranking-row-btn.is-selected {
+  background: var(--color-surface-soft);
+  border-color: var(--color-primary);
+  border-left-width: 3px;
+}
+
+.ranking-row-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .row-header {
