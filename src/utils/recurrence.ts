@@ -29,14 +29,27 @@ export function occurrencesBetween(
   until: string,
 ): string[] {
   const dates: string[] = [];
+  const interval = rule.intervalValue ?? 1;
   const last = rule.endDate && rule.endDate < until ? rule.endDate : until;
-  // shortcut: percorre desde o início da regra; regras semanais de muitos anos ficam lentas, mas o limite abaixo protege
-  for (let n = 0; n < 2000; n++) {
-    const date = addOccurrences(rule.startDate, rule.frequency, rule.intervalValue ?? 1, n);
-    if (date > last) break;
+  // Começa perto de `from` (um passo antes, por segurança) em vez de enumerar desde o início da regra
+  let n = Math.max(0, firstIndexNear(rule.startDate, rule.frequency, interval, from) - 1);
+  for (let date = addOccurrences(rule.startDate, rule.frequency, interval, n); date <= last; ) {
     if (date >= from) dates.push(date);
+    date = addOccurrences(rule.startDate, rule.frequency, interval, ++n);
   }
   return dates;
+}
+
+function firstIndexNear(start: string, frequency: RecurringFrequency, interval: number, from: string): number {
+  if (from <= start) return 0;
+  const [sy, sm, sd] = start.slice(0, 10).split('-').map(Number) as [number, number, number];
+  const [fy, fm, fd] = from.split('-').map(Number) as [number, number, number];
+  if (frequency === 'weekly') {
+    const days = (Date.UTC(fy, fm - 1, fd) - Date.UTC(sy, sm - 1, sd)) / 86_400_000;
+    return Math.floor(days / (7 * interval));
+  }
+  const months = (fy - sy) * 12 + (fm - sm);
+  return Math.floor(months / (frequency === 'monthly' ? interval : 12 * interval));
 }
 
 export interface MonthProjection {
