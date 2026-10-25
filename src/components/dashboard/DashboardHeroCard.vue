@@ -30,6 +30,7 @@ const periodNet = computed(() => periodIncome.value - periodExpense.value);
 
 interface DailyPoint {
   date: string;
+  timestamp: number;
   label: string;
   delta: number;
   cumulative: number;
@@ -55,8 +56,11 @@ const points = computed<DailyPoint[]>(() => {
 
   for (const [date, delta] of byDate.entries()) {
     current += delta;
+    const [year, month, day] = date.split('-').map(Number) as [number, number, number];
+    const timestamp = new Date(year, month - 1, day, 12, 0, 0).getTime();
     result.push({
       date,
+      timestamp,
       label: formatShortDate(date),
       delta,
       cumulative: current,
@@ -69,7 +73,7 @@ const points = computed<DailyPoint[]>(() => {
 const series = computed(() => [
   {
     name: 'Saldo acumulado',
-    data: points.value.map((p) => p.cumulative),
+    data: points.value.map((p) => [p.timestamp, p.cumulative]),
   },
 ]);
 
@@ -89,21 +93,27 @@ const chartOptions = computed<ApexOptions>(() => {
     },
     colors: [colors.income],
     fill: {
-      type: 'gradient',
-      gradient: {
-        shadeIntensity: 1,
-        opacityFrom: 0.32,
-        opacityTo: 0.02,
-        stops: [0, 95, 100],
-        colorStops: [
-          { offset: 0, color: colors.income, opacity: 0.32 },
-          { offset: 100, color: colors.income, opacity: 0.0 },
-        ],
-      },
+      type: 'solid',
+      opacity: 0.12,
     },
     xaxis: {
       ...base.xaxis,
-      categories: points.value.map((p) => p.label),
+      type: 'datetime',
+      tickAmount: 6,
+      labels: {
+        rotate: 0,
+        rotateAlways: false,
+        hideOverlappingLabels: true,
+        formatter: (val: string | number, timestamp?: number) => {
+          const ts = typeof val === 'number' ? val : (timestamp ?? new Date(val).getTime());
+          if (isNaN(ts)) return String(val);
+          const d = new Date(ts);
+          const day = String(d.getDate()).padStart(2, '0');
+          const month = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').slice(0, 3);
+          return `${day} ${month}`;
+        },
+        style: { fontSize: '11px', colors: [colors.muted] },
+      },
     },
     yaxis: {
       ...base.yaxis,
@@ -132,7 +142,7 @@ const maxBalance = computed(() =>
         <p class="lg-note">Visão consolidada da conta e fluxo acumulado no recorte selecionado</p>
       </div>
       <div class="lg-legend" aria-label="Legenda do gráfico de saldo">
-        <span class="is-income">Saldo acumulado (linha contínua)</span>
+        <span class="is-income">Saldo acumulado</span>
       </div>
     </div>
 

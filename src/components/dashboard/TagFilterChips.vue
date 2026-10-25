@@ -82,6 +82,11 @@ const visibleTags = computed(() => tagStore.tags.filter((tag) => (tagCounts.valu
   border: 1px solid var(--lg-line);
   font: inherit;
   font-size: 0.8125rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 14px;
+  border-radius: 999px;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
@@ -92,5 +97,8 @@ const visibleTags = computed(() => tagStore.tags.filter((tag) => (tagCounts.valu
 .manage-tags-link {
   margin-left: auto;
   text-decoration: underline;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 </style>

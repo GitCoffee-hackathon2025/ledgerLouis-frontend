@@ -187,6 +187,9 @@ const chartOptions = computed<ApexOptions>(() => {
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .tag-table-filter-btn.is-active {

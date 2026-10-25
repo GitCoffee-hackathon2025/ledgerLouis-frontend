@@ -13,10 +13,21 @@ const emit = defineEmits<{
 
 const exportMenuOpen = ref(false);
 const exportMenuRef = ref<HTMLElement | null>(null);
+const exportButtonRef = ref<HTMLButtonElement | null>(null);
 
 const pickFormat = (format: 'csv' | 'pdf') => {
   exportMenuOpen.value = false;
+  exportButtonRef.value?.focus();
   emit('export', format);
+};
+
+const closeExportMenu = (restoreFocus = false) => {
+  if (exportMenuOpen.value) {
+    exportMenuOpen.value = false;
+    if (restoreFocus) {
+      exportButtonRef.value?.focus();
+    }
+  }
 };
 
 const handleClickOutside = (event: MouseEvent) => {
@@ -55,13 +66,14 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
       <!-- Menu de Exportação -->
       <div ref="exportMenuRef" class="export-menu-wrap">
         <button
+          ref="exportButtonRef"
           type="button"
           class="lg-btn"
           :aria-expanded="exportMenuOpen"
           aria-haspopup="true"
           aria-controls="export-dropdown"
           @click="exportMenuOpen = !exportMenuOpen"
-          @keydown.esc="exportMenuOpen = false"
+          @keydown.esc="closeExportMenu(false)"
         >
           <Download :size="16" aria-hidden="true" />
           <span>Exportar</span>
@@ -72,7 +84,7 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
           id="export-dropdown"
           class="export-dropdown"
           role="menu"
-          @keydown.esc="exportMenuOpen = false"
+          @keydown.esc.stop="closeExportMenu(true)"
         >
           <button type="button" class="export-opt" role="menuitem" @click="pickFormat('csv')">
             Exportar CSV
@@ -117,6 +129,9 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
 }
 
 .export-opt {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
   border: none;
   background: transparent;
   color: var(--lg-ink);
@@ -126,6 +141,7 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   font-size: 0.875rem;
   cursor: pointer;
   border-radius: 6px;
+  width: 100%;
 }
 
 .export-opt:hover {
