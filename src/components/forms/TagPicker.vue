@@ -74,11 +74,11 @@ export default {
         type="button"
         class="tag-chip"
         :class="{ 'tag-chip--active': isSelected(tag.id) }"
-        :style="isSelected(tag.id) ? { borderColor: colorForTag(tag.id), color: colorForTag(tag.id) } : {}"
+        :aria-pressed="isSelected(tag.id)"
         @click="toggleTag(tag.id)"
       >
         <span class="tag-chip-dot" :style="{ backgroundColor: colorForTag(tag.id) }"></span>
-        {{ tag.name }}
+        <span>{{ tag.name }}</span>
       </button>
 
       <button v-if="!showCreate" type="button" class="tag-chip tag-chip--new" @click="openCreate">
@@ -86,7 +86,7 @@ export default {
         Nova tag
       </button>
 
-      <div v-else class="tag-create-form" @keydown.enter.prevent.stop="confirmCreate">
+      <div v-else class="tag-create-form">
         <input
           v-model="newTagName"
           type="text"
@@ -102,7 +102,7 @@ export default {
           :disabled="creating"
           title="Criar tag"
           aria-label="Criar tag"
-          @click.prevent.stop="confirmCreate"
+          @click.stop="confirmCreate"
         >
           <Plus :size="14" />
         </button>
@@ -111,7 +111,7 @@ export default {
           class="tag-create-cancel"
           title="Cancelar"
           aria-label="Cancelar criação de tag"
-          @click.prevent.stop="cancelCreate"
+          @click.stop="cancelCreate"
         >
           <X :size="14" />
         </button>
@@ -151,23 +151,25 @@ export default {
   min-height: 44px;
   padding: 8px 14px;
   border-radius: 999px;
-  border: 1.5px solid var(--color-border);
-  background: transparent;
-  color: var(--color-text-secondary);
+  border: 1px solid var(--lg-line-strong);
+  background: var(--lg-paper);
+  color: var(--lg-ink);
   font-family: var(--font-body);
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .tag-chip:hover {
-  border-color: var(--color-text-tertiary);
-  color: var(--color-text);
+  background: var(--lg-sunken);
+  color: var(--lg-ink);
 }
 
 .tag-chip--active {
-  background: var(--color-surface-alt);
+  background: var(--lg-sunken);
+  border-color: var(--lg-ink);
+  color: var(--lg-ink);
 }
 
 .tag-chip-dot {
@@ -178,13 +180,13 @@ export default {
 }
 
 .tag-chip--new {
-  color: var(--color-text-secondary);
+  color: var(--lg-ink-2);
   border-style: dashed;
 }
 
 .tag-chip--new:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+  border-color: var(--lg-action);
+  color: var(--lg-ink);
 }
 
 .tag-create-form {
@@ -198,15 +200,11 @@ export default {
   min-height: 44px;
   padding: 7px 12px;
   border-radius: 999px;
-  border: 1.5px solid var(--color-primary);
-  background: var(--color-surface);
-  color: var(--color-text);
+  border: 1px solid var(--lg-line-strong);
+  background: var(--lg-paper);
+  color: var(--lg-ink);
   font-size: 13.5px;
   font-family: var(--font-body);
-}
-
-.tag-create-input:focus {
-  outline: none;
 }
 
 .tag-create-confirm,
@@ -217,16 +215,15 @@ export default {
   min-width: 44px;
   min-height: 44px;
   border-radius: 999px;
-  border: 1.5px solid var(--color-border);
-  background: transparent;
-  color: var(--color-text-secondary);
+  border: 1px solid var(--lg-line-strong);
+  background: var(--lg-paper);
+  color: var(--lg-ink-2);
   cursor: pointer;
   transition: border-color 0.15s ease, color 0.15s ease;
 }
 
 .tag-create-confirm {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+  color: var(--lg-income);
 }
 
 .tag-create-confirm:disabled {
@@ -235,8 +232,16 @@ export default {
 }
 
 .tag-create-cancel:hover {
-  border-color: var(--color-text-secondary);
-  color: var(--color-text);
+  border-color: var(--lg-line-strong);
+  color: var(--lg-ink);
+}
+
+.tag-chip:focus-visible,
+.tag-create-input:focus-visible,
+.tag-create-confirm:focus-visible,
+.tag-create-cancel:focus-visible {
+  outline: 2px solid var(--lg-focus);
+  outline-offset: 2px;
 }
 
 .tag-picker-hint,

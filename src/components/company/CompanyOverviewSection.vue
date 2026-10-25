@@ -10,13 +10,14 @@ import type { CompanyMemberDto } from '@/services/companyService';
 const props = defineProps<{
   members: CompanyMemberDto[];
   membersLoading?: boolean;
+  membersError?: string | null;
 }>();
 
 const recurringStore = useRecurringTransactionStore();
 const chartTheme = useChartTheme();
 
 onMounted(async () => {
-  if (recurringStore.items.length === 0 && !recurringStore.loading) {
+  if (recurringStore.items.length === 0 && !recurringStore.loading && !recurringStore.error) {
     await recurringStore.fetchRecurringTransactions();
   }
 });
@@ -100,12 +101,16 @@ const chartOptions = computed<ApexOptions>(() => {
       <div class="lg-figures">
         <div class="lg-figure">
           <span class="lg-figure-label">Membros com acesso</span>
-          <span class="lg-figure-value">{{ membersLoading ? '—' : members.length }}</span>
+          <span v-if="membersLoading" class="lg-figure-value is-muted">—</span>
+          <span v-else-if="membersError" class="lg-figure-value is-muted" style="font-size: 1rem;">Indisponível</span>
+          <span v-else class="lg-figure-value">{{ members.length }}</span>
         </div>
 
         <div class="lg-figure">
           <span class="lg-figure-label">Recorrências ativas</span>
-          <span class="lg-figure-value">{{ recurringStore.loading ? '—' : activeRules.length }}</span>
+          <span v-if="recurringStore.loading" class="lg-figure-value is-muted">—</span>
+          <span v-else-if="recurringStore.error" class="lg-figure-value is-muted" style="font-size: 1rem;">Indisponível</span>
+          <span v-else class="lg-figure-value">{{ activeRules.length }}</span>
         </div>
 
         <div class="lg-figure">
@@ -165,57 +170,59 @@ const chartOptions = computed<ApexOptions>(() => {
         Nenhum compromisso recorrente ativo cadastrado no momento.
       </div>
 
-      <div v-else class="lg-chart">
-        <apexchart
-          type="bar"
-          height="280"
-          :options="chartOptions"
-          :series="chartSeries"
-        />
-      </div>
+      <template v-else>
+        <div class="lg-chart">
+          <apexchart
+            type="bar"
+            height="280"
+            :options="chartOptions"
+            :series="chartSeries"
+          />
+        </div>
 
-      <!-- Tabela alternativa acessível -->
-      <details class="lg-details">
-        <summary>Ver projeção mensal em tabela</summary>
-        <table class="lg-table" aria-label="Projeção mês a mês de recorrências">
-          <thead>
-            <tr>
-              <th scope="col">Mês</th>
-              <th scope="col" class="lg-num">Saídas</th>
-              <th scope="col" class="lg-num">Entradas</th>
-              <th scope="col" class="lg-num">Resultado líquido</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in projections" :key="row.key">
-              <th scope="row">{{ row.label }}</th>
-              <td class="lg-num is-expense">
-                <MoneyValue :value="-row.debit" :signed="true" />
-              </td>
-              <td class="lg-num is-income">
-                <MoneyValue :value="row.credit" :signed="true" />
-              </td>
-              <td class="lg-num" :class="row.credit - row.debit >= 0 ? 'is-income' : 'is-expense'">
-                <MoneyValue :value="row.credit - row.debit" :signed="true" />
-              </td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr>
-              <th scope="row">Total previsto (12 meses)</th>
-              <td class="lg-num is-expense">
-                <MoneyValue :value="-total12Debit" :signed="true" />
-              </td>
-              <td class="lg-num is-income">
-                <MoneyValue :value="total12Credit" :signed="true" />
-              </td>
-              <td class="lg-num" :class="total12Credit - total12Debit >= 0 ? 'is-income' : 'is-expense'">
-                <MoneyValue :value="total12Credit - total12Debit" :signed="true" />
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </details>
+        <!-- Tabela alternativa acessível -->
+        <details class="lg-details">
+          <summary>Ver projeção mensal em tabela</summary>
+          <table class="lg-table" aria-label="Projeção mês a mês de recorrências">
+            <thead>
+              <tr>
+                <th scope="col">Mês</th>
+                <th scope="col" class="lg-num">Saídas</th>
+                <th scope="col" class="lg-num">Entradas</th>
+                <th scope="col" class="lg-num">Resultado líquido</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in projections" :key="row.key">
+                <th scope="row">{{ row.label }}</th>
+                <td class="lg-num is-expense">
+                  <MoneyValue :value="-row.debit" :signed="true" />
+                </td>
+                <td class="lg-num is-income">
+                  <MoneyValue :value="row.credit" :signed="true" />
+                </td>
+                <td class="lg-num" :class="row.credit - row.debit >= 0 ? 'is-income' : 'is-expense'">
+                  <MoneyValue :value="row.credit - row.debit" :signed="true" />
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Total previsto (12 meses)</th>
+                <td class="lg-num is-expense">
+                  <MoneyValue :value="-total12Debit" :signed="true" />
+                </td>
+                <td class="lg-num is-income">
+                  <MoneyValue :value="total12Credit" :signed="true" />
+                </td>
+                <td class="lg-num" :class="total12Credit - total12Debit >= 0 ? 'is-income' : 'is-expense'">
+                  <MoneyValue :value="total12Credit - total12Debit" :signed="true" />
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </details>
+      </template>
     </section>
   </div>
 </template>

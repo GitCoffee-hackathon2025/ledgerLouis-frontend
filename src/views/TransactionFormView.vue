@@ -33,25 +33,31 @@ const syncFromRoute = () => {
   isRecurring.value = repetirParam === '1' || repetirParam === 'true';
 };
 
-const currentBalance = ref<number | null>(null);
-const balanceLoading = ref(false);
+const balanceStatus = ref<'idle' | 'loading' | 'success' | 'error'>('idle');
+const balanceLoading = computed(() => balanceStatus.value === 'loading');
 const balanceError = ref<string | null>(null);
+
+const currentBalance = computed(() => {
+  if (balanceStatus.value !== 'success') return null;
+  return transactionStore.accountValue;
+});
 
 const loadAccountBalance = async () => {
   try {
-    balanceLoading.value = true;
+    balanceStatus.value = 'loading';
     balanceError.value = null;
     const service = new TransactionService();
     const val = await service.getAccountValue();
-    currentBalance.value = typeof val === 'number' && !isNaN(val) ? val : null;
-    if (currentBalance.value !== null) {
-      transactionStore.setAccountValue(currentBalance.value);
+    if (typeof val === 'number' && !isNaN(val)) {
+      transactionStore.setAccountValue(val);
+      balanceStatus.value = 'success';
+    } else {
+      balanceStatus.value = 'error';
+      balanceError.value = 'Não foi possível consultar o saldo da conta.';
     }
   } catch {
+    balanceStatus.value = 'error';
     balanceError.value = 'Não foi possível consultar o saldo da conta.';
-    currentBalance.value = null;
-  } finally {
-    balanceLoading.value = false;
   }
 };
 

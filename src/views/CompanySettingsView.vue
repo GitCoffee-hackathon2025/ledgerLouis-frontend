@@ -213,6 +213,7 @@ onMounted(async () => {
           v-if="activeTab === 'geral'"
           :members="members"
           :members-loading="membersLoading"
+          :members-error="membersError"
         />
 
         <CompanyMembersSection
