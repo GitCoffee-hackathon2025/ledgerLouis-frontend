@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { TransactionDto } from '@/services/transactionService';
+import { formatDateBr } from '@/utils/dateUtils';
 
 interface ExportRow {
   date: string;
@@ -18,7 +19,7 @@ const buildRows = (
   tagsByTransactionId: Record<string, { name: string }[]>,
 ): ExportRow[] =>
   transactions.map((transaction) => ({
-    date: new Date(transaction.date).toLocaleDateString('pt-BR'),
+    date: formatDateBr(transaction.date),
     description: transaction.description,
     type: transaction.entryType === 'credit' ? 'Entrada' : 'Saída',
     amount: transaction.amount,

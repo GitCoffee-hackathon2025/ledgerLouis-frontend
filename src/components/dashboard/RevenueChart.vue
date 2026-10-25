@@ -45,6 +45,7 @@ import { ref, computed } from 'vue';
 import { useTransactionStore } from '@/stores/transactionStore';
 import { useThemeStore } from '@/stores/themeStore';
 import type { TransactionDto } from '@/services/transactionService';
+import { parseCalendarDate, toLocalMidnight } from '@/utils/dateUtils';
 
 const props = defineProps<{ transactions?: TransactionDto[] }>();
 
@@ -93,6 +94,7 @@ const expensePercentage = computed(() => {
 
 const periodData = computed(() => {
   const now = new Date();
+  const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
   let categories: string[] = [];
   let incomeData: number[] = [];
   let expenseData: number[] = [];
@@ -104,18 +106,25 @@ const periodData = computed(() => {
     expenseData = [];
 
     for (let i = 6; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      const dateString = date.toISOString().split('T')[0];
-      const dayName = date.toLocaleDateString('pt-BR', { weekday: 'short' });
-      categories.push(`${dayName} (${date.getDate()})`);
+      const dateRef = new Date(todayLocal.getFullYear(), todayLocal.getMonth(), todayLocal.getDate() - i, 0, 0, 0, 0);
+      const targetY = dateRef.getFullYear();
+      const targetM = dateRef.getMonth() + 1;
+      const targetD = dateRef.getDate();
+      const dayName = dateRef.toLocaleDateString('pt-BR', { weekday: 'short' });
+      categories.push(`${dayName} (${targetD})`);
 
       const dayIncome = source.value
-        .filter((t) => t.entryType === 'credit' && t.date === dateString)
+        .filter((t) => {
+          const p = parseCalendarDate(t.date);
+          return t.entryType === 'credit' && p && p.year === targetY && p.month === targetM && p.day === targetD;
+        })
         .reduce((sum, t) => sum + t.amount, 0);
 
       const dayExpense = source.value
-        .filter((t) => t.entryType === 'debit' && t.date === dateString)
+        .filter((t) => {
+          const p = parseCalendarDate(t.date);
+          return t.entryType === 'debit' && p && p.year === targetY && p.month === targetM && p.day === targetD;
+        })
         .reduce((sum, t) => sum + t.amount, 0);
 
       incomeData.push(dayIncome);
@@ -127,14 +136,12 @@ const periodData = computed(() => {
     incomeData = [0, 0, 0, 0];
     expenseData = [0, 0, 0, 0];
 
-    const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
     const todayTime = todayLocal.getTime();
     const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
     source.value.forEach((t) => {
-      const parts = t.date.split('T')[0].split('-');
-      if (parts.length !== 3) return;
-      const txLocal = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 0, 0, 0, 0);
+      const txLocal = toLocalMidnight(t.date);
+      if (!txLocal) return;
       const diffDays = Math.floor((todayTime - txLocal.getTime()) / MS_PER_DAY);
 
       // Limite estrito de 28 dias: passado distante (>=28) e futuro (<0) não entram. Sem Math.abs nem clamp.
@@ -149,35 +156,39 @@ const periodData = computed(() => {
       }
     });
   } else if (selectedPeriod.value === 'monthly') {
-    // Últimos 6 meses
+    // Últimos 6 meses (calendário real, sem shift de fuso horário UTC)
     categories = [];
     incomeData = [];
     expenseData = [];
 
     for (let i = 5; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthName = date.toLocaleDateString('pt-BR', { month: 'short' });
-      const year = date.getFullYear().toString().slice(-2);
+      const monthRef = new Date(todayLocal.getFullYear(), todayLocal.getMonth() - i, 1, 12, 0, 0);
+      const targetMonth = monthRef.getMonth() + 1; // 1-12
+      const targetYear = monthRef.getFullYear();
+      const monthName = monthRef.toLocaleDateString('pt-BR', { month: 'short' });
+      const year = targetYear.toString().slice(-2);
       categories.push(`${monthName}/${year}`);
 
       const monthIncome = source.value
         .filter((t) => {
-          const tDate = new Date(t.date);
+          const p = parseCalendarDate(t.date);
           return (
             t.entryType === 'credit' &&
-            tDate.getMonth() === date.getMonth() &&
-            tDate.getFullYear() === date.getFullYear()
+            p &&
+            p.month === targetMonth &&
+            p.year === targetYear
           );
         })
         .reduce((sum, t) => sum + t.amount, 0);
 
       const monthExpense = source.value
         .filter((t) => {
-          const tDate = new Date(t.date);
+          const p = parseCalendarDate(t.date);
           return (
             t.entryType === 'debit' &&
-            tDate.getMonth() === date.getMonth() &&
-            tDate.getFullYear() === date.getFullYear()
+            p &&
+            p.month === targetMonth &&
+            p.year === targetYear
           );
         })
         .reduce((sum, t) => sum + t.amount, 0);
@@ -187,7 +198,7 @@ const periodData = computed(() => {
     }
   } else if (selectedPeriod.value === 'annual') {
     // Últimos 5 anos
-    const currentYear = now.getFullYear();
+    const currentYear = todayLocal.getFullYear();
     categories = [];
     incomeData = [];
     expenseData = [];
@@ -198,15 +209,15 @@ const periodData = computed(() => {
 
       const yearIncome = source.value
         .filter((t) => {
-          const date = new Date(t.date);
-          return t.entryType === 'credit' && date.getFullYear() === year;
+          const p = parseCalendarDate(t.date);
+          return t.entryType === 'credit' && p && p.year === year;
         })
         .reduce((sum, t) => sum + t.amount, 0);
 
       const yearExpense = source.value
         .filter((t) => {
-          const date = new Date(t.date);
-          return t.entryType === 'debit' && date.getFullYear() === year;
+          const p = parseCalendarDate(t.date);
+          return t.entryType === 'debit' && p && p.year === year;
         })
         .reduce((sum, t) => sum + t.amount, 0);
 

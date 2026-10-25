@@ -29,6 +29,7 @@ import { useRouter } from 'vue-router';
 import TransactionItem from '@/components/dashboard/TransactionItem.vue';
 import { useTransactionStore } from '@/stores/transactionStore';
 import type { TransactionDto } from '@/services/transactionService';
+import { toLocalMidnight, formatShortDate } from '@/utils/dateUtils';
 
 const router = useRouter();
 
@@ -53,17 +54,18 @@ const formattedAmount = (transaction: { amount: number; entryType: string }) => 
 };
 
 const formattedDate = (dateString: string) => {
-  const date = new Date(dateString);
+  const txLocal = toLocalMidnight(dateString);
+  if (!txLocal) return dateString;
   const now = new Date();
-  const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  
+  const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const diffDays = Math.floor((todayLocal.getTime() - txLocal.getTime()) / (1000 * 60 * 60 * 24));
+
   if (diffDays === 0) {
-    return `Hoje, ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    return 'Hoje';
   } else if (diffDays === 1) {
-    return `Ontem, ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    return 'Ontem';
   } else {
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+    return formatShortDate(dateString);
   }
 };
 </script>

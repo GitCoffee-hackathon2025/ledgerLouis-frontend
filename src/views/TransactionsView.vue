@@ -7,6 +7,7 @@ import { useTransactionStore } from '@/stores/transactionStore';
 import { useCompanyStore } from '@/stores/CompanyStore';
 import { useTagStore } from '@/stores/tagStore';
 import { exportTransactionsCsv, exportTransactionsPdf } from '@/utils/exportTransactions';
+import { toLocalMidnight, formatDateBr } from '@/utils/dateUtils';
 
 const router = useRouter();
 const transactionStore = useTransactionStore();
@@ -34,7 +35,7 @@ const filteredTransactions = computed(() => {
   return [...transactionStore.transactions]
     .filter((transaction) => (typeFilter.value === 'all' ? true : transaction.entryType === typeFilter.value))
     .filter((transaction) => (term ? transaction.description.toLowerCase().includes(term) : true))
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    .sort((a, b) => b.date.localeCompare(a.date));
 });
 
 const formattedAmount = (transaction: { amount: number; entryType: string }) => {
@@ -47,13 +48,15 @@ const formattedAmount = (transaction: { amount: number; entryType: string }) => 
 };
 
 const formattedDate = (dateString: string) => {
-  const date = new Date(dateString);
+  const txLocal = toLocalMidnight(dateString);
+  if (!txLocal) return dateString;
   const now = new Date();
-  const diffDays = Math.floor(Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const diffDays = Math.floor((todayLocal.getTime() - txLocal.getTime()) / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return `Hoje, ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-  if (diffDays === 1) return `Ontem, ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  if (diffDays === 0) return 'Hoje';
+  if (diffDays === 1) return 'Ontem';
+  return formatDateBr(dateString);
 };
 
 const handleExport = (format: 'csv' | 'pdf') => {
