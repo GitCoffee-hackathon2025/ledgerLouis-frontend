@@ -2,7 +2,7 @@
   <section class="chart-card chart-card--revenue" aria-labelledby="revenue-chart-title">
     <header class="chart-header">
       <div>
-        <p class="chart-kicker">Entradas vs Saídas</p>
+        <p class="chart-kicker">Recorte do gráfico · {{ periodLabels[selectedPeriod] }}</p>
         <h2 id="revenue-chart-title" class="chart-title">Movimentação financeira</h2>
       </div>
 
@@ -20,12 +20,78 @@
     <div class="chart-legend" aria-label="Legendas do gráfico">
       <span class="legend-item">
         <i class="legend-dot legend-dot--income" aria-hidden="true"></i>
-        <span>Entradas ({{ incomePercentage }}%)</span>
+        <span>Entradas no período: {{ formatCurrency(periodIncomeTotal) }} ({{ incomePercentage }}%)</span>
       </span>
       <span class="legend-item">
         <i class="legend-dot legend-dot--expense" aria-hidden="true"></i>
-        <span>Saídas ({{ expensePercentage }}%)</span>
+        <span>Saídas no período: {{ formatCurrency(periodExpenseTotal) }} ({{ expensePercentage }}%)</span>
       </span>
+    </div>
+
+    <p class="chart-summary-text" aria-live="polite">
+      {{ chartSummaryText }}
+    </p>
+
+    <div class="chart-actions-bar">
+      <button
+        type="button"
+        class="data-table-toggle-btn"
+        :aria-expanded="showDataTable"
+        aria-controls="revenue-data-table"
+        @click="showDataTable = !showDataTable"
+      >
+        {{ showDataTable ? 'Ocultar tabela de dados' : 'Ver dados do período em tabela' }}
+      </button>
+    </div>
+
+    <!-- Tabela Acessível com Valores do Período -->
+    <div
+      v-show="showDataTable"
+      id="revenue-data-table"
+      class="chart-table-container"
+    >
+      <table class="chart-table">
+        <caption class="sr-only">Valores de entradas e saídas por {{ periodLabels[selectedPeriod] }}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Período</th>
+            <th scope="col" class="num-col">Entradas</th>
+            <th scope="col" class="num-col">Saídas</th>
+            <th scope="col" class="num-col">Saldo</th>
+          </tr>
+        </thead>
+        <tbody v-if="periodTotal > 0">
+          <tr v-for="(cat, idx) in periodData.categories" :key="cat">
+            <th scope="row">{{ cat }}</th>
+            <td class="num-col text-income">{{ formatCurrency(periodData.income[idx] ?? 0) }}</td>
+            <td class="num-col text-expense">{{ formatCurrency(periodData.expense[idx] ?? 0) }}</td>
+            <td
+              class="num-col"
+              :class="(periodData.income[idx] ?? 0) - (periodData.expense[idx] ?? 0) >= 0 ? 'text-income' : 'text-expense'"
+            >
+              {{ formatCurrency((periodData.income[idx] ?? 0) - (periodData.expense[idx] ?? 0)) }}
+            </td>
+          </tr>
+        </tbody>
+        <tbody v-else>
+          <tr>
+            <td colspan="4" class="empty-period-cell">Nenhuma movimentação registrada neste período.</td>
+          </tr>
+        </tbody>
+        <tfoot v-if="periodTotal > 0">
+          <tr>
+            <th scope="row">Total do período</th>
+            <td class="num-col text-income">{{ formatCurrency(periodIncomeTotal) }}</td>
+            <td class="num-col text-expense">{{ formatCurrency(periodExpenseTotal) }}</td>
+            <td
+              class="num-col"
+              :class="periodBalance >= 0 ? 'text-income' : 'text-expense'"
+            >
+              {{ periodBalance >= 0 ? '+' : '-' }} {{ formatCurrency(Math.abs(periodBalance)) }}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
 
     <div class="chart-wrapper">
@@ -53,7 +119,18 @@ const transactionStore = useTransactionStore();
 const themeStore = useThemeStore();
 const isDark = computed(() => themeStore.theme === 'dark');
 const selectedPeriod = ref('monthly');
+const showDataTable = ref(false);
 const source = computed(() => props.transactions ?? transactionStore.transactions);
+
+const periodLabels: Record<string, string> = {
+  daily: 'últimos 7 dias',
+  weekly: 'últimas 4 semanas',
+  monthly: 'últimos 6 meses',
+  annual: 'últimos 5 anos',
+};
+
+const formatCurrency = (val: number) =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
 const chartSeries = computed(() => [
   {
@@ -66,30 +143,39 @@ const chartSeries = computed(() => [
   },
 ]);
 
-const totalIncome = computed(() =>
-  source.value
-    .filter((t) => t.entryType === 'credit')
-    .reduce((sum, t) => sum + t.amount, 0),
+const periodIncomeTotal = computed(() =>
+  (periodData.value?.income || []).reduce((sum, v) => sum + v, 0),
 );
 
-const totalExpense = computed(() =>
-  source.value
-    .filter((t) => t.entryType === 'debit')
-    .reduce((sum, t) => sum + t.amount, 0),
+const periodExpenseTotal = computed(() =>
+  (periodData.value?.expense || []).reduce((sum, v) => sum + v, 0),
 );
 
-const total = computed(() => totalIncome.value + totalExpense.value);
+const periodTotal = computed(() => periodIncomeTotal.value + periodExpenseTotal.value);
+const periodBalance = computed(() => periodIncomeTotal.value - periodExpenseTotal.value);
 
 const incomePercentage = computed(() => {
-  const totalVal = total.value;
-  if (totalVal === 0) return 0;
-  return Math.round((totalIncome.value / totalVal) * 100);
+  if (periodTotal.value === 0) return 0;
+  return Math.round((periodIncomeTotal.value / periodTotal.value) * 100);
 });
 
 const expensePercentage = computed(() => {
-  const totalVal = total.value;
-  if (totalVal === 0) return 0;
-  return Math.round((totalExpense.value / totalVal) * 100);
+  if (periodTotal.value === 0) return 0;
+  return Math.round((periodExpenseTotal.value / periodTotal.value) * 100);
+});
+
+const chartSummaryText = computed(() => {
+  if (periodTotal.value === 0) {
+    return `Nenhuma movimentação registrada no recorte (${periodLabels[selectedPeriod.value]}).`;
+  }
+  const balSignal = periodBalance.value >= 0 ? '+' : '-';
+  return `No período selecionado (${periodLabels[selectedPeriod.value]}): Entradas de ${formatCurrency(
+    periodIncomeTotal.value,
+  )} (${incomePercentage.value}%) e Saídas de ${formatCurrency(
+    periodExpenseTotal.value,
+  )} (${expensePercentage.value}%), com saldo do período de ${balSignal} ${formatCurrency(
+    Math.abs(periodBalance.value),
+  )}.`;
 });
 
 const periodData = computed(() => {
@@ -350,7 +436,114 @@ const chartOptions = computed(() => ({
   font-size: 13px;
   font-weight: 500;
   color: var(--color-text-secondary);
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.chart-summary-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text);
+  background: var(--color-surface-soft);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border-left: 3px solid var(--color-primary);
+  margin: 0 0 12px 0;
+}
+
+.chart-actions-bar {
+  display: flex;
+  justify-content: flex-end;
   margin-bottom: 12px;
+}
+
+.data-table-toggle-btn {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  min-height: 38px;
+  transition: all 0.15s ease;
+}
+
+.data-table-toggle-btn:hover {
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+}
+
+.data-table-toggle-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.chart-table-container {
+  overflow-x: auto;
+  margin-bottom: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.chart-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.chart-table th,
+.chart-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.chart-table th[scope='col'] {
+  background: var(--color-surface-soft);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.chart-table th[scope='row'] {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.chart-table tfoot th,
+.chart-table tfoot td {
+  font-weight: 700;
+  background: var(--color-surface-soft);
+  border-bottom: none;
+}
+
+.num-col {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.text-income {
+  color: var(--color-success-dark, #065F46);
+}
+
+[data-theme='dark'] .text-income {
+  color: #6EE7B7;
+}
+
+.text-expense {
+  color: var(--color-danger, #E52124);
+}
+
+.empty-period-cell {
+  text-align: center;
+  color: var(--color-text-secondary);
+  padding: 20px;
 }
 
 .legend-item {

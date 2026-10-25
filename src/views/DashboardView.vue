@@ -11,33 +11,33 @@
       <section class="financial-summary-surface" aria-label="Resumo e Saldo">
         <!-- Indicador Dominante: Saldo Total Global -->
         <div class="primary-balance-tile">
-          <span class="balance-kicker">Saldo total da conta</span>
+          <span class="balance-kicker">Saldo total da conta (global)</span>
           <div class="balance-value" :class="accountValue >= 0 ? 'positive' : 'negative'">
             {{ formattedAccountValue }}
           </div>
-          <span class="balance-meta">Disponível consolidado na conta da empresa</span>
+          <span class="balance-meta">Disponível consolidado na conta bancária (não sofre filtros)</span>
         </div>
 
         <!-- Indicadores de Apoio do Recorte Filtrado -->
         <div class="secondary-metrics-grid">
           <div class="metric-item">
-            <span class="metric-label">Entradas no recorte</span>
+            <span class="metric-label">Entradas no filtro</span>
             <strong class="metric-val text-income">+ {{ formattedIncome }}</strong>
             <span class="metric-footnote">
-              {{ activeTagName ? `Filtrado por: ${activeTagName}` : 'Total consolidado' }}
+              {{ activeTagName ? `Filtro ativo: ${activeTagName}` : 'Todas as entradas registradas' }}
             </span>
           </div>
 
           <div class="metric-item">
-            <span class="metric-label">Saídas no recorte</span>
+            <span class="metric-label">Saídas no filtro</span>
             <strong class="metric-val text-expense">- {{ formattedExpense }}</strong>
             <span class="metric-footnote">
-              {{ activeTagName ? `Filtrado por: ${activeTagName}` : 'Total consolidado' }}
+              {{ activeTagName ? `Filtro ativo: ${activeTagName}` : 'Todas as saídas registradas' }}
             </span>
           </div>
 
           <div class="metric-item">
-            <span class="metric-label">Resultado líquido</span>
+            <span class="metric-label">Resultado no filtro</span>
             <strong
               class="metric-val"
               :class="netTotal >= 0 ? 'text-income' : 'text-expense'"
