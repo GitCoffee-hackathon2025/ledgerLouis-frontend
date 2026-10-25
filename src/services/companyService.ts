@@ -51,6 +51,8 @@ export interface InvitationDto {
   email: string;
   role: CompanyRole;
   expiresAt: string;
+  acceptedAt?: string | null;
+  revokedAt?: string | null;
 }
 
 export interface UserInvitationDto {

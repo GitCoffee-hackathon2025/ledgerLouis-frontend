@@ -3,11 +3,17 @@ import { onMounted, reactive, ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { Plus, Trash2, Play, Pause, PlayCircle } from 'lucide-vue-next';
 import { useRecurringTransactionStore } from '@/stores/recurringTransactionStore';
+import { useCompanyStore } from '@/stores/CompanyStore';
 import type { RecurringFrequency } from '@/services/recurringTransactionService';
 import PrimaryButton from '@/components/ui/PrimaryButton.vue';
+import { formatDateBr } from '@/utils/dateUtils';
 
 const router = useRouter();
 const store = useRecurringTransactionStore();
+const companyStore = useCompanyStore();
+
+const isOwner = computed(() => companyStore.company.role === 'owner');
+const canManage = computed(() => companyStore.company.role === 'owner' || companyStore.company.role === 'admin');
 
 const runningId = ref<string | null>(null);
 const message = reactive({ status: '', text: '', show: false });
@@ -30,8 +36,7 @@ const sortedItems = computed(() =>
 
 const formatDate = (value: string | null) => {
   if (!value) return '—';
-  const [year, month, day] = value.split('-');
-  return `${day}/${month}/${year}`;
+  return formatDateBr(value);
 };
 
 const formatCurrency = (value: number) =>
@@ -43,29 +48,41 @@ const notify = (status: 'success' | 'error', text: string) => {
   message.show = true;
   setTimeout(() => {
     message.show = false;
-  }, 2500);
+  }, 3500);
 };
 
 const handleDelete = async (id: string) => {
+  if (!canManage.value) {
+    notify('error', 'Permissão insuficiente: apenas proprietário ou administrador podem excluir recorrências.');
+    return;
+  }
   try {
     await store.deleteRecurringTransaction(id);
     notify('success', 'Lançamento recorrente removido!');
-  } catch {
-    notify('error', 'Erro ao remover lançamento recorrente');
+  } catch (err: any) {
+    notify('error', err?.response?.data?.message || 'Erro ao remover lançamento recorrente.');
   }
 };
 
 const handleToggleStatus = async (id: string, currentStatus: string) => {
+  if (!canManage.value) {
+    notify('error', 'Permissão insuficiente: apenas proprietário ou administrador podem alterar o status.');
+    return;
+  }
   try {
     await store.updateRecurringTransaction(id, {
       status: currentStatus === 'active' ? 'paused' : 'active',
     });
-  } catch {
-    notify('error', 'Erro ao atualizar status');
+  } catch (err: any) {
+    notify('error', err?.response?.data?.message || 'Erro ao atualizar status.');
   }
 };
 
 const handleRunNow = async (id: string) => {
+  if (!isOwner.value) {
+    notify('error', 'Permissão insuficiente: apenas o proprietário (owner) pode disparar lançamentos manuais.');
+    return;
+  }
   runningId.value = id;
   try {
     const result = await store.runNow(id);
@@ -73,8 +90,8 @@ const handleRunNow = async (id: string) => {
       'success',
       result.created > 0 ? 'Lançamento gerado com sucesso!' : 'Nada vencido para lançar ainda.',
     );
-  } catch {
-    notify('error', 'Erro ao lançar agora');
+  } catch (err: any) {
+    notify('error', err?.response?.data?.message || 'Erro ao lançar agora.');
   } finally {
     runningId.value = null;
   }
@@ -144,7 +161,7 @@ export default {
 
         <div class="item-actions">
           <PrimaryButton
-            v-if="item.status !== 'finished'"
+            v-if="isOwner && item.status !== 'finished'"
             variant="neutral"
             compact
             :loading="runningId === item.id"
@@ -155,7 +172,7 @@ export default {
           </PrimaryButton>
 
           <PrimaryButton
-            v-if="item.status !== 'finished'"
+            v-if="canManage && item.status !== 'finished'"
             variant="neutral"
             compact
             @click="handleToggleStatus(item.id, item.status)"
@@ -166,6 +183,7 @@ export default {
           </PrimaryButton>
 
           <PrimaryButton
+            v-if="canManage"
             icon-only
             compact
             variant="danger"
@@ -175,6 +193,10 @@ export default {
           >
             <Trash2 :size="14" />
           </PrimaryButton>
+
+          <span v-if="!canManage" class="readonly-badge">
+            Somente leitura
+          </span>
         </div>
       </div>
     </div>

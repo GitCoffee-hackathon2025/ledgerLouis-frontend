@@ -111,7 +111,7 @@
                 </div>
                 <div class="header-btns">
                   <PrimaryButton
-                    v-if="!showInviteForm"
+                    v-if="isOwner && !showInviteForm"
                     variant="neutral"
                     compact
                     @click="showInviteForm = true"
@@ -126,7 +126,7 @@
               </header>
 
               <!-- Formulário Inline de Convite -->
-              <div v-if="showInviteForm" class="invite-panel">
+              <div v-if="isOwner && showInviteForm" class="invite-panel">
                 <div class="invite-header">
                   <h3>Novo convite de membro</h3>
                   <button
@@ -190,6 +190,12 @@
               <div v-if="membersLoading" class="empty-state">
                 Carregando membros da empresa...
               </div>
+              <div v-else-if="membersError" class="empty-state error-box" role="alert">
+                <p>{{ membersError }}</p>
+                <PrimaryButton variant="neutral" compact @click="loadMembers">
+                  Tentar novamente
+                </PrimaryButton>
+              </div>
               <div v-else-if="members.length === 0" class="empty-state">
                 Nenhum membro encontrado para esta empresa.
               </div>
@@ -206,39 +212,70 @@
               </ul>
             </section>
 
-            <!-- Painel de Convites Pendentes -->
+            <!-- Painel de Convites -->
             <section class="panel" aria-labelledby="invites-title">
               <header class="panel-header with-actions">
                 <div>
-                  <h2 id="invites-title" class="panel-title">Convites pendentes</h2>
-                  <p class="panel-subtitle">Aguardando aceite pelos usuários convidados.</p>
+                  <h2 id="invites-title" class="panel-title">Convites da empresa</h2>
+                  <p class="panel-subtitle">Histórico e convites pendentes de aceite.</p>
                 </div>
-                <PrimaryButton variant="neutral" compact title="Recarregar convites" @click="loadInvitations">
+                <PrimaryButton
+                  v-if="isOwner"
+                  variant="neutral"
+                  compact
+                  title="Recarregar convites"
+                  @click="loadInvitations"
+                >
                   <RefreshCw :size="14" aria-hidden="true" />
                 </PrimaryButton>
               </header>
 
-              <div v-if="invitationsLoading" class="empty-state">
-                Carregando convites pendentes...
+              <!-- Restrição de papel para não-owner (Achado 6) -->
+              <div v-if="!isOwner" class="empty-state notice-box">
+                Apenas o proprietário (owner) pode consultar e gerenciar convites da empresa.
+              </div>
+              <div v-else-if="invitationsLoading" class="empty-state">
+                Carregando convites da empresa...
+              </div>
+              <div v-else-if="invitationsError" class="empty-state error-box" role="alert">
+                <p>{{ invitationsError }}</p>
+                <PrimaryButton variant="neutral" compact @click="loadInvitations">
+                  Tentar novamente
+                </PrimaryButton>
               </div>
               <div v-else-if="invitations.length === 0" class="empty-state">
-                Nenhum convite pendente no momento.
+                Nenhum convite registrado no momento.
               </div>
-              <ul v-else class="invites-list">
-                <li v-for="invitation in invitations" :key="invitation.id" class="invite-row">
-                  <div class="invite-data">
-                    <strong class="invite-email">{{ invitation.email }}</strong>
-                    <div class="invite-subdata">
-                      <span>Função: {{ roleLabels[invitation.role] || invitation.role }}</span>
-                      <span class="separator">·</span>
-                      <span>Expira em: {{ formatDate(invitation.expiresAt) }}</span>
+              <div v-else>
+                <p v-if="revokeError" class="field-error banner-gap" role="alert">
+                  {{ revokeError }}
+                </p>
+                <ul class="invites-list">
+                  <li v-for="invitation in invitations" :key="invitation.id" class="invite-row">
+                    <div class="invite-data">
+                      <div class="invite-header-line">
+                        <strong class="invite-email">{{ invitation.email }}</strong>
+                        <span class="status-badge" :data-status="getInvitationStatus(invitation).key">
+                          {{ getInvitationStatus(invitation).label }}
+                        </span>
+                      </div>
+                      <div class="invite-subdata">
+                        <span>Função: {{ roleLabels[invitation.role] || invitation.role }}</span>
+                        <span class="separator">·</span>
+                        <span>Expira em: {{ formatDate(invitation.expiresAt) }}</span>
+                      </div>
                     </div>
-                  </div>
-                  <PrimaryButton variant="danger" compact @click="handleRevoke(invitation)">
-                    Revogar
-                  </PrimaryButton>
-                </li>
-              </ul>
+                    <PrimaryButton
+                      v-if="getInvitationStatus(invitation).key === 'pending'"
+                      variant="danger"
+                      compact
+                      @click="handleRevoke(invitation)"
+                    >
+                      Revogar
+                    </PrimaryButton>
+                  </li>
+                </ul>
+              </div>
             </section>
           </div>
 
@@ -270,7 +307,7 @@ import {
   UserPlus,
 } from 'lucide-vue-next';
 import { useCompanyStore } from '@/stores/CompanyStore';
-import CompanyService, { type CompanyRole } from '@/services/companyService';
+import CompanyService, { type CompanyRole, type InvitationDto } from '@/services/companyService';
 import RecurringTransactionManager from '@/components/company/RecurringTransactionManager.vue';
 import TagManager from '@/components/company/TagManager.vue';
 import PrimaryButton from '@/components/ui/PrimaryButton.vue';
@@ -296,15 +333,35 @@ const roleLabels: Record<string, string> = {
   viewer: 'Visualizador (Viewer)',
 };
 
+const isOwner = computed(() => companyStore.company.role === 'owner');
+const isAdminOrOwner = computed(() => companyStore.company.role === 'owner' || companyStore.company.role === 'admin');
+
 const showInviteForm = ref(false);
 const membersLoading = ref(false);
 const inviteLoading = ref(false);
 const inviteError = ref('');
+const membersError = ref<string | null>(null);
+const invitationsError = ref<string | null>(null);
+const revokeError = ref<string | null>(null);
 
 const members = ref<Array<{ userId: string; name: string; email: string; role: CompanyRole; createdAt: string }>>([]);
 const newInvite = reactive<{ email: string; role: CompanyRole }>({ email: '', role: 'viewer' });
-const invitations = ref<Array<{ id: string; email: string; role: CompanyRole; expiresAt: string }>>([]);
+const invitations = ref<InvitationDto[]>([]);
 const invitationsLoading = ref(false);
+
+const getInvitationStatus = (inv: InvitationDto) => {
+  if (inv.acceptedAt) {
+    return { key: 'accepted', label: 'Aceito' };
+  }
+  if (inv.revokedAt) {
+    return { key: 'revoked', label: 'Revogado' };
+  }
+  const exp = new Date(inv.expiresAt).getTime();
+  if (!isNaN(exp) && exp < Date.now()) {
+    return { key: 'expired', label: 'Expirado' };
+  }
+  return { key: 'pending', label: 'Aguardando aceite' };
+};
 
 const setCompanyFromUserCompany = (userCompany: { companyId: string; companyName: string; role: string }) => {
   const safeRole: CompanyRole =
@@ -336,11 +393,13 @@ const loadMembers = async () => {
   if (!companyStore.company.id) return;
 
   membersLoading.value = true;
+  membersError.value = null;
   try {
     const response = await service.getCompanyMembers(companyStore.company.id);
     members.value = response.items;
   } catch (error) {
     console.error('Erro ao carregar membros:', error);
+    membersError.value = 'Não foi possível carregar os membros da empresa.';
     members.value = [];
   } finally {
     membersLoading.value = false;
@@ -348,13 +407,15 @@ const loadMembers = async () => {
 };
 
 const loadInvitations = async () => {
-  if (!companyStore.company.id) return;
+  if (!companyStore.company.id || !isOwner.value) return;
   invitationsLoading.value = true;
+  invitationsError.value = null;
   try {
     const response = await service.listInvitations(companyStore.company.id, { limit: 50 });
     invitations.value = response.items;
   } catch (error) {
     console.error('Erro ao carregar convites:', error);
+    invitationsError.value = 'Não foi possível carregar os convites da empresa.';
     invitations.value = [];
   } finally {
     invitationsLoading.value = false;
@@ -363,6 +424,11 @@ const loadInvitations = async () => {
 
 const handleCreateInvitation = async () => {
   inviteError.value = '';
+
+  if (!isOwner.value) {
+    inviteError.value = 'Permissão insuficiente: apenas o owner pode convidar novos membros.';
+    return;
+  }
 
   if (!newInvite.email.trim()) {
     inviteError.value = 'Por favor, informe o email do usuário.';
@@ -395,7 +461,7 @@ const handleCreateInvitation = async () => {
     } else if (resp?.error === 'FORBIDDEN') {
       inviteError.value = 'Permissão insuficiente: apenas o owner pode convidar novos membros.';
     } else {
-      inviteError.value = 'Erro ao convidar membro. Verifique o console para mais detalhes.';
+      inviteError.value = 'Erro ao convidar membro. Verifique suas permissões.';
     }
   } finally {
     inviteLoading.value = false;
@@ -403,12 +469,14 @@ const handleCreateInvitation = async () => {
 };
 
 const handleRevoke = async (invitation: { id: string }) => {
-  if (!companyStore.company.id) return;
+  if (!companyStore.company.id || !isOwner.value) return;
+  revokeError.value = null;
   try {
     await service.revokeInvitation(companyStore.company.id, invitation.id);
     await loadInvitations();
   } catch (error) {
     console.error('Erro ao revogar convite:', error);
+    revokeError.value = 'Não foi possível revogar o convite. Verifique suas permissões e tente novamente.';
   }
 };
 
@@ -430,7 +498,9 @@ onMounted(async () => {
   }
   await ensureCompanyId();
   await loadMembers();
-  await loadInvitations();
+  if (isOwner.value) {
+    await loadInvitations();
+  }
 });
 </script>
 
@@ -799,7 +869,72 @@ onMounted(async () => {
 .invite-data {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+}
+
+.invite-header-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.status-badge[data-status='pending'] {
+  background: rgba(245, 158, 11, 0.15);
+  color: #B45309;
+}
+
+[data-theme='dark'] .status-badge[data-status='pending'] {
+  color: #FDE68A;
+}
+
+.status-badge[data-status='accepted'] {
+  background: rgba(16, 185, 129, 0.15);
+  color: #065F46;
+}
+
+[data-theme='dark'] .status-badge[data-status='accepted'] {
+  color: #6EE7B7;
+}
+
+.status-badge[data-status='revoked'] {
+  background: rgba(239, 68, 68, 0.15);
+  color: #991B1B;
+}
+
+[data-theme='dark'] .status-badge[data-status='revoked'] {
+  color: #FCA5A5;
+}
+
+.status-badge[data-status='expired'] {
+  background: var(--color-surface-soft);
+  color: var(--color-text-secondary);
+}
+
+.error-box {
+  color: var(--color-danger, #E52124);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.notice-box {
+  color: var(--color-text-secondary);
+  background: var(--color-surface-soft);
+  border-radius: 10px;
+  border: 1px dashed var(--color-border);
+}
+
+.banner-gap {
+  margin-bottom: 12px;
 }
 
 .invite-email {
