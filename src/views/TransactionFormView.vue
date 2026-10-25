@@ -6,6 +6,7 @@ import { useTransactionStore } from '@/stores/transactionStore';
 import { useRecurringTransactionStore } from '@/stores/recurringTransactionStore';
 import { useTagStore } from '@/stores/tagStore';
 import type { RecurringFrequency } from '@/services/recurringTransactionService';
+import TransactionService from '@/services/transactionService';
 import TagPicker from '@/components/forms/TagPicker.vue';
 import TransactionFormEffect from '@/components/transaction/TransactionFormEffect.vue';
 import MoneyValue from '@/components/ui/MoneyValue.vue';
@@ -32,9 +33,31 @@ const syncFromRoute = () => {
   isRecurring.value = repetirParam === '1' || repetirParam === 'true';
 };
 
+const currentBalance = ref<number | null>(null);
+const balanceLoading = ref(false);
+const balanceError = ref<string | null>(null);
+
+const loadAccountBalance = async () => {
+  try {
+    balanceLoading.value = true;
+    balanceError.value = null;
+    const service = new TransactionService();
+    const val = await service.getAccountValue();
+    currentBalance.value = typeof val === 'number' && !isNaN(val) ? val : null;
+    if (currentBalance.value !== null) {
+      transactionStore.setAccountValue(currentBalance.value);
+    }
+  } catch {
+    balanceError.value = 'Não foi possível consultar o saldo da conta.';
+    currentBalance.value = null;
+  } finally {
+    balanceLoading.value = false;
+  }
+};
+
 onMounted(async () => {
   syncFromRoute();
-  await transactionStore.fetchAccountValue();
+  await loadAccountBalance();
 });
 
 watch(
@@ -131,8 +154,6 @@ const parsedAmount = computed(() => {
   const num = parseFloat(formData.amount);
   return isNaN(num) || num <= 0 ? null : num;
 });
-
-const currentBalance = computed(() => transactionStore.accountValue ?? 0);
 
 const pageTitle = computed(() => {
   if (isRecurring.value) return 'Lançamento recorrente';
@@ -660,8 +681,11 @@ const handleSubmit = async (e: Event) => {
           :is-recurring="isRecurring"
           :frequency="formData.frequency"
           :start-date="formData.startDate"
-          :end-date="formData.endDate"
+          :end-date="formData.endDate || undefined"
           :current-balance="currentBalance"
+          :balance-loading="balanceLoading"
+          :balance-error="balanceError"
+          @retry-balance="loadAccountBalance"
         />
       </div>
     </div>

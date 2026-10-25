@@ -86,22 +86,36 @@ export default {
         Nova tag
       </button>
 
-      <form v-else class="tag-create-form" @submit.prevent="confirmCreate">
+      <div v-else class="tag-create-form" @keydown.enter.prevent.stop="confirmCreate">
         <input
           v-model="newTagName"
           type="text"
           placeholder="Nome da tag"
           class="tag-create-input"
           autofocus
+          @keydown.enter.prevent.stop="confirmCreate"
           @keyup.escape="cancelCreate"
         />
-        <button type="submit" class="tag-create-confirm" :disabled="creating" title="Criar tag">
+        <button
+          type="button"
+          class="tag-create-confirm"
+          :disabled="creating"
+          title="Criar tag"
+          aria-label="Criar tag"
+          @click.prevent.stop="confirmCreate"
+        >
           <Plus :size="14" />
         </button>
-        <button type="button" class="tag-create-cancel" title="Cancelar" @click="cancelCreate">
+        <button
+          type="button"
+          class="tag-create-cancel"
+          title="Cancelar"
+          aria-label="Cancelar criação de tag"
+          @click.prevent.stop="cancelCreate"
+        >
           <X :size="14" />
         </button>
-      </form>
+      </div>
     </div>
 
     <p v-if="createError" class="tag-picker-error">{{ createError }}</p>
@@ -134,6 +148,7 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  min-height: 44px;
   padding: 8px 14px;
   border-radius: 999px;
   border: 1.5px solid var(--color-border);
@@ -180,6 +195,7 @@ export default {
 
 .tag-create-input {
   width: 140px;
+  min-height: 44px;
   padding: 7px 12px;
   border-radius: 999px;
   border: 1.5px solid var(--color-primary);
@@ -198,8 +214,8 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 999px;
   border: 1.5px solid var(--color-border);
   background: transparent;

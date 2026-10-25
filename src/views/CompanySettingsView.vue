@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useCompanyStore } from '@/stores/CompanyStore';
+import { useRecurringTransactionStore } from '@/stores/recurringTransactionStore';
 import CompanyService, {
   type CompanyMemberDto,
   type CompanyRole,
@@ -15,6 +16,7 @@ import RecurringTransactionManager from '@/components/company/RecurringTransacti
 const router = useRouter();
 const route = useRoute();
 const companyStore = useCompanyStore();
+const recurringStore = useRecurringTransactionStore();
 const service = new CompanyService();
 
 const validTabs = ['geral', 'pessoas', 'tags', 'recorrencias'] as const;
@@ -125,10 +127,11 @@ onMounted(async () => {
     return;
   }
   await ensureCompanyId();
-  await loadMembers();
-  if (isOwner.value) {
-    await loadInvitations();
-  }
+  await Promise.allSettled([
+    loadMembers(),
+    recurringStore.fetchRecurringTransactions(),
+    isOwner.value ? loadInvitations() : Promise.resolve(),
+  ]);
 });
 </script>
 
@@ -209,7 +212,7 @@ onMounted(async () => {
         <CompanyOverviewSection
           v-if="activeTab === 'geral'"
           :members="members"
-          :loading="membersLoading"
+          :members-loading="membersLoading"
         />
 
         <CompanyMembersSection

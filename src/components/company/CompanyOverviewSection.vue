@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import type { ApexOptions } from 'apexcharts';
-import { useChartTheme, brl } from '@/utils/chartTheme';
+import { useChartTheme, brlExact } from '@/utils/chartTheme';
 import { projectRecurring } from '@/utils/recurrence';
 import { useRecurringTransactionStore } from '@/stores/recurringTransactionStore';
 import MoneyValue from '@/components/ui/MoneyValue.vue';
@@ -9,11 +9,17 @@ import type { CompanyMemberDto } from '@/services/companyService';
 
 const props = defineProps<{
   members: CompanyMemberDto[];
-  loading?: boolean;
+  membersLoading?: boolean;
 }>();
 
 const recurringStore = useRecurringTransactionStore();
 const chartTheme = useChartTheme();
+
+onMounted(async () => {
+  if (recurringStore.items.length === 0 && !recurringStore.loading) {
+    await recurringStore.fetchRecurringTransactions();
+  }
+});
 
 const activeRules = computed(() =>
   recurringStore.items.filter((r) => r.status === 'active'),
@@ -38,10 +44,16 @@ const total12Credit = computed(() =>
 );
 
 const summarySentence = computed(() => {
+  if (recurringStore.loading) {
+    return 'Carregando projeções recorrentes...';
+  }
+  if (recurringStore.error) {
+    return 'Não foi possível carregar a projeção de recorrências.';
+  }
   if (activeRules.value.length === 0) {
     return 'Nenhuma recorrência ativa programada para os próximos 12 meses.';
   }
-  return `Nos próximos 12 meses, a previsão é de ${brl(total12Debit.value)} em saídas e ${brl(total12Credit.value)} em entradas recorrentes.`;
+  return `Nos próximos 12 meses, a previsão é de ${brlExact(total12Debit.value)} em saídas e ${brlExact(total12Credit.value)} em entradas recorrentes.`;
 });
 
 const chartSeries = computed(() => [
@@ -88,17 +100,23 @@ const chartOptions = computed<ApexOptions>(() => {
       <div class="lg-figures">
         <div class="lg-figure">
           <span class="lg-figure-label">Membros com acesso</span>
-          <span class="lg-figure-value">{{ members.length }}</span>
+          <span class="lg-figure-value">{{ membersLoading ? '—' : members.length }}</span>
         </div>
 
         <div class="lg-figure">
           <span class="lg-figure-label">Recorrências ativas</span>
-          <span class="lg-figure-value">{{ activeRules.length }}</span>
+          <span class="lg-figure-value">{{ recurringStore.loading ? '—' : activeRules.length }}</span>
         </div>
 
         <div class="lg-figure">
           <span class="lg-figure-label">Compromisso do mês em recorrências</span>
-          <span class="lg-figure-value is-expense">
+          <span v-if="recurringStore.loading" class="lg-figure-value is-muted">
+            —
+          </span>
+          <span v-else-if="recurringStore.error" class="lg-figure-value is-muted" style="font-size: 1rem;">
+            Indisponível
+          </span>
+          <span v-else class="lg-figure-value is-expense">
             <MoneyValue :value="monthlyDebitCommitment" :signed="true" />
           </span>
         </div>
@@ -127,8 +145,20 @@ const chartOptions = computed<ApexOptions>(() => {
         {{ summarySentence }}
       </p>
 
-      <div v-if="loading" class="lg-empty">
+      <div v-if="recurringStore.loading" class="lg-empty">
         Carregando projeções recorrentes...
+      </div>
+
+      <div v-else-if="recurringStore.error" class="lg-empty">
+        <p class="lg-error">{{ recurringStore.error }}</p>
+        <button
+          type="button"
+          class="lg-btn lg-btn--quiet"
+          style="margin-top: 8px;"
+          @click="recurringStore.fetchRecurringTransactions()"
+        >
+          Tentar carregar projeções novamente
+        </button>
       </div>
 
       <div v-else-if="activeRules.length === 0" class="lg-empty">

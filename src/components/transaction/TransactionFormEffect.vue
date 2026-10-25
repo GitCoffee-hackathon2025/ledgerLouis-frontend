@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import type { ApexOptions } from 'apexcharts';
 import type { RecurringFrequency } from '@/services/recurringTransactionService';
 import MoneyValue from '@/components/ui/MoneyValue.vue';
-import { useChartTheme, brl } from '@/utils/chartTheme';
+import { useChartTheme, brlExact } from '@/utils/chartTheme';
 import { occurrencesBetween, projectRecurring, todayISO } from '@/utils/recurrence';
 import { formatDateBr } from '@/utils/dateUtils';
 
@@ -14,7 +14,13 @@ const props = defineProps<{
   frequency: RecurringFrequency;
   startDate: string;
   endDate?: string;
-  currentBalance: number;
+  currentBalance: number | null;
+  balanceLoading?: boolean;
+  balanceError?: string | null;
+}>();
+
+const emit = defineEmits<{
+  (e: 'retry-balance'): void;
 }>();
 
 const chartTheme = useChartTheme();
@@ -23,6 +29,7 @@ const chartTheme = useChartTheme();
 const safeAmount = computed(() => props.amount || 0);
 
 const projectedBalance = computed(() => {
+  if (props.currentBalance === null || props.currentBalance === undefined) return null;
   if (props.entryType === 'credit') {
     return props.currentBalance + safeAmount.value;
   }
@@ -30,17 +37,21 @@ const projectedBalance = computed(() => {
 });
 
 // Proporções para barra comparativa
-const barMax = computed(() =>
-  Math.max(Math.abs(props.currentBalance), Math.abs(projectedBalance.value), 1),
-);
+const barMax = computed(() => {
+  const current = props.currentBalance ?? 0;
+  const projected = projectedBalance.value ?? 0;
+  return Math.max(Math.abs(current), Math.abs(projected), 1);
+});
 
-const currentBarWidth = computed(() =>
-  `${Math.min(100, Math.round((Math.abs(props.currentBalance) / barMax.value) * 100))}%`,
-);
+const currentBarWidth = computed(() => {
+  if (props.currentBalance === null) return '0%';
+  return `${Math.min(100, Math.round((Math.abs(props.currentBalance) / barMax.value) * 100))}%`;
+});
 
-const projectedBarWidth = computed(() =>
-  `${Math.min(100, Math.round((Math.abs(projectedBalance.value) / barMax.value) * 100))}%`,
-);
+const projectedBarWidth = computed(() => {
+  if (projectedBalance.value === null) return '0%';
+  return `${Math.min(100, Math.round((Math.abs(projectedBalance.value) / barMax.value) * 100))}%`;
+});
 
 // 2. Efeito para Lançamento Recorrente
 const nextDates = computed(() => {
@@ -144,53 +155,84 @@ const chartOptions = computed<ApexOptions>(() => {
 
     <!-- Cenário A: Lançamento Único -->
     <div v-if="!isRecurring" class="single-effect-content">
-      <div class="lg-figures">
-        <div class="lg-figure">
-          <span class="lg-figure-label">Saldo atual em conta</span>
-          <span class="lg-figure-value">
-            <MoneyValue :value="currentBalance" />
-          </span>
+      <div v-if="balanceLoading" class="lg-empty">
+        Consultando saldo atual...
+      </div>
+
+      <!-- Saldo conhecido: exibe saldo atual e saldo projetado -->
+      <template v-else-if="currentBalance !== null && projectedBalance !== null">
+        <div class="lg-figures">
+          <div class="lg-figure">
+            <span class="lg-figure-label">Saldo atual em conta</span>
+            <span class="lg-figure-value">
+              <MoneyValue :value="currentBalance" />
+            </span>
+          </div>
+
+          <div class="lg-figure">
+            <span class="lg-figure-label">Saldo após este lançamento</span>
+            <span
+              class="lg-figure-value"
+              :class="projectedBalance >= 0 ? 'is-income' : 'is-expense'"
+            >
+              <MoneyValue :value="projectedBalance" />
+            </span>
+          </div>
         </div>
 
-        <div class="lg-figure">
-          <span class="lg-figure-label">Saldo após este lançamento</span>
-          <span
-            class="lg-figure-value"
-            :class="projectedBalance >= 0 ? 'is-income' : 'is-expense'"
+        <!-- Barra Comparativa Neutra -->
+        <div class="balance-bars-wrapper" aria-hidden="true">
+          <div class="bar-line">
+            <span class="bar-label">Hoje</span>
+            <div class="bar-track">
+              <div class="bar-fill current" :style="{ width: currentBarWidth }"></div>
+            </div>
+          </div>
+
+          <div class="bar-line">
+            <span class="bar-label">Depois</span>
+            <div class="bar-track">
+              <div
+                class="bar-fill projected"
+                :class="entryType === 'credit' ? 'is-income' : 'is-expense'"
+                :style="{ width: projectedBarWidth }"
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        <p class="lg-note effect-explanation">
+          O valor de
+          <strong :class="entryType === 'credit' ? 'is-income' : 'is-expense'">
+            <MoneyValue :value="entryType === 'credit' ? safeAmount : -safeAmount" :signed="true" />
+          </strong>
+          será incorporado imediatamente ao saldo bancário da empresa após a gravação.
+        </p>
+      </template>
+
+      <!-- Saldo desconhecido/indisponível: exibe apenas o valor do lançamento (R2-06) -->
+      <template v-else>
+        <div class="lg-figures">
+          <div class="lg-figure">
+            <span class="lg-figure-label">{{ entryType === 'credit' ? 'Valor da receita' : 'Valor da despesa' }}</span>
+            <span class="lg-figure-value" :class="entryType === 'credit' ? 'is-income' : 'is-expense'">
+              <MoneyValue :value="entryType === 'credit' ? safeAmount : -safeAmount" :signed="true" />
+            </span>
+          </div>
+        </div>
+
+        <div v-if="balanceError" class="balance-fallback-box" style="margin-top: 12px;">
+          <p class="lg-note">{{ balanceError }}</p>
+          <button
+            type="button"
+            class="lg-btn lg-btn--quiet"
+            style="margin-top: 6px;"
+            @click="$emit('retry-balance')"
           >
-            <MoneyValue :value="projectedBalance" />
-          </span>
+            Tentar carregar saldo
+          </button>
         </div>
-      </div>
-
-      <!-- Barra Comparativa Neutra -->
-      <div class="balance-bars-wrapper" aria-hidden="true">
-        <div class="bar-line">
-          <span class="bar-label">Hoje</span>
-          <div class="bar-track">
-            <div class="bar-fill current" :style="{ width: currentBarWidth }"></div>
-          </div>
-        </div>
-
-        <div class="bar-line">
-          <span class="bar-label">Depois</span>
-          <div class="bar-track">
-            <div
-              class="bar-fill projected"
-              :class="entryType === 'credit' ? 'is-income' : 'is-expense'"
-              :style="{ width: projectedBarWidth }"
-            ></div>
-          </div>
-        </div>
-      </div>
-
-      <p class="lg-note effect-explanation">
-        O valor de
-        <strong :class="entryType === 'credit' ? 'is-income' : 'is-expense'">
-          <MoneyValue :value="entryType === 'credit' ? safeAmount : -safeAmount" :signed="true" />
-        </strong>
-        será incorporado imediatamente ao saldo bancário da empresa após a gravação.
-      </p>
+      </template>
     </div>
 
     <!-- Cenário B: Lançamento Recorrente -->
@@ -219,7 +261,7 @@ const chartOptions = computed<ApexOptions>(() => {
           <h3 class="upcoming-title">Acumulado projetado em 12 meses</h3>
           <div class="lg-legend">
             <span :class="entryType === 'credit' ? 'is-income' : 'is-expense'">
-              Total: {{ brl(total12Months) }}
+              Total: {{ brlExact(total12Months) }}
             </span>
           </div>
         </header>
@@ -232,6 +274,37 @@ const chartOptions = computed<ApexOptions>(() => {
             :series="chartSeries"
           />
         </div>
+
+        <!-- Tabela alternativa acessível em 12 meses (R2-11) -->
+        <details class="lg-details">
+          <summary>Ver projeção mês a mês em tabela</summary>
+          <table class="lg-table" aria-label="Projeção mês a mês de valores acumulados">
+            <thead>
+              <tr>
+                <th scope="col">Mês</th>
+                <th scope="col" class="lg-num">No mês</th>
+                <th scope="col" class="lg-num">Acumulado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(bucket, idx) in projectionBuckets" :key="bucket.key">
+                <th scope="row" style="font-weight: 500;">{{ bucket.label }}</th>
+                <td class="lg-num" :class="entryType === 'credit' ? 'is-income' : 'is-expense'">
+                  <MoneyValue
+                    :value="entryType === 'credit' ? bucket.credit : -bucket.debit"
+                    :signed="true"
+                  />
+                </td>
+                <td class="lg-num" :class="entryType === 'credit' ? 'is-income' : 'is-expense'">
+                  <MoneyValue
+                    :value="entryType === 'credit' ? (accumulatedData[idx] ?? 0) : -(accumulatedData[idx] ?? 0)"
+                    :signed="true"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
       </div>
     </div>
   </aside>
