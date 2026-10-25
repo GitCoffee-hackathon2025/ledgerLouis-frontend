@@ -158,9 +158,9 @@ export default {
 
           <div class="lg-row-meta recurring-meta-line">
             <span>{{ frequencyLabels[item.frequency] }}</span>
-            <span>· Próximo: {{ formatDateBr(item.nextRunDate) }}</span>
-            <span v-if="item.lastRunDate">· Último: {{ formatDateBr(item.lastRunDate) }}</span>
-            <span v-if="item.endDate">· Término: {{ formatDateBr(item.endDate) }}</span>
+            <span>Próximo: {{ formatDateBr(item.nextRunDate) }}</span>
+            <span v-if="item.lastRunDate">Último: {{ formatDateBr(item.lastRunDate) }}</span>
+            <span v-if="item.endDate">Término: {{ formatDateBr(item.endDate) }}</span>
           </div>
         </div>
 

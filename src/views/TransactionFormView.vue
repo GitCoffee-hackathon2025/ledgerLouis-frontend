@@ -107,6 +107,7 @@ const startDateInputRef = ref<HTMLInputElement | null>(null);
 const endDateInputRef = ref<HTMLInputElement | null>(null);
 const successBannerRef = ref<HTMLElement | null>(null);
 const partialBannerRef = ref<HTMLElement | null>(null);
+const errorBannerRef = ref<HTMLElement | null>(null);
 
 const clearFieldErrors = () => {
   fieldErrors.amount = undefined;
@@ -165,19 +166,57 @@ const resetFormForNewTransaction = () => {
   });
 };
 
+const isAlreadyLinkedError = (err: any): boolean => {
+  const status = err?.response?.status;
+  const code = err?.response?.data?.code || err?.response?.data?.error;
+  const message = err?.response?.data?.message || err?.message || '';
+  return (
+    status === 409 ||
+    code === 'TAG_ALREADY_LINKED' ||
+    (typeof message === 'string' && message.includes('TAG_ALREADY_LINKED'))
+  );
+};
+
+const processTagAttachment = async (txId: string, tagIdsToAttach: string[]): Promise<string[]> => {
+  const results = await Promise.allSettled(
+    tagIdsToAttach.map((tagId) => tagStore.attachTag(txId, tagId)),
+  );
+
+  const stillPending: string[] = [];
+  results.forEach((res, idx) => {
+    const tagId = tagIdsToAttach[idx];
+    if (!tagId) return;
+    if (res.status === 'fulfilled') {
+      return;
+    }
+    if (isAlreadyLinkedError(res.reason)) {
+      return;
+    }
+    stillPending.push(tagId);
+  });
+
+  return stillPending;
+};
+
 const retryAttachTags = async () => {
   if (!createdTransactionId.value || pendingTagIds.value.length === 0) return;
   try {
     isRetryingTags.value = true;
-    await Promise.all(
-      pendingTagIds.value.map((tagId) => tagStore.attachTag(createdTransactionId.value!, tagId)),
-    );
-    pendingTagIds.value = [];
-    feedback.type = 'success';
-    feedback.message = `${entryType.value === 'credit' ? 'Receita' : 'Despesa'} registrada e tags associadas com sucesso.`;
-    nextTick(() => {
-      successBannerRef.value?.focus();
-    });
+    const stillPending = await processTagAttachment(createdTransactionId.value, [...pendingTagIds.value]);
+    pendingTagIds.value = stillPending;
+    if (stillPending.length === 0) {
+      feedback.type = 'success';
+      feedback.message = `${entryType.value === 'credit' ? 'Receita' : 'Despesa'} registrada e tags associadas com sucesso.`;
+      nextTick(() => {
+        successBannerRef.value?.focus();
+      });
+    } else {
+      feedback.type = 'partial';
+      feedback.message = 'Ainda não foi possível associar todas as tags. O lançamento já está salvo.';
+      nextTick(() => {
+        partialBannerRef.value?.focus();
+      });
+    }
   } catch {
     feedback.type = 'partial';
     feedback.message = 'Ainda não foi possível associar as tags. O lançamento já está salvo.';
@@ -266,12 +305,9 @@ const handleSubmit = async (e: Event) => {
 
       if (selectedTagIds.value.length > 0) {
         pendingTagIds.value = [...selectedTagIds.value];
-        try {
-          await Promise.all(
-            pendingTagIds.value.map((tagId) => tagStore.attachTag(txId!, tagId)),
-          );
-          pendingTagIds.value = [];
-        } catch {
+        const stillPending = await processTagAttachment(txId!, [...pendingTagIds.value]);
+        pendingTagIds.value = stillPending;
+        if (stillPending.length > 0) {
           feedback.type = 'partial';
           feedback.message = 'Lançamento salvo, mas ocorreu um erro ao associar as tags.';
           nextTick(() => {
@@ -289,9 +325,43 @@ const handleSubmit = async (e: Event) => {
     }
   } catch (err: any) {
     feedback.type = 'error';
+    const serverMsg = err?.response?.data?.message || err?.response?.data?.error || err?.message;
     feedback.message =
-      err?.response?.data?.message ||
-      'Não foi possível salvar o lançamento. Verifique os dados e tente novamente.';
+      typeof serverMsg === 'string'
+        ? serverMsg
+        : 'Não foi possível salvar o lançamento. Verifique os dados e tente novamente.';
+
+    // Mapeamento estruturado de erros por campo retornados do backend
+    const errorsObj = err?.response?.data?.errors;
+    if (errorsObj && typeof errorsObj === 'object') {
+      for (const [key, val] of Object.entries(errorsObj)) {
+        if (key in fieldErrors) {
+          fieldErrors[key as keyof typeof fieldErrors] = Array.isArray(val) ? val.join(', ') : String(val);
+        }
+      }
+    } else if (typeof serverMsg === 'string') {
+      const lower = serverMsg.toLowerCase();
+      if (lower.includes('valor') || lower.includes('amount')) {
+        fieldErrors.amount = serverMsg;
+      } else if (lower.includes('descri') || lower.includes('description')) {
+        fieldErrors.description = serverMsg;
+      } else if (lower.includes('término') || lower.includes('fim') || lower.includes('enddate') || lower.includes('end_date')) {
+        fieldErrors.endDate = serverMsg;
+      } else if (lower.includes('início') || lower.includes('startdate') || lower.includes('start_date')) {
+        fieldErrors.startDate = serverMsg;
+      } else if (lower.includes('data') || lower.includes('date')) {
+        fieldErrors.date = serverMsg;
+      }
+    }
+
+    nextTick(() => {
+      const hasFieldErr = Object.values(fieldErrors).some(Boolean);
+      if (hasFieldErr) {
+        focusFirstError();
+      } else {
+        errorBannerRef.value?.focus();
+      }
+    });
   } finally {
     isSubmitting.value = false;
   }
@@ -408,9 +478,16 @@ const handleSubmit = async (e: Event) => {
       <section class="lg-span-7 lg-section" aria-labelledby="form-section-heading">
         <h2 id="form-section-heading" class="sr-only">Dados da movimentação</h2>
 
-        <p v-if="feedback.type === 'error'" class="lg-error" role="alert" style="margin-bottom: 16px;">
+        <div
+          v-if="feedback.type === 'error'"
+          ref="errorBannerRef"
+          class="lg-error server-error-banner"
+          role="alert"
+          tabindex="-1"
+          style="margin-bottom: 16px;"
+        >
           {{ feedback.message }}
-        </p>
+        </div>
 
         <form class="main-form" novalidate @submit="handleSubmit">
           <!-- Campo 1: Valor em destaque -->
@@ -480,7 +557,6 @@ const handleSubmit = async (e: Event) => {
             </div>
 
             <div class="lg-field">
-              <label class="lg-label">Tags</label>
               <TagPicker v-model="selectedTagIds" />
             </div>
           </div>
@@ -611,6 +687,15 @@ const handleSubmit = async (e: Event) => {
   align-items: center;
   gap: 10px;
   margin-bottom: 6px;
+}
+
+.form-segmented label {
+  min-height: 44px;
+}
+
+.server-error-banner:focus-visible {
+  outline: 2px solid var(--lg-focus);
+  outline-offset: 2px;
 }
 
 .main-form {

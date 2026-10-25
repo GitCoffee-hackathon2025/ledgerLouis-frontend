@@ -277,6 +277,11 @@ onMounted(async () => {
   color: var(--lg-ink);
 }
 
+.local-nav-item:focus-visible {
+  outline: 2px solid var(--lg-focus);
+  outline-offset: 2px;
+}
+
 .local-nav-item.is-active {
   background: var(--lg-sunken);
   color: var(--lg-ink);

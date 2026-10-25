@@ -322,7 +322,7 @@ const handleRevoke = async (invitation: { id: string }) => {
                   v-if="getInvitationStatus(inv).key === 'pending'"
                   type="button"
                   class="lg-btn lg-btn--quiet lg-btn--danger"
-                  style="min-height: 36px; padding: 0 12px; font-size: 0.8125rem;"
+                  style="min-height: 44px; padding: 0 16px;"
                   @click="handleRevoke(inv)"
                 >
                   Revogar
