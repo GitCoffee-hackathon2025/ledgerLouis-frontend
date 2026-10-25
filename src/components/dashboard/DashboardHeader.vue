@@ -1,45 +1,56 @@
 <template>
   <section class="dashboard-header">
     <div class="header-copy">
-      <p class="eyebrow">Resumo financeiro</p>
-      <h1>Dashboard de relatórios</h1>
+      <p class="eyebrow">Desempenho financeiro · {{ companyName }}</p>
+      <h1 class="header-title">Relatórios</h1>
       <p class="subtitle">
-        Acompanhe saldo, entradas, saídas e a distribuição dos gastos com uma leitura rápida e visual.
+        Acompanhe saldo global, movimentação de entradas e saídas e o detalhamento por categorias.
       </p>
     </div>
 
     <div class="header-actions">
-      <div class="period-chip" aria-label="Período atual">
-        <CalendarDays :size="18" />
-        <span>Mensal</span>
-      </div>
-
-      <div class="export-menu" ref="exportMenuRef">
-        <button class="action-button action-button--neutral" type="button" @click="exportMenuOpen = !exportMenuOpen">
-          <Download :size="18" />
-          Exportar
+      <!-- Menu de Exportação -->
+      <div ref="exportMenuRef" class="export-menu">
+        <button
+          class="action-button action-button--neutral"
+          type="button"
+          aria-haspopup="true"
+          :aria-expanded="exportMenuOpen"
+          @click="exportMenuOpen = !exportMenuOpen"
+        >
+          <Download :size="16" aria-hidden="true" />
+          <span>Exportar</span>
         </button>
 
-        <div v-if="exportMenuOpen" class="export-dropdown">
-          <button type="button" @click="pickFormat('csv')">Exportar CSV</button>
-          <button type="button" @click="pickFormat('pdf')">Exportar PDF</button>
+        <div v-if="exportMenuOpen" class="export-dropdown" role="menu">
+          <button type="button" role="menuitem" @click="pickFormat('csv')">Exportar CSV</button>
+          <button type="button" role="menuitem" @click="pickFormat('pdf')">Exportar PDF</button>
         </div>
       </div>
 
-      <button class="action-button action-button--primary" type="button" @click="router.push({ name: 'addExpense' })">
-        <Plus :size="18" />
-        Novo lançamento
+      <!-- Botão Novo Lançamento -->
+      <button
+        class="action-button action-button--primary"
+        type="button"
+        @click="router.push({ name: 'addExpense' })"
+      >
+        <Plus :size="16" aria-hidden="true" />
+        <span>Novo lançamento</span>
       </button>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { CalendarDays, Download, Plus } from 'lucide-vue-next';
+import { Download, Plus } from 'lucide-vue-next';
+import { useCompanyStore } from '@/stores/CompanyStore';
 
 const router = useRouter();
+const companyStore = useCompanyStore();
+const companyName = computed(() => companyStore.company.name || 'Sua empresa');
+
 const emit = defineEmits<{ export: [format: 'csv' | 'pdf'] }>();
 
 const exportMenuOpen = ref(false);
@@ -62,80 +73,79 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
 
 <style scoped>
 .dashboard-header {
-  display: grid;
-  gap: 18px;
-  padding: 20px;
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  background: var(--color-surface);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
 }
 
 .eyebrow {
-  color: var(--color-success-dark);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
 }
 
-h1 {
+.header-title {
   font-family: var(--font-display);
-  font-size: clamp(1.8rem, 4vw, 3rem);
-  line-height: 1.05;
+  font-size: 28px;
+  font-weight: 700;
   color: var(--color-text);
-  margin-bottom: 12px;
+  margin: 0 0 6px 0;
+  line-height: 1.15;
 }
 
 .subtitle {
-  max-width: 58ch;
+  max-width: 60ch;
   color: var(--color-text-secondary);
-  line-height: 1.7;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
 }
 
 .header-actions {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
 }
 
-.period-chip,
 .action-button {
-  min-height: 46px;
-  border-radius: 999px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
-  padding: 0 16px;
-  font-weight: 700;
-}
-
-.period-chip {
-  border: 1px solid var(--color-border);
-  background: rgba(var(--color-surface-rgb), 0.86);
-  color: var(--color-text-secondary);
-}
-
-.action-button {
-  border: none;
+  min-height: 42px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-}
-
-.action-button:active {
-  transform: scale(0.98);
-}
-
-.action-button--primary {
-  color: white;
-  background: var(--color-success-gradient);
+  border: 1px solid var(--color-border);
+  transition: all 0.15s ease;
 }
 
 .action-button--neutral {
-  border: 1px solid var(--color-border);
-  background: rgba(var(--color-surface-rgb), 0.86);
+  background: var(--color-surface);
   color: var(--color-text);
+}
+
+.action-button--neutral:hover {
+  background: var(--color-surface-soft);
+}
+
+.action-button--primary {
+  background: var(--color-primary);
+  color: #111827;
+  border-color: var(--color-primary);
+}
+
+.action-button--primary:hover {
+  filter: brightness(0.95);
 }
 
 .export-menu {
@@ -144,43 +154,33 @@ h1 {
 
 .export-dropdown {
   position: absolute;
+  right: 0;
   top: calc(100% + 6px);
-  left: 0;
-  z-index: 20;
-  display: grid;
-  min-width: 160px;
-  padding: 6px;
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
   background: var(--color-surface);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 50;
 }
 
 .export-dropdown button {
-  border: none;
   background: transparent;
-  color: var(--color-text);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
   text-align: left;
-  padding: 9px 10px;
-  border-radius: 10px;
-  font-weight: 600;
   font-size: 13px;
+  color: var(--color-text);
   cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
 }
 
 .export-dropdown button:hover {
   background: var(--color-surface-soft);
-}
-
-@media (min-width: 900px) {
-  .dashboard-header {
-    grid-template-columns: minmax(0, 1.6fr) auto;
-    align-items: center;
-    padding: 28px 30px;
-  }
-
-  .header-actions {
-    justify-content: flex-end;
-  }
 }
 </style>

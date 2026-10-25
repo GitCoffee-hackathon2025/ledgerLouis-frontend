@@ -1,24 +1,31 @@
 <template>
-  <section class="chart-card chart-card--revenue">
+  <section class="chart-card chart-card--revenue" aria-labelledby="revenue-chart-title">
     <header class="chart-header">
       <div>
         <p class="chart-kicker">Entradas vs Saídas</p>
-        <h2>Movimentação financeira</h2>
+        <h2 id="revenue-chart-title" class="chart-title">Movimentação financeira</h2>
       </div>
-      
+
       <div class="chart-controls">
-        <select v-model="selectedPeriod" class="period-select">
-          <option value="daily">Diário</option>
-          <option value="weekly">Semanal</option>
-          <option value="monthly">Mensal</option>
-          <option value="annual">Anual</option>
+        <label for="period-select-control" class="sr-only">Selecione o período de agregação</label>
+        <select id="period-select-control" v-model="selectedPeriod" class="period-select">
+          <option value="daily">Últimos 7 dias</option>
+          <option value="weekly">Últimas 4 semanas</option>
+          <option value="monthly">Últimos 6 meses</option>
+          <option value="annual">Últimos 5 anos</option>
         </select>
       </div>
     </header>
 
-    <div class="chart-legend" aria-label="Legendas do gráfico de barras">
-      <span><i class="legend-dot legend-dot--income"></i> Entradas ({{ incomePercentage }}%)</span>
-      <span><i class="legend-dot legend-dot--expense"></i> Saídas ({{ expensePercentage }}%)</span>
+    <div class="chart-legend" aria-label="Legendas do gráfico">
+      <span class="legend-item">
+        <i class="legend-dot legend-dot--income" aria-hidden="true"></i>
+        <span>Entradas ({{ incomePercentage }}%)</span>
+      </span>
+      <span class="legend-item">
+        <i class="legend-dot legend-dot--expense" aria-hidden="true"></i>
+        <span>Saídas ({{ expensePercentage }}%)</span>
+      </span>
     </div>
 
     <div class="chart-wrapper">
@@ -49,25 +56,25 @@ const source = computed(() => props.transactions ?? transactionStore.transaction
 
 const chartSeries = computed(() => [
   {
-    name: 'Entradas',
+    name: 'Entradas (+)',
     data: periodData.value?.income || [],
   },
   {
-    name: 'Saídas',
+    name: 'Saídas (-)',
     data: periodData.value?.expense || [],
   },
 ]);
 
-const totalIncome = computed(() => 
+const totalIncome = computed(() =>
   source.value
-    .filter(t => t.entryType === 'credit')
-    .reduce((sum, t) => sum + t.amount, 0)
+    .filter((t) => t.entryType === 'credit')
+    .reduce((sum, t) => sum + t.amount, 0),
 );
 
-const totalExpense = computed(() => 
+const totalExpense = computed(() =>
   source.value
-    .filter(t => t.entryType === 'debit')
-    .reduce((sum, t) => sum + t.amount, 0)
+    .filter((t) => t.entryType === 'debit')
+    .reduce((sum, t) => sum + t.amount, 0),
 );
 
 const total = computed(() => totalIncome.value + totalExpense.value);
@@ -95,82 +102,108 @@ const periodData = computed(() => {
     categories = [];
     incomeData = [];
     expenseData = [];
-    
+
     for (let i = 6; i >= 0; i--) {
       const date = new Date(now);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      categories.push(date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }));
-      
+      const dateString = date.toISOString().split('T')[0];
+      const dayName = date.toLocaleDateString('pt-BR', { weekday: 'short' });
+      categories.push(`${dayName} (${date.getDate()})`);
+
       const dayIncome = source.value
-        .filter(t => t.entryType === 'credit' && t.date === dateStr)
+        .filter((t) => t.entryType === 'credit' && t.date === dateString)
         .reduce((sum, t) => sum + t.amount, 0);
+
       const dayExpense = source.value
-        .filter(t => t.entryType === 'debit' && t.date === dateStr)
+        .filter((t) => t.entryType === 'debit' && t.date === dateString)
         .reduce((sum, t) => sum + t.amount, 0);
-      
+
       incomeData.push(dayIncome);
       expenseData.push(dayExpense);
     }
   } else if (selectedPeriod.value === 'weekly') {
     // Últimas 4 semanas
-    categories = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'];
+    categories = ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'];
     incomeData = [0, 0, 0, 0];
     expenseData = [0, 0, 0, 0];
-    
-    source.value.forEach((transaction) => {
-      const date = new Date(transaction.date);
-      const weekNum = Math.floor((now.getTime() - date.getTime()) / (7 * 24 * 60 * 60 * 1000));
-      
-      if (weekNum >= 0 && weekNum < 4) {
-        if (transaction.entryType === 'credit') {
-          incomeData[3 - weekNum] = (incomeData[3 - weekNum] ?? 0) + transaction.amount;
+
+    source.value.forEach((t) => {
+      const txDate = new Date(t.date);
+      const diffTime = Math.abs(now.getTime() - txDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const weekIndex = Math.min(Math.floor(diffDays / 7), 3);
+
+      if (weekIndex < 4) {
+        const reverseIndex = 3 - weekIndex;
+        if (t.entryType === 'credit') {
+          incomeData[reverseIndex] = (incomeData[reverseIndex] ?? 0) + t.amount;
         } else {
-          expenseData[3 - weekNum] = (expenseData[3 - weekNum] ?? 0) + transaction.amount;
+          expenseData[reverseIndex] = (expenseData[reverseIndex] ?? 0) + t.amount;
         }
       }
     });
   } else if (selectedPeriod.value === 'monthly') {
-    // Últimos 12 meses
-    categories = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    incomeData = new Array(12).fill(0);
-    expenseData = new Array(12).fill(0);
-    
-    source.value.forEach((transaction) => {
-      const date = new Date(transaction.date);
-      const month = date.getMonth();
-      
-      if (transaction.entryType === 'credit') {
-        incomeData[month] = (incomeData[month] ?? 0) + transaction.amount;
-      } else {
-        expenseData[month] = (expenseData[month] ?? 0) + transaction.amount;
-      }
-    });
+    // Últimos 6 meses
+    categories = [];
+    incomeData = [];
+    expenseData = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthName = date.toLocaleDateString('pt-BR', { month: 'short' });
+      const year = date.getFullYear().toString().slice(-2);
+      categories.push(`${monthName}/${year}`);
+
+      const monthIncome = source.value
+        .filter((t) => {
+          const tDate = new Date(t.date);
+          return (
+            t.entryType === 'credit' &&
+            tDate.getMonth() === date.getMonth() &&
+            tDate.getFullYear() === date.getFullYear()
+          );
+        })
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const monthExpense = source.value
+        .filter((t) => {
+          const tDate = new Date(t.date);
+          return (
+            t.entryType === 'debit' &&
+            tDate.getMonth() === date.getMonth() &&
+            tDate.getFullYear() === date.getFullYear()
+          );
+        })
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      incomeData.push(monthIncome);
+      expenseData.push(monthExpense);
+    }
   } else if (selectedPeriod.value === 'annual') {
     // Últimos 5 anos
     const currentYear = now.getFullYear();
     categories = [];
     incomeData = [];
     expenseData = [];
-    
+
     for (let i = 4; i >= 0; i--) {
       const year = currentYear - i;
       categories.push(year.toString());
-      
+
       const yearIncome = source.value
-        .filter(t => {
+        .filter((t) => {
           const date = new Date(t.date);
           return t.entryType === 'credit' && date.getFullYear() === year;
         })
         .reduce((sum, t) => sum + t.amount, 0);
-      
+
       const yearExpense = source.value
-        .filter(t => {
+        .filter((t) => {
           const date = new Date(t.date);
           return t.entryType === 'debit' && date.getFullYear() === year;
         })
         .reduce((sum, t) => sum + t.amount, 0);
-      
+
       incomeData.push(yearIncome);
       expenseData.push(yearExpense);
     }
@@ -184,20 +217,23 @@ const chartOptions = computed(() => ({
     type: 'bar',
     toolbar: { show: false },
     fontFamily: 'var(--font-body)',
+    background: 'transparent',
   },
-  colors: ['#27B969', '#FF585A'],
+  colors: isDark.value ? ['#6EE7B7', '#FF6B6D'] : ['#065F46', '#E52124'],
   plotOptions: {
     bar: {
-      borderRadius: 8,
-      columnWidth: '45%',
+      borderRadius: 4,
+      columnWidth: '48%',
     },
   },
   dataLabels: {
     enabled: false,
   },
   grid: {
-    borderColor: isDark.value ? 'rgba(163, 170, 184, 0.14)' : 'rgba(148, 163, 184, 0.16)',
-    strokeDashArray: 4,
+    borderColor: isDark.value ? '#2A2F3A' : '#F3F4F6',
+    strokeDashArray: 3,
+    xaxis: { lines: { show: false } },
+    yaxis: { lines: { show: true } },
   },
   xaxis: {
     categories: periodData.value?.categories || [],
@@ -205,17 +241,23 @@ const chartOptions = computed(() => ({
       style: {
         colors: isDark.value ? '#a3aab8' : '#64748b',
         fontSize: '12px',
+        fontFamily: 'var(--font-body)',
       },
     },
+    axisBorder: { show: false },
+    axisTicks: { show: false },
   },
   yaxis: {
-    decimalsInFloat: 1,
     labels: {
       style: {
         colors: isDark.value ? '#a3aab8' : '#64748b',
         fontSize: '12px',
+        fontFamily: 'var(--font-body)',
       },
-      formatter: (value: number) => `R$ ${Math.round(value / 100) / 10}k`,
+      formatter: (value: number) => {
+        if (value >= 1000) return `R$ ${(value / 1000).toFixed(1)}k`;
+        return `R$ ${Math.round(value)}`;
+      },
     },
   },
   legend: {
@@ -225,111 +267,113 @@ const chartOptions = computed(() => ({
     theme: isDark.value ? 'dark' : 'light',
     y: {
       formatter: (value: number) =>
-        `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value),
     },
   },
-  responsive: [
-    {
-      breakpoint: 768,
-      options: {
-        plotOptions: {
-          bar: {
-            columnWidth: '58%',
-          },
-        },
-      },
-    },
-  ],
 }));
-
 </script>
 
 <style scoped>
 .chart-card {
-  padding: 18px;
+  padding: 24px;
   border-radius: 16px;
-  border: 1px solid var(--color-border);
   background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
 }
 
 .chart-header {
   display: flex;
-  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 16px;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
 }
 
 .chart-kicker {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
-h2 {
-  font-size: 20px;
-  font-weight: 800;
+.chart-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
   color: var(--color-text);
-}
-
-.chart-controls {
-  display: flex;
-  gap: 10px;
-  align-items: center;
+  margin: 0;
 }
 
 .period-select {
+  padding: 6px 12px;
+  border-radius: 8px;
   border: 1px solid var(--color-border);
   background: var(--color-surface-soft);
   color: var(--color-text);
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius: 999px;
-  font-weight: 700;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
+  min-height: 38px;
+}
+
+.period-select:focus {
   outline: none;
+  border-color: var(--color-primary);
 }
 
 .chart-legend {
   display: flex;
   gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-  color: var(--color-text-secondary);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  margin-bottom: 12px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .legend-dot {
-  display: inline-block;
   width: 10px;
   height: 10px;
-  border-radius: 999px;
-  margin-right: 8px;
+  border-radius: 3px;
+  display: inline-block;
 }
 
 .legend-dot--income {
-  background: #27b969;
+  background: var(--color-success-dark, #065F46);
+}
+
+[data-theme='dark'] .legend-dot--income {
+  background: #6EE7B7;
 }
 
 .legend-dot--expense {
-  background: #ff585a;
+  background: var(--color-danger, #E52124);
 }
 
 .chart-wrapper {
-  margin-left: -10px;
+  flex: 1;
+  min-height: 320px;
 }
 
-:deep(.apexcharts-text),
-:deep(.apexcharts-legend-text) {
-  font-family: var(--font-body) !important;
-}
-
-@media (min-width: 768px) {
-  .chart-card {
-    padding: 24px;
-  }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
 }
 </style>

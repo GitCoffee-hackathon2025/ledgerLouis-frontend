@@ -2,261 +2,248 @@
 import { computed } from 'vue';
 import { useTagStore } from '@/stores/tagStore';
 import { useTransactionStore } from '@/stores/transactionStore';
-import { useThemeStore } from '@/stores/themeStore';
-import { colorForTag } from '@/utils/tagColor';
 import type { TransactionDto } from '@/services/transactionService';
 
 const props = defineProps<{ transactions?: TransactionDto[] }>();
 
 const tagStore = useTagStore();
 const transactionStore = useTransactionStore();
-const themeStore = useThemeStore();
-const isDark = computed(() => themeStore.theme === 'dark');
 const source = computed(() => props.transactions ?? transactionStore.transactions);
 
-interface TagAggregate {
+interface TagRankItem {
   id: string;
-  label: string;
+  name: string;
   total: number;
-  color: string;
+  count: number;
 }
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
-const aggregates = computed<TagAggregate[]>(() => {
-  const totals = new Map<string, number>();
+const tagRankings = computed<TagRankItem[]>(() => {
+  const totals = new Map<string, { total: number; count: number }>();
 
   for (const transaction of source.value) {
     const tags = tagStore.transactionTagsMap[transaction.id] ?? [];
     for (const tag of tags) {
-      totals.set(tag.id, (totals.get(tag.id) ?? 0) + transaction.amount);
+      const current = totals.get(tag.id) ?? { total: 0, count: 0 };
+      current.total += transaction.amount;
+      current.count += 1;
+      totals.set(tag.id, current);
     }
   }
 
   return tagStore.tags
-    .map((tag) => ({
-      id: tag.id,
-      label: tag.name,
-      total: totals.get(tag.id) ?? 0,
-      color: colorForTag(tag.id),
-    }))
+    .map((tag) => {
+      const data = totals.get(tag.id) ?? { total: 0, count: 0 };
+      return {
+        id: tag.id,
+        name: tag.name,
+        total: data.total,
+        count: data.count,
+      };
+    })
     .filter((item) => item.total > 0)
     .sort((a, b) => b.total - a.total);
 });
 
-const grandTotal = computed(() => aggregates.value.reduce((sum, item) => sum + item.total, 0));
-
-const chartSeries = computed(() => aggregates.value.map((item) => item.total));
-
-const percentage = (value: number) => {
-  if (grandTotal.value === 0) return 0;
-  return Math.round((value / grandTotal.value) * 100);
-};
-
-const chartOptions = computed(() => ({
-  chart: {
-    type: 'donut',
-    toolbar: { show: false },
-    fontFamily: 'var(--font-body)',
-  },
-  labels: aggregates.value.map((item) => item.label),
-  colors: aggregates.value.map((item) => item.color),
-  legend: { show: false },
-  dataLabels: { enabled: false },
-  stroke: {
-    width: 0,
-  },
-  plotOptions: {
-    pie: {
-      donut: {
-        size: '72%',
-        // Labels nativos do Apex desligados — o centro é renderizado por cima
-        // com HTML/CSS nosso (.donut-center), que dá controle total do
-        // espaçamento sem brigar com o posicionamento interno do Apex.
-        labels: { show: false },
-      },
-    },
-  },
-  tooltip: {
-    theme: isDark.value ? 'dark' : 'light',
-    y: {
-      formatter: (value: number) => formatCurrency(value),
-    },
-  },
-}));
+const maxTotal = computed(() => {
+  if (!tagRankings.value.length) return 1;
+  return Math.max(...tagRankings.value.map((t) => t.total), 1);
+});
 </script>
 
 <template>
-  <section class="chart-card tags-card">
-    <header class="chart-header">
+  <section class="tag-ranking-card" aria-labelledby="tag-ranking-title">
+    <header class="card-header">
       <div>
-        <p class="chart-kicker">Distribuição por tag</p>
-        <h2>Onde as tags estão concentradas</h2>
+        <p class="card-kicker">Distribuição por etiquetas</p>
+        <h2 id="tag-ranking-title" class="card-title">Valores associados por tag</h2>
       </div>
     </header>
 
-    <div v-if="aggregates.length === 0" class="tags-empty">
-      Marque suas transações com tags para ver a distribuição aqui.
+    <div v-if="tagRankings.length === 0" class="empty-state">
+      Nenhuma tag vinculada às transações filtradas.
     </div>
 
-    <div v-else class="expenses-layout">
-      <div class="donut-panel">
-        <div class="chart-wrapper">
-          <apexchart
-            :key="`${aggregates.length}-${isDark}`"
-            type="donut"
-            height="260"
-            :options="chartOptions"
-            :series="chartSeries"
-          />
-
-          <div class="donut-center" aria-hidden="true">
-            <span class="donut-center-label">Total marcado</span>
-            <strong class="donut-center-value">{{ formatCurrency(grandTotal) }}</strong>
+    <div v-else class="ranking-content">
+      <ul class="ranking-list" role="list">
+        <li
+          v-for="(item, index) in tagRankings"
+          :key="item.id"
+          class="ranking-row"
+          :class="{ 'is-selected': tagStore.activeTagId === item.id }"
+          @click="tagStore.setActiveTag(tagStore.activeTagId === item.id ? null : item.id)"
+        >
+          <div class="row-header">
+            <span class="tag-position" aria-hidden="true">{{ index + 1 }}</span>
+            <strong class="tag-name">{{ item.name }}</strong>
+            <span class="tag-count">{{ item.count }} {{ item.count === 1 ? 'lançamento' : 'lançamentos' }}</span>
+            <span class="tag-amount">{{ formatCurrency(item.total) }}</span>
           </div>
-        </div>
-      </div>
 
-      <ul class="breakdown-list" aria-label="Totais por tag">
-        <li v-for="item in aggregates" :key="item.id">
-          <span class="breakdown-marker" :style="{ backgroundColor: item.color }"></span>
-          <div>
-            <strong>{{ item.label }}</strong>
-            <span>{{ formatCurrency(item.total) }} · {{ percentage(item.total) }}%</span>
+          <!-- Barra de proporção horizontal -->
+          <div class="bar-track" aria-hidden="true">
+            <div
+              class="bar-fill"
+              :style="{ width: `${Math.round((item.total / maxTotal) * 100)}%` }"
+            ></div>
           </div>
         </li>
       </ul>
+
+      <footer class="card-footer">
+        <p class="footnote">
+          Nota: Um lançamento pode conter múltiplas tags simultâneas; os valores acima refletem o montante associado a cada tag individualmente.
+        </p>
+      </footer>
     </div>
   </section>
 </template>
 
 <style scoped>
-.chart-card {
-  padding: 18px;
-  border-radius: 16px;
-  border: 1px solid var(--color-border);
+.tag-ranking-card {
   background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
-.chart-header {
-  margin-bottom: 14px;
+.card-header {
+  margin-bottom: 20px;
 }
 
-.chart-kicker {
+.card-kicker {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
-h2 {
-  font-size: 20px;
-  font-weight: 800;
+.card-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
   color: var(--color-text);
+  margin: 0;
 }
 
-.tags-empty {
-  padding: 24px 12px;
+.empty-state {
   text-align: center;
+  padding: 40px 16px;
   color: var(--color-text-secondary);
   font-size: 13px;
-  background: var(--color-surface-soft);
-  border-radius: 18px;
-  border: 1px dashed var(--color-border);
-}
-
-.expenses-layout {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  align-items: center;
-}
-
-.donut-panel {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.chart-wrapper {
-  position: relative;
-  width: 100%;
-  max-width: 300px;
-  min-width: 0;
-}
-
-.donut-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+.ranking-content {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  max-width: 62%;
-  text-align: center;
-  pointer-events: none;
+  justify-content: space-between;
+  flex: 1;
 }
 
-.donut-center-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--color-text-secondary);
-}
-
-.donut-center-value {
-  font-size: 17px;
-  font-weight: 800;
-  line-height: 1.15;
-  color: var(--color-text);
-  overflow-wrap: anywhere;
-}
-
-.breakdown-list {
-  display: grid;
+.ranking-list {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
-.breakdown-list li {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 12px;
-  align-items: center;
-  padding: 10px 12px;
-  border-radius: 18px;
+.ranking-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.ranking-row:hover {
   background: var(--color-surface-soft);
 }
 
-.breakdown-list strong {
-  display: block;
-  color: var(--color-text);
-  font-size: 14px;
-  margin-bottom: 3px;
+.ranking-row.is-selected {
+  background: var(--color-surface-alt);
+  border-left: 3px solid var(--color-primary);
 }
 
-.breakdown-list span {
-  color: var(--color-text-secondary);
+.row-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
+}
+
+.tag-position {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  min-width: 16px;
+}
+
+.tag-name {
+  color: var(--color-text);
   font-weight: 600;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.breakdown-marker {
-  width: 12px;
-  height: 12px;
+.tag-count {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.tag-amount {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  margin-left: 8px;
+}
+
+.bar-track {
+  width: 100%;
+  height: 6px;
+  background: var(--color-border);
   border-radius: 999px;
+  overflow: hidden;
 }
 
-:deep(.apexcharts-text),
-:deep(.apexcharts-legend-text) {
-  font-family: var(--font-body) !important;
+.bar-fill {
+  height: 100%;
+  background: var(--color-text-secondary);
+  border-radius: 999px;
+  transition: width 0.3s ease;
 }
 
+.ranking-row.is-selected .bar-fill {
+  background: var(--color-primary);
+}
 
-@media (min-width: 768px) {
-  .chart-card {
-    padding: 24px;
-  }
+.card-footer {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.footnote {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  margin: 0;
 }
 </style>

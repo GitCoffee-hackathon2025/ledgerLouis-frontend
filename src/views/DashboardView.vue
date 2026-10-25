@@ -1,109 +1,83 @@
 <template>
   <main class="dashboard-page">
     <div class="dashboard-shell">
+      <!-- Cabeçalho de Relatórios -->
       <DashboardHeader @export="handleExport" />
 
+      <!-- Filtro por Tag (se houver tags) -->
       <TagFilterChips />
 
-      <section class="metrics-grid" aria-label="Resumo financeiro">
-        <DashboardCard
-          title="Saldo total"
-          :value="formattedAccountValue"
-          description="Saldo disponível"
-          :trend-value="balanceTrend"
-          trend-label="vs mês anterior"
-          :tone="accountValue >= 0 ? 'positive' : 'negative'"
-        >
-          <template #icon>
-            <div class="card-icon" :class="accountValue >= 0 ? 'card-icon--positive' : 'card-icon--negative'">
-              <WalletMinimal :size="20" />
-            </div>
-          </template>
+      <!-- Bloco de Indicadores com Hierarquia Financeira Real -->
+      <section class="financial-summary-surface" aria-label="Resumo e Saldo">
+        <!-- Indicador Dominante: Saldo Total Global -->
+        <div class="primary-balance-tile">
+          <span class="balance-kicker">Saldo total da conta</span>
+          <div class="balance-value" :class="accountValue >= 0 ? 'positive' : 'negative'">
+            {{ formattedAccountValue }}
+          </div>
+          <span class="balance-meta">Disponível consolidado na conta da empresa</span>
+        </div>
 
-          <template #sparkline>
-            <DashboardSparkline :variant="accountValue >= 0 ? 'success' : 'danger'" />
-          </template>
-        </DashboardCard>
+        <!-- Indicadores de Apoio do Recorte Filtrado -->
+        <div class="secondary-metrics-grid">
+          <div class="metric-item">
+            <span class="metric-label">Entradas no recorte</span>
+            <strong class="metric-val text-income">+ {{ formattedIncome }}</strong>
+            <span class="metric-footnote">
+              {{ activeTagName ? `Filtrado por: ${activeTagName}` : 'Total consolidado' }}
+            </span>
+          </div>
 
-        <DashboardCard
-          title="Entradas do mês"
-          :value="formattedIncome"
-          :description="entriesDescription"
-          trend-value="+ 8,3%"
-          trend-label="vs mês anterior"
-          tone="positive"
-        >
-          <template #icon>
-            <div class="card-icon card-icon--positive">
-              <ArrowDownToLine :size="20" />
-            </div>
-          </template>
+          <div class="metric-item">
+            <span class="metric-label">Saídas no recorte</span>
+            <strong class="metric-val text-expense">- {{ formattedExpense }}</strong>
+            <span class="metric-footnote">
+              {{ activeTagName ? `Filtrado por: ${activeTagName}` : 'Total consolidado' }}
+            </span>
+          </div>
 
-          <template #sparkline>
-            <DashboardSparkline variant="success" />
-          </template>
-        </DashboardCard>
-
-        <DashboardCard
-          title="Saídas do mês"
-          :value="formattedExpense"
-          :description="exitsDescription"
-          trend-value="+ 3,7%"
-          trend-label="vs mês anterior"
-          tone="negative"
-        >
-          <template #icon>
-            <div class="card-icon card-icon--negative">
-              <ArrowUpFromLine :size="20" />
-            </div>
-          </template>
-
-          <template #sparkline>
-            <DashboardSparkline variant="danger" />
-          </template>
-        </DashboardCard>
-
-        <DashboardCard
-          title="Transações"
-          :value="transactionCount.toString()"
-          :description="countDescription"
-          trend-value="+ 5,2%"
-          trend-label="vs mês anterior"
-          tone="neutral"
-        >
-          <template #icon>
-            <div class="card-icon card-icon--neutral">
-              <ChartNoAxesCombined :size="20" />
-            </div>
-          </template>
-
-          <template #sparkline>
-            <DashboardSparkline variant="success" />
-          </template>
-        </DashboardCard>
+          <div class="metric-item">
+            <span class="metric-label">Resultado líquido</span>
+            <strong
+              class="metric-val"
+              :class="netTotal >= 0 ? 'text-income' : 'text-expense'"
+            >
+              {{ netTotal >= 0 ? '+ ' : '- ' }}{{ formattedNetTotal }}
+            </strong>
+            <span class="metric-footnote">
+              {{ transactionCount }} {{ transactionCount === 1 ? 'lançamento computado' : 'lançamentos computados' }}
+            </span>
+          </div>
+        </div>
       </section>
 
-      <section class="charts-grid" aria-label="Gráficos financeiros">
-        <RevenueChart :transactions="filteredTransactions" />
-        <TagsDistributionCard :transactions="filteredTransactions" />
+      <!-- Gráficos Principais: Movimentação (8 cols) + Tags Ranking (4 cols) -->
+      <section class="charts-section" aria-label="Gráficos de movimentação e categorias">
+        <div class="chart-col-main">
+          <RevenueChart :transactions="filteredTransactions" />
+        </div>
+        <div class="chart-col-side">
+          <TagsDistributionCard :transactions="filteredTransactions" />
+        </div>
       </section>
 
-      <section class="insights-grid" aria-label="Estatísticas de gastos">
+      <!-- Análise Estatística e Previsão Baseada em Dados Históricos -->
+      <section class="insights-section" aria-label="Estatísticas e previsões">
         <ExpenseInsightsCard />
       </section>
 
-      <RecentTransactions :transactions="filteredTransactions" />
+      <!-- Lista de Transações Recentes -->
+      <section class="transactions-section" aria-label="Últimas movimentações">
+        <RecentTransactions :transactions="filteredTransactions" />
+      </section>
     </div>
   </main>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
-import { ArrowDownToLine, ArrowUpFromLine, ChartNoAxesCombined, WalletMinimal } from 'lucide-vue-next';
 
-import DashboardCard from '@/components/dashboard/DashboardCard.vue';
 import DashboardHeader from '@/components/dashboard/DashboardHeader.vue';
-import DashboardSparkline from '@/components/dashboard/DashboardSparkline.vue';
 import RecentTransactions from '@/components/dashboard/RecentTransactions.vue';
 import RevenueChart from '@/components/dashboard/RevenueChart.vue';
 import TagFilterChips from '@/components/dashboard/TagFilterChips.vue';
@@ -141,138 +115,199 @@ const filteredTransactions = computed(() => {
 });
 
 const formattedAccountValue = computed(() => {
-  const value = accountValue.value;
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
-  }).format(value);
-});
-
-const balanceTrend = computed(() => {
-  const value = accountValue.value;
-  if (value > 0) return '+ 12,5%';
-  if (value < 0) return '- 5,2%';
-  return '0%';
+  }).format(accountValue.value);
 });
 
 const income = computed(() => {
   return filteredTransactions.value
-    .filter(t => t.entryType === 'credit')
+    .filter((t) => t.entryType === 'credit')
     .reduce((sum, t) => sum + t.amount, 0);
 });
 
 const expense = computed(() => {
   return filteredTransactions.value
-    .filter(t => t.entryType === 'debit')
+    .filter((t) => t.entryType === 'debit')
     .reduce((sum, t) => sum + t.amount, 0);
 });
 
-const formattedIncome = computed(() => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(income.value);
-});
+const netTotal = computed(() => income.value - expense.value);
 
-const formattedExpense = computed(() => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(expense.value);
-});
-
-const transactionCount = computed(() => {
-  return filteredTransactions.value.length;
-});
-
-const entriesDescription = computed(() =>
-  activeTagName.value ? `Total de entradas · Tag: ${activeTagName.value}` : 'Total de entradas',
+const formattedIncome = computed(() =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(income.value),
 );
 
-const exitsDescription = computed(() =>
-  activeTagName.value ? `Total de saídas · Tag: ${activeTagName.value}` : 'Total de saídas',
+const formattedExpense = computed(() =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(expense.value),
 );
 
-const countDescription = computed(() =>
-  activeTagName.value ? `Total de transações · Tag: ${activeTagName.value}` : 'Total de transações',
+const formattedNetTotal = computed(() =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Math.abs(netTotal.value)),
 );
+
+const transactionCount = computed(() => filteredTransactions.value.length);
 
 const handleExport = (format: 'csv' | 'pdf') => {
   if (format === 'csv') {
     exportTransactionsCsv(filteredTransactions.value, tagStore.transactionTagsMap);
   } else {
-    exportTransactionsPdf(filteredTransactions.value, tagStore.transactionTagsMap, companyStore.company.name);
+    exportTransactionsPdf(
+      filteredTransactions.value,
+      tagStore.transactionTagsMap,
+      companyStore.company.name,
+    );
   }
 };
 </script>
 
 <style scoped>
 .dashboard-page {
-  min-height: calc(100vh - 165px);
-  padding: 30px 16px 32px;
+  min-height: calc(100vh - 80px);
+  padding: 32px 20px 64px;
   background: var(--color-bg);
 }
 
 .dashboard-shell {
-  display: grid;
-  gap: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
   max-width: 1240px;
   margin: 0 auto;
 }
 
-.metrics-grid,
-.charts-grid,
-.insights-grid {
+/* Superfície de Resumo Financeiro Hierárquico */
+.financial-summary-surface {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 28px 32px;
   display: grid;
-  gap: 16px;
-}
-
-.card-icon {
-  display: inline-flex;
+  grid-template-columns: 1.2fr 2fr;
+  gap: 36px;
   align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
 }
 
-.card-icon--positive {
-  color: var(--color-success-dark);
-  background: rgba(29, 205, 108, 0.12);
+.primary-balance-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 28px;
+  border-right: 1px solid var(--color-border);
 }
 
-.card-icon--negative {
-  color: var(--color-danger);
-  background: rgba(229, 33, 36, 0.12);
-}
-
-.card-icon--neutral {
+.balance-kicker {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--color-text-secondary);
-  background: rgba(107, 114, 128, 0.12);
 }
 
-@media (min-width: 640px) {
-  .dashboard-page {
-    padding-inline: 20px;
-  }
-
-  .metrics-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.balance-value {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 3.5vw, 42px);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  margin: 4px 0;
 }
 
-@media (min-width: 1024px) {
-  .dashboard-page {
-    padding: 28px 24px 40px;
+.balance-meta {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.secondary-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.metric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.metric-val {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.text-income {
+  color: var(--color-success-dark, #065F46);
+}
+
+[data-theme='dark'] .text-income {
+  color: #6EE7B7;
+}
+
+.text-expense {
+  color: var(--color-danger, #E52124);
+}
+
+[data-theme='dark'] .text-expense {
+  color: #FF6B6D;
+}
+
+.metric-footnote {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  margin-top: 2px;
+}
+
+/* Grid de Gráficos: Movimentação (8 cols) + Tags (4 cols) */
+.charts-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.chart-col-main,
+.chart-col-side {
+  display: flex;
+  flex-direction: column;
+}
+
+.insights-section,
+.transactions-section {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 960px) {
+  .financial-summary-surface {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 24px;
   }
 
-  .metrics-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .primary-balance-tile {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+    padding-right: 0;
+    padding-bottom: 20px;
   }
 
-  .charts-grid {
-    grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.95fr);
-    align-items: stretch;
+  .secondary-metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .charts-section {
+    grid-template-columns: 1fr;
   }
 }
 </style>
