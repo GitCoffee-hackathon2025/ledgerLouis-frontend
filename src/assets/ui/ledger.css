@@ -452,7 +452,7 @@
 .lg-segmented label {
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 16px;
   border-radius: 9px;
   color: var(--lg-ink-2);
