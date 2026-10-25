@@ -53,13 +53,7 @@ export interface InvitationDto {
   expiresAt: string;
 }
 
-export interface UserInvitationDto {
-  id: string;
-  companyId: string;
-  email: string;
-  role: CompanyRole;
-  expiresAt: string;
-}
+export type UserInvitationDto = InvitationDto;
 
 export default class CompanyService {
   async createCompany(
