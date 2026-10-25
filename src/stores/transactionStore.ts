@@ -4,6 +4,7 @@ import type { TransactionDto, CreateTransactionDto } from '@/services/transactio
 import TransactionService from '@/services/transactionService';
 
 export const useTransactionStore = defineStore('transaction', () => {
+  const service = new TransactionService();
   const transactions = ref<TransactionDto[]>([]);
   const accountValue = ref<number>(0);
   const loading = ref(false);
@@ -41,7 +42,6 @@ export const useTransactionStore = defineStore('transaction', () => {
     try {
       setLoading(true);
       clearError();
-      const service = new TransactionService();
       const data = await service.getTransactions();
       setTransactions(data);
     } catch (err) {
@@ -54,7 +54,6 @@ export const useTransactionStore = defineStore('transaction', () => {
 
   const fetchAccountValue = async () => {
     try {
-      const service = new TransactionService();
       const value = await service.getAccountValue();
       setAccountValue(value);
     } catch (err) {
@@ -66,7 +65,6 @@ export const useTransactionStore = defineStore('transaction', () => {
     try {
       setLoading(true);
       clearError();
-      const service = new TransactionService();
       const transaction = await service.createTransaction(data);
       addTransaction(transaction);
       
@@ -87,7 +85,6 @@ export const useTransactionStore = defineStore('transaction', () => {
     try {
       setLoading(true);
       clearError();
-      const service = new TransactionService();
       await service.deleteTransaction(id);
       removeTransaction(id);
       

@@ -4,6 +4,7 @@ import type { TagDto } from '@/services/tagService';
 import TagService from '@/services/tagService';
 
 export const useTagStore = defineStore('tag', () => {
+  const service = new TagService();
   const tags = ref<TagDto[]>([]);
   const transactionTagsMap = reactive<Record<string, TagDto[]>>({});
   const activeTagId = ref<string | null>(null);
@@ -30,7 +31,6 @@ export const useTagStore = defineStore('tag', () => {
     try {
       setLoading(true);
       clearError();
-      const service = new TagService();
       setTags(await service.getTags());
     } catch (err) {
       console.error('Erro ao buscar tags:', err);
@@ -44,7 +44,6 @@ export const useTagStore = defineStore('tag', () => {
     try {
       setLoading(true);
       clearError();
-      const service = new TagService();
       const tag = await service.createTag(name);
       tags.value.push(tag);
       return tag;
@@ -61,7 +60,6 @@ export const useTagStore = defineStore('tag', () => {
     try {
       setLoading(true);
       clearError();
-      const service = new TagService();
       const updated = await service.updateTag(id, name);
       const index = tags.value.findIndex((t) => t.id === id);
       if (index !== -1) tags.value[index] = updated;
@@ -87,7 +85,6 @@ export const useTagStore = defineStore('tag', () => {
     try {
       setLoading(true);
       clearError();
-      const service = new TagService();
       await service.deleteTag(id);
       tags.value = tags.value.filter((t) => t.id !== id);
 
@@ -108,7 +105,6 @@ export const useTagStore = defineStore('tag', () => {
 
   const fetchTagsForTransaction = async (transactionId: string) => {
     try {
-      const service = new TagService();
       transactionTagsMap[transactionId] = await service.getTransactionTags(transactionId);
     } catch (err) {
       console.error('Erro ao buscar tags da transação:', err);
@@ -122,13 +118,11 @@ export const useTagStore = defineStore('tag', () => {
   };
 
   const attachTag = async (transactionId: string, tagId: string) => {
-    const service = new TagService();
     await service.attachTag(transactionId, tagId);
     await fetchTagsForTransaction(transactionId);
   };
 
   const detachTag = async (transactionId: string, tagId: string) => {
-    const service = new TagService();
     await service.detachTag(transactionId, tagId);
     await fetchTagsForTransaction(transactionId);
   };

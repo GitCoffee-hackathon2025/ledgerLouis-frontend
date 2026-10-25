@@ -8,6 +8,7 @@ import type {
 import RecurringTransactionService from '@/services/recurringTransactionService';
 
 export const useRecurringTransactionStore = defineStore('recurringTransaction', () => {
+  const service = new RecurringTransactionService();
   const items = ref<RecurringTransactionDto[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
@@ -28,7 +29,6 @@ export const useRecurringTransactionStore = defineStore('recurringTransaction', 
     try {
       setLoading(true);
       clearError();
-      const service = new RecurringTransactionService();
       items.value = await service.getRecurringTransactions();
     } catch (err) {
       console.error('Erro ao buscar lançamentos recorrentes:', err);
@@ -42,7 +42,6 @@ export const useRecurringTransactionStore = defineStore('recurringTransaction', 
     try {
       setLoading(true);
       clearError();
-      const service = new RecurringTransactionService();
       const created = await service.createRecurringTransaction(data);
       items.value.unshift(created);
       return created;
@@ -59,7 +58,6 @@ export const useRecurringTransactionStore = defineStore('recurringTransaction', 
     try {
       setLoading(true);
       clearError();
-      const service = new RecurringTransactionService();
       const updated = await service.updateRecurringTransaction(id, data);
       const index = items.value.findIndex((item) => item.id === id);
       if (index !== -1) items.value[index] = updated;
@@ -77,7 +75,6 @@ export const useRecurringTransactionStore = defineStore('recurringTransaction', 
     try {
       setLoading(true);
       clearError();
-      const service = new RecurringTransactionService();
       await service.deleteRecurringTransaction(id);
       items.value = items.value.filter((item) => item.id !== id);
     } catch (err) {
@@ -93,7 +90,6 @@ export const useRecurringTransactionStore = defineStore('recurringTransaction', 
     try {
       setLoading(true);
       clearError();
-      const service = new RecurringTransactionService();
       const result = await service.runNow(id);
       const index = items.value.findIndex((item) => item.id === id);
       if (index !== -1) {
