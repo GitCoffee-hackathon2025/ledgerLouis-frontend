@@ -8,8 +8,17 @@ import { formatShortDate, formatDateBr } from '@/utils/dateUtils';
 
 const props = defineProps<{
   transactions: TransactionDto[];
-  accountValue: number;
+  accountValue: number | null;
+  accountValueLoading?: boolean;
+  accountValueError?: string | null;
+  loading?: boolean;
+  error?: string | null;
   periodLabel: string;
+}>();
+
+const emit = defineEmits<{
+  retry: [];
+  'retry-balance': [];
 }>();
 
 const theme = useChartTheme();
@@ -145,7 +154,7 @@ const maxBalance = computed(() =>
         <h2 id="hero-balance-title" class="lg-h2">Evolução do saldo no período</h2>
         <p class="lg-note">Visão consolidada da conta e fluxo acumulado ({{ periodLabel }})</p>
       </div>
-      <div class="lg-legend" aria-label="Legenda do gráfico de saldo">
+      <div v-if="!loading && !error" class="lg-legend" aria-label="Legenda do gráfico de saldo">
         <span class="is-income">Saldo acumulado</span>
       </div>
     </div>
@@ -155,79 +164,114 @@ const maxBalance = computed(() =>
       <div class="lg-figure">
         <span class="lg-figure-label">Saldo total da conta</span>
         <div class="lg-figure-value lg-figure-value--hero">
-          <MoneyValue :value="accountValue" />
+          <span v-if="accountValueLoading" class="is-muted">—</span>
+          <span v-else-if="accountValueError" class="is-muted" style="font-size: 1rem;">
+            Indisponível
+            <button
+              type="button"
+              class="lg-btn lg-btn--quiet"
+              style="margin-left: 8px; font-size: 0.75rem; padding: 2px 6px; min-height: 28px;"
+              @click="emit('retry-balance')"
+            >
+              Tentar novamente
+            </button>
+          </span>
+          <MoneyValue v-else-if="accountValue != null" :value="accountValue" />
+          <span v-else class="is-muted">—</span>
         </div>
       </div>
 
-      <div class="lg-figure">
-        <span class="lg-figure-label">Entradas no período</span>
-        <div class="lg-figure-value is-income">
-          <MoneyValue :value="periodIncome" signed />
+      <template v-if="!loading && !error">
+        <div class="lg-figure">
+          <span class="lg-figure-label">Entradas no período</span>
+          <div class="lg-figure-value is-income">
+            <MoneyValue :value="periodIncome" signed />
+          </div>
         </div>
-      </div>
 
-      <div class="lg-figure">
-        <span class="lg-figure-label">Saídas no período</span>
-        <div class="lg-figure-value is-expense">
-          <MoneyValue :value="-periodExpense" signed />
+        <div class="lg-figure">
+          <span class="lg-figure-label">Saídas no período</span>
+          <div class="lg-figure-value is-expense">
+            <MoneyValue :value="-periodExpense" signed />
+          </div>
         </div>
-      </div>
 
-      <div class="lg-figure">
-        <span class="lg-figure-label">Resultado líquido</span>
-        <div class="lg-figure-value" :class="periodNet >= 0 ? 'is-income' : 'is-expense'">
-          <MoneyValue :value="periodNet" signed />
+        <div class="lg-figure">
+          <span class="lg-figure-label">Resultado líquido</span>
+          <div class="lg-figure-value" :class="periodNet >= 0 ? 'is-income' : 'is-expense'">
+            <MoneyValue :value="periodNet" signed />
+          </div>
         </div>
-      </div>
+      </template>
     </div>
 
-    <!-- Gráfico de Área Sangrando até a borda -->
-    <div v-if="points.length > 0" class="lg-chart lg-chart--hero">
-      <apexchart
-        type="area"
-        height="300"
-        :options="chartOptions"
-        :series="series"
-      />
+    <!-- Estado de Loading da série de movimentações -->
+    <div v-if="loading" class="lg-empty">
+      Carregando evolução do saldo e movimentações...
     </div>
 
-    <div v-else class="lg-empty">
-      Nenhuma movimentação registrada no período selecionado.
+    <!-- Estado de Erro da série de movimentações -->
+    <div v-else-if="error" class="lg-empty">
+      <p class="lg-error">{{ error }}</p>
+      <button
+        type="button"
+        class="lg-btn lg-btn--quiet"
+        style="margin-top: 8px;"
+        @click="emit('retry')"
+      >
+        Tentar carregar movimentações novamente
+      </button>
     </div>
 
-    <!-- Resumo textual de 1 frase -->
-    <p v-if="points.length > 0" class="lg-note hero-summary-text" aria-live="polite">
-      No período analisado, o fluxo acumulado oscilou entre
-      <MoneyValue :value="minBalance" signed /> e
-      <MoneyValue :value="maxBalance" signed />, totalizando um saldo líquido de
-      <MoneyValue :value="periodNet" signed />.
-    </p>
+    <template v-else>
+      <!-- Gráfico de Área Sangrando até a borda -->
+      <div v-if="points.length > 0" class="lg-chart lg-chart--hero">
+        <apexchart
+          type="area"
+          height="300"
+          :options="chartOptions"
+          :series="series"
+        />
+      </div>
 
-    <!-- Tabela Acessível Opcional -->
-    <details v-if="points.length > 0" class="lg-details">
-      <summary>Ver evolução diária em tabela</summary>
-      <table class="lg-table">
-        <caption class="sr-only">Evolução diária do saldo acumulado</caption>
-        <thead>
-          <tr>
-            <th scope="col">Data</th>
-            <th scope="col" class="lg-num">Movimentação do dia</th>
-            <th scope="col" class="lg-num">Saldo acumulado</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="point in points" :key="point.date">
-            <td>{{ formatDateBr(point.date) }}</td>
-            <td class="lg-num" :class="point.delta >= 0 ? 'is-income' : 'is-expense'">
-              <MoneyValue :value="point.delta" signed />
-            </td>
-            <td class="lg-num">
-              <MoneyValue :value="point.cumulative" />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </details>
+      <div v-else class="lg-empty">
+        Nenhuma movimentação registrada no período selecionado.
+      </div>
+
+      <!-- Resumo textual de 1 frase -->
+      <p v-if="points.length > 0" class="lg-note hero-summary-text" aria-live="polite">
+        No período analisado, o fluxo acumulado oscilou entre
+        <MoneyValue :value="minBalance" signed /> e
+        <MoneyValue :value="maxBalance" signed />, totalizando um saldo líquido de
+        <MoneyValue :value="periodNet" signed />.
+      </p>
+
+      <!-- Tabela Acessível Opcional -->
+      <details v-if="points.length > 0" class="lg-details">
+        <summary>Ver evolução diária em tabela</summary>
+        <table class="lg-table">
+          <caption class="sr-only">Evolução diária do saldo acumulado</caption>
+          <thead>
+            <tr>
+              <th scope="col">Data</th>
+              <th scope="col" class="lg-num">Movimentação do dia</th>
+              <th scope="col" class="lg-num">Saldo acumulado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="point in points" :key="point.date">
+              <td>{{ formatDateBr(point.date) }}</td>
+              <td class="lg-num" :class="point.delta >= 0 ? 'is-income' : 'is-expense'">
+                <MoneyValue :value="point.delta" signed />
+              </td>
+              <td class="lg-num">
+                <MoneyValue :value="point.cumulative" />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </template>
   </section>
 </template>
 

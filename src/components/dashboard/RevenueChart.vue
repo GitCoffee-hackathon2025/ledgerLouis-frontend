@@ -11,6 +11,12 @@ const props = defineProps<{
   transactions?: TransactionDto[];
   period?: string;
   periodLabel?: string;
+  loading?: boolean;
+  error?: string | null;
+}>();
+
+const emit = defineEmits<{
+  retry: [];
 }>();
 
 const theme = useChartTheme();
@@ -80,37 +86,47 @@ const periodBuckets = computed<PeriodBucket[]>(() => {
       }
     }
   } else if (props.period === 'all') {
-    // Todo o histórico: se extensão > 24 meses, agrupa por ano; caso contrário, por mês
-    const years = txs.map((t) => Number(t.date.slice(0, 4))).filter((y) => !isNaN(y) && y > 0);
-    const minYear = years.length ? Math.min(...years) : currentYear;
-    const spanYears = currentYear - minYear;
+    // Todo o histórico: calcular extensão em meses desde a primeira data; mensal até 24 meses, anual acima
+    const validDates = txs
+      .map((t) => t.date.slice(0, 10))
+      .filter((d) => /^\d{4}-\d{2}-\d{2}/.test(d))
+      .sort();
 
-    if (spanYears >= 2) {
-      for (let y = minYear; y <= currentYear; y++) {
-        buckets.push({ key: String(y), label: String(y), income: 0, expense: 0 });
-      }
-      for (const t of txs) {
-        const y = t.date.slice(0, 4);
-        const bucket = buckets.find((b) => b.key === y);
-        if (bucket) {
-          if (t.entryType === 'credit') bucket.income += t.amount;
-          else bucket.expense += t.amount;
+    if (validDates.length > 0) {
+      const [firstYearStr, firstMonthStr] = (validDates[0] ?? '').split('-');
+      const firstYear = Number(firstYearStr);
+      const firstMonth = Number(firstMonthStr);
+      const monthSpan = (currentYear - firstYear) * 12 + (currentMonth - firstMonth) + 1;
+
+      if (monthSpan > 24) {
+        // Mais de 24 meses: agrupa por ano desde o ano da primeira transação até o ano atual
+        for (let y = firstYear; y <= currentYear; y++) {
+          buckets.push({ key: String(y), label: String(y), income: 0, expense: 0 });
         }
-      }
-    } else {
-      // Agrupa por mês de todas as transações
-      for (let i = 11; i >= 0; i--) {
-        const d = new Date(currentYear, currentMonth - 1 - i, 1);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        const label = d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).replace('.', '');
-        buckets.push({ key, label, income: 0, expense: 0 });
-      }
-      for (const t of txs) {
-        const key = t.date.slice(0, 7);
-        const bucket = buckets.find((b) => b.key === key);
-        if (bucket) {
-          if (t.entryType === 'credit') bucket.income += t.amount;
-          else bucket.expense += t.amount;
+        for (const t of txs) {
+          const y = t.date.slice(0, 4);
+          const bucket = buckets.find((b) => b.key === y);
+          if (bucket) {
+            if (t.entryType === 'credit') bucket.income += t.amount;
+            else bucket.expense += t.amount;
+          }
+        }
+      } else {
+        // Mensal até 24 meses (cobre exatamente todos os meses desde firstMonth/firstYear até o mês atual)
+        const safeSpan = Math.max(1, monthSpan);
+        for (let i = safeSpan - 1; i >= 0; i--) {
+          const d = new Date(currentYear, currentMonth - 1 - i, 1);
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          const label = d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).replace('.', '');
+          buckets.push({ key, label, income: 0, expense: 0 });
+        }
+        for (const t of txs) {
+          const key = t.date.slice(0, 7);
+          const bucket = buckets.find((b) => b.key === key);
+          if (bucket) {
+            if (t.entryType === 'credit') bucket.income += t.amount;
+            else bucket.expense += t.amount;
+          }
         }
       }
     }
@@ -201,62 +217,82 @@ const chartOptions = computed<ApexOptions>(() => {
         <p class="lg-note">Comparativo de receitas e despesas ({{ periodLabel || 'período selecionado' }})</p>
       </div>
 
-      <div class="lg-legend" aria-label="Legenda das movimentações">
+      <div v-if="!loading && !error" class="lg-legend" aria-label="Legenda das movimentações">
         <span class="is-income">Entradas: <MoneyValue :value="totalIncome" /></span>
         <span class="is-expense">Saídas: <MoneyValue :value="totalExpense" /></span>
       </div>
     </div>
 
-    <!-- Gráfico -->
-    <div v-if="hasData" class="lg-chart">
-      <apexchart
-        type="bar"
-        height="280"
-        :options="chartOptions"
-        :series="series"
-      />
+    <!-- Estado de Carregamento -->
+    <div v-if="loading" class="lg-empty">
+      Carregando fluxo financeiro...
     </div>
 
-    <div v-else class="lg-empty">
-      Nenhuma movimentação registrada para {{ periodLabel || 'o período selecionado' }}.
+    <!-- Estado de Erro -->
+    <div v-else-if="error" class="lg-empty">
+      <p class="lg-error">{{ error }}</p>
+      <button
+        type="button"
+        class="lg-btn lg-btn--quiet"
+        style="margin-top: 8px;"
+        @click="emit('retry')"
+      >
+        Tentar carregar fluxo novamente
+      </button>
     </div>
 
-    <!-- Resumo textual -->
-    <p v-if="hasData" class="lg-note" aria-live="polite">
-      No período analisado ({{ periodLabel || 'selecionado' }}), as entradas totalizaram
-      <MoneyValue :value="totalIncome" signed /> e as saídas
-      <MoneyValue :value="-totalExpense" signed />, com resultado de
-      <MoneyValue :value="netResult" signed :class="netResult >= 0 ? 'is-income' : 'is-expense'" />.
-    </p>
+    <template v-else>
+      <!-- Gráfico -->
+      <div v-if="hasData" class="lg-chart">
+        <apexchart
+          type="bar"
+          height="280"
+          :options="chartOptions"
+          :series="series"
+        />
+      </div>
 
-    <!-- Tabela Acessível -->
-    <details v-if="hasData" class="lg-details">
-      <summary>Ver comparativo do período em tabela</summary>
-      <table class="lg-table">
-        <caption class="sr-only">Comparativo de entradas e saídas por período</caption>
-        <thead>
-          <tr>
-            <th scope="col">Período</th>
-            <th scope="col" class="lg-num">Entradas</th>
-            <th scope="col" class="lg-num">Saídas</th>
-            <th scope="col" class="lg-num">Resultado líquido</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="b in periodBuckets" :key="b.key">
-            <td>{{ b.label }}</td>
-            <td class="lg-num is-income">
-              <MoneyValue :value="b.income" signed />
-            </td>
-            <td class="lg-num is-expense">
-              <MoneyValue :value="-b.expense" signed />
-            </td>
-            <td class="lg-num" :class="b.income - b.expense >= 0 ? 'is-income' : 'is-expense'">
-              <MoneyValue :value="b.income - b.expense" signed />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </details>
+      <div v-else class="lg-empty">
+        Nenhuma movimentação registrada para {{ periodLabel || 'o período selecionado' }}.
+      </div>
+
+      <!-- Resumo textual -->
+      <p v-if="hasData" class="lg-note" aria-live="polite">
+        No período analisado ({{ periodLabel || 'selecionado' }}), as entradas totalizaram
+        <MoneyValue :value="totalIncome" signed /> e as saídas
+        <MoneyValue :value="-totalExpense" signed />, com resultado de
+        <MoneyValue :value="netResult" signed :class="netResult >= 0 ? 'is-income' : 'is-expense'" />.
+      </p>
+
+      <!-- Tabela Acessível -->
+      <details v-if="hasData" class="lg-details">
+        <summary>Ver comparativo do período em tabela</summary>
+        <table class="lg-table">
+          <caption class="sr-only">Comparativo de entradas e saídas por período</caption>
+          <thead>
+            <tr>
+              <th scope="col">Período</th>
+              <th scope="col" class="lg-num">Entradas</th>
+              <th scope="col" class="lg-num">Saídas</th>
+              <th scope="col" class="lg-num">Resultado líquido</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="b in periodBuckets" :key="b.key">
+              <td>{{ b.label }}</td>
+              <td class="lg-num is-income">
+                <MoneyValue :value="b.income" signed />
+              </td>
+              <td class="lg-num is-expense">
+                <MoneyValue :value="-b.expense" signed />
+              </td>
+              <td class="lg-num" :class="b.income - b.expense >= 0 ? 'is-income' : 'is-expense'">
+                <MoneyValue :value="b.income - b.expense" signed />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </template>
   </section>
 </template>

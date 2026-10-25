@@ -122,63 +122,83 @@ const chartOptions = computed<ApexOptions>(() => {
         <p class="lg-note">Média histórica e estimativa de gastos futuros</p>
       </div>
 
-      <div v-if="overall && hasForecast" class="lg-legend" aria-label="Legenda de previsão">
+      <div v-if="!analyticsStore.loading && !analyticsStore.error && overall && hasForecast" class="lg-legend" aria-label="Legenda de previsão">
         <span class="is-expense">Histórico mensal</span>
         <span class="is-projection">Previsão: <MoneyValue :value="forecastValue" /></span>
       </div>
     </div>
 
-    <!-- Gráfico -->
-    <div v-if="overall && hasForecast" class="lg-chart">
-      <apexchart
-        type="line"
-        height="280"
-        :options="chartOptions"
-        :series="series"
-      />
+    <!-- Loading -->
+    <div v-if="analyticsStore.loading" class="lg-empty">
+      Carregando estimativas e previsão histórica...
     </div>
 
-    <div v-else class="lg-empty">
-      Dados históricos insuficientes para calcular previsão (são necessários ao menos 2 meses com lançamentos).
+    <!-- Erro -->
+    <div v-else-if="analyticsStore.error" class="lg-empty">
+      <p class="lg-error">{{ analyticsStore.error }}</p>
+      <button
+        type="button"
+        class="lg-btn lg-btn--quiet"
+        style="margin-top: 8px;"
+        @click="analyticsStore.fetchOverallStats()"
+      >
+        Tentar carregar previsão novamente
+      </button>
     </div>
 
-    <!-- Resumo textual de 1 frase -->
-    <p v-if="overall && hasForecast" class="lg-note" aria-live="polite">
-      A despesa média mensal foi de
-      <MoneyValue :value="overall.mean" />, com oscilação padrão de ±
-      <MoneyValue :value="overall.standardDeviation" /> e projeção de
-      <MoneyValue :value="forecastValue" /> para o próximo mês.
-    </p>
+    <template v-else>
+      <!-- Gráfico -->
+      <div v-if="overall && hasForecast" class="lg-chart">
+        <apexchart
+          type="line"
+          height="280"
+          :options="chartOptions"
+          :series="series"
+        />
+      </div>
 
-    <!-- Tabela Acessível -->
-    <details v-if="overall && hasForecast" class="lg-details">
-      <summary>Ver valores históricos e previsão em tabela</summary>
-      <table class="lg-table">
-        <caption class="sr-only">Histórico mensal e previsão estimada de gastos</caption>
-        <thead>
-          <tr>
-            <th scope="col">Período</th>
-            <th scope="col" class="lg-num">Valor</th>
-            <th scope="col">Situação</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="point in overall.months" :key="point.period">
-            <td>{{ periodLabel(point.period) }}</td>
-            <td class="lg-num is-expense">
-              <MoneyValue :value="point.total" />
-            </td>
-            <td>Registrado</td>
-          </tr>
-          <tr>
-            <td>Próximo mês</td>
-            <td class="lg-num is-projection">
-              <MoneyValue :value="forecastValue" />
-            </td>
-            <td>Previsão projetada</td>
-          </tr>
-        </tbody>
-      </table>
-    </details>
+      <div v-else class="lg-empty">
+        Dados históricos insuficientes para calcular previsão (são necessários ao menos 2 meses com lançamentos).
+      </div>
+
+      <!-- Resumo textual de 1 frase -->
+      <p v-if="overall && hasForecast" class="lg-note" aria-live="polite">
+        A despesa média mensal foi de
+        <MoneyValue :value="overall.mean" />, com oscilação padrão de ±
+        <MoneyValue :value="overall.standardDeviation" /> e projeção de
+        <MoneyValue :value="forecastValue" /> para o próximo mês.
+      </p>
+
+      <!-- Tabela Acessível -->
+      <details v-if="overall && hasForecast" class="lg-details">
+        <summary>Ver valores históricos e previsão em tabela</summary>
+        <table class="lg-table">
+          <caption class="sr-only">Histórico mensal e previsão estimada de gastos</caption>
+          <thead>
+            <tr>
+              <th scope="col">Período</th>
+              <th scope="col" class="lg-num">Valor</th>
+              <th scope="col">Situação</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="point in overall.months" :key="point.period">
+              <td>{{ periodLabel(point.period) }}</td>
+              <td class="lg-num is-expense">
+                <MoneyValue :value="point.total" />
+              </td>
+              <td>Registrado</td>
+            </tr>
+            <tr>
+              <td>Próximo mês</td>
+              <td class="lg-num is-projection">
+                <MoneyValue :value="forecastValue" />
+              </td>
+              <td>Previsão projetada</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </template>
   </section>
 </template>

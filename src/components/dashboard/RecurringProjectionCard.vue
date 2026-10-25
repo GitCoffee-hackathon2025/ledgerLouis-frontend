@@ -75,62 +75,82 @@ const chartOptions = computed<ApexOptions>(() => {
         <p class="lg-note">Projeção de débitos e créditos com base nas regras ativas</p>
       </div>
 
-      <div class="lg-legend" aria-label="Legenda dos compromissos recorrentes">
+      <div v-if="!recurringStore.loading && !recurringStore.error" class="lg-legend" aria-label="Legenda dos compromissos recorrentes">
         <span class="is-income">Receitas: <MoneyValue :value="totalCredit" /></span>
         <span class="is-expense">Despesas: <MoneyValue :value="totalDebit" /></span>
       </div>
     </div>
 
-    <!-- Gráfico de Colunas Empilhadas -->
-    <div v-if="hasRecurringData" class="lg-chart">
-      <apexchart
-        type="bar"
-        height="280"
-        :options="chartOptions"
-        :series="series"
-      />
+    <!-- Loading -->
+    <div v-if="recurringStore.loading" class="lg-empty">
+      Carregando compromissos recorrentes...
     </div>
 
-    <div v-else class="lg-empty">
-      Nenhum compromisso recorrente ativo cadastrado no momento.
+    <!-- Erro -->
+    <div v-else-if="recurringStore.error" class="lg-empty">
+      <p class="lg-error">{{ recurringStore.error }}</p>
+      <button
+        type="button"
+        class="lg-btn lg-btn--quiet"
+        style="margin-top: 8px;"
+        @click="recurringStore.fetchRecurringTransactions()"
+      >
+        Tentar carregar compromissos novamente
+      </button>
     </div>
 
-    <!-- Resumo textual de 1 frase -->
-    <p v-if="hasRecurringData" class="lg-note" aria-live="polite">
-      Nos próximos 6 meses, estão previstos
-      <MoneyValue :value="totalCredit" signed /> em receitas e
-      <MoneyValue :value="-totalDebit" signed /> em despesas fixas, resultando em
-      <MoneyValue :value="netProjected" signed :class="netProjected >= 0 ? 'is-income' : 'is-expense'" />.
-    </p>
+    <template v-else>
+      <!-- Gráfico de Colunas Empilhadas -->
+      <div v-if="hasRecurringData" class="lg-chart">
+        <apexchart
+          type="bar"
+          height="280"
+          :options="chartOptions"
+          :series="series"
+        />
+      </div>
 
-    <!-- Tabela Acessível -->
-    <details v-if="hasRecurringData" class="lg-details">
-      <summary>Ver projeção de recorrências em tabela</summary>
-      <table class="lg-table">
-        <caption class="sr-only">Projeção mensal de lançamentos recorrentes</caption>
-        <thead>
-          <tr>
-            <th scope="col">Mês</th>
-            <th scope="col" class="lg-num">Receitas previstas</th>
-            <th scope="col" class="lg-num">Despesas previstas</th>
-            <th scope="col" class="lg-num">Saldo líquido previsto</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="p in projections" :key="p.key">
-            <td>{{ p.label }}</td>
-            <td class="lg-num is-income">
-              <MoneyValue :value="p.credit" signed />
-            </td>
-            <td class="lg-num is-expense">
-              <MoneyValue :value="-p.debit" signed />
-            </td>
-            <td class="lg-num" :class="p.credit - p.debit >= 0 ? 'is-income' : 'is-expense'">
-              <MoneyValue :value="p.credit - p.debit" signed />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </details>
+      <div v-else class="lg-empty">
+        Nenhum compromisso recorrente ativo cadastrado no momento.
+      </div>
+
+      <!-- Resumo textual de 1 frase -->
+      <p v-if="hasRecurringData" class="lg-note" aria-live="polite">
+        Nos próximos 6 meses, estão previstos
+        <MoneyValue :value="totalCredit" signed /> em receitas e
+        <MoneyValue :value="-totalDebit" signed /> em despesas fixas, resultando em
+        <MoneyValue :value="netProjected" signed :class="netProjected >= 0 ? 'is-income' : 'is-expense'" />.
+      </p>
+
+      <!-- Tabela Acessível -->
+      <details v-if="hasRecurringData" class="lg-details">
+        <summary>Ver projeção de recorrências em tabela</summary>
+        <table class="lg-table">
+          <caption class="sr-only">Projeção mensal de lançamentos recorrentes</caption>
+          <thead>
+            <tr>
+              <th scope="col">Mês</th>
+              <th scope="col" class="lg-num">Receitas previstas</th>
+              <th scope="col" class="lg-num">Despesas previstas</th>
+              <th scope="col" class="lg-num">Saldo líquido previsto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="p in projections" :key="p.key">
+              <td>{{ p.label }}</td>
+              <td class="lg-num is-income">
+                <MoneyValue :value="p.credit" signed />
+              </td>
+              <td class="lg-num is-expense">
+                <MoneyValue :value="-p.debit" signed />
+              </td>
+              <td class="lg-num" :class="p.credit - p.debit >= 0 ? 'is-income' : 'is-expense'">
+                <MoneyValue :value="p.credit - p.debit" signed />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </template>
   </section>
 </template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
+import TransactionService from '@/services/transactionService';
 import DashboardHeader from '@/components/dashboard/DashboardHeader.vue';
 import TagFilterChips from '@/components/dashboard/TagFilterChips.vue';
 import DashboardHeroCard from '@/components/dashboard/DashboardHeroCard.vue';
@@ -21,34 +22,49 @@ const tagStore = useTagStore();
 const recurringStore = useRecurringTransactionStore();
 
 const selectedPeriod = ref('monthly');
-const isLoading = ref(true);
-const loadError = ref<string | null>(null);
+const accountValue = ref<number | null>(null);
+const accountValueLoading = ref(false);
+const accountValueError = ref<string | null>(null);
 
-const loadData = async () => {
-  if (!companyStore.company.hasCompany) {
-    isLoading.value = false;
-    return;
-  }
-  isLoading.value = true;
-  loadError.value = null;
+const fetchAccountBalance = async () => {
+  accountValueLoading.value = true;
+  accountValueError.value = null;
   try {
-    await Promise.all([
-      transactionStore.fetchTransactions(),
-      transactionStore.fetchAccountValue(),
-      recurringStore.fetchRecurringTransactions(),
-      tagStore.fetchTags(),
-    ]);
+    const service = new TransactionService();
+    const val = await service.getAccountValue();
+    accountValue.value = typeof val === 'number' && !isNaN(val) ? val : null;
+    if (accountValue.value !== null) {
+      transactionStore.setAccountValue(accountValue.value);
+    }
   } catch (err) {
-    console.error('Erro ao carregar relatórios:', err);
-    loadError.value = 'Não foi possível carregar os dados financeiros.';
+    accountValueError.value = 'Não foi possível consultar o saldo da conta.';
+    accountValue.value = null;
   } finally {
-    isLoading.value = false;
+    accountValueLoading.value = false;
   }
 };
 
-onMounted(loadData);
+const retryTransactions = async () => {
+  await transactionStore.fetchTransactions();
+};
 
-const accountValue = computed(() => transactionStore.accountValue);
+const retryTags = async () => {
+  await tagStore.fetchTags();
+};
+
+const loadData = async () => {
+  if (!companyStore.company.hasCompany) {
+    return;
+  }
+  await Promise.allSettled([
+    transactionStore.fetchTransactions(),
+    fetchAccountBalance(),
+    recurringStore.fetchRecurringTransactions(),
+    tagStore.fetchTags(),
+  ]);
+};
+
+onMounted(loadData);
 
 // Filtro inicial por tag
 const tagFilteredTransactions = computed(() => {
@@ -123,62 +139,60 @@ const handleExport = (format: 'csv' | 'pdf') => {
       @export="handleExport"
     />
 
-    <!-- Estado de Erro -->
-    <div v-if="loadError" class="lg-section" role="alert" style="border-color: var(--lg-expense);">
-      <div class="lg-section-head">
-        <div>
-          <h2 class="lg-h2 is-expense">Falha ao carregar relatórios</h2>
-          <p class="lg-note">{{ loadError }}</p>
-        </div>
-        <button type="button" class="lg-btn lg-btn--primary" @click="loadData">
-          Tentar novamente
-        </button>
+    <!-- Linha discreta de tags -->
+    <TagFilterChips />
+
+    <!-- Hero: Saldo Acumulado -->
+    <DashboardHeroCard
+      :transactions="periodTransactions"
+      :account-value="accountValue"
+      :account-value-loading="accountValueLoading"
+      :account-value-error="accountValueError"
+      :loading="transactionStore.loading"
+      :error="transactionStore.error"
+      :period-label="periodLabels[selectedPeriod] || selectedPeriod"
+      @retry="retryTransactions"
+      @retry-balance="fetchAccountBalance"
+    />
+
+    <!-- Grid 1: Entradas e saídas por período (7) + Valores por tag (5) -->
+    <div class="lg-grid">
+      <div class="lg-span-7">
+        <RevenueChart
+          :transactions="periodTransactions"
+          :period="selectedPeriod"
+          :period-label="periodLabels[selectedPeriod] || selectedPeriod"
+          :loading="transactionStore.loading"
+          :error="transactionStore.error"
+          @retry="retryTransactions"
+        />
+      </div>
+      <div class="lg-span-5">
+        <TagsDistributionCard
+          :transactions="periodTransactions"
+          :loading="transactionStore.loading || tagStore.loading"
+          :error="transactionStore.error || tagStore.error"
+          @retry="retryTags"
+        />
       </div>
     </div>
 
-    <!-- Estado de Carregamento -->
-    <div v-else-if="isLoading" class="lg-section">
-      <div class="lg-empty">Carregando dados financeiros e relatórios...</div>
+    <!-- Grid 2: Compromissos recorrentes (7) + Variação e previsão (5) -->
+    <div class="lg-grid">
+      <div class="lg-span-7">
+        <RecurringProjectionCard />
+      </div>
+      <div class="lg-span-5">
+        <ExpenseInsightsCard />
+      </div>
     </div>
 
-    <!-- Conteúdo Principal -->
-    <template v-else>
-      <!-- Linha discreta de tags -->
-      <TagFilterChips />
-
-      <!-- Hero: Saldo Acumulado -->
-      <DashboardHeroCard
-        :transactions="periodTransactions"
-        :account-value="accountValue"
-        :period-label="periodLabels[selectedPeriod] || selectedPeriod"
-      />
-
-      <!-- Grid 1: Entradas e saídas por mês (7) + Para onde vai o dinheiro (5) -->
-      <div class="lg-grid">
-        <div class="lg-span-7">
-          <RevenueChart
-            :transactions="periodTransactions"
-            :period="selectedPeriod"
-            :period-label="periodLabels[selectedPeriod] || selectedPeriod"
-          />
-        </div>
-        <div class="lg-span-5">
-          <TagsDistributionCard :transactions="periodTransactions" />
-        </div>
-      </div>
-
-      <!-- Grid 2: Compromissos recorrentes (7) + Variação e previsão (5) -->
-      <div class="lg-grid">
-        <div class="lg-span-7">
-          <RecurringProjectionCard />
-        </div>
-        <div class="lg-span-5">
-          <ExpenseInsightsCard />
-        </div>
-      </div>
-
-      <!-- Atividade Recente (mesmo recorte do período) -->
-      <RecentTransactions :transactions="periodTransactions" />
-    </template>
+    <!-- Atividade Recente (mesmo recorte do período) -->
+    <RecentTransactions
+      :transactions="periodTransactions"
+      :loading="transactionStore.loading"
+      :error="transactionStore.error"
+      @retry="retryTransactions"
+    />
   </main>
 </template>

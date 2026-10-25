@@ -8,10 +8,19 @@ import MoneyValue from '@/components/ui/MoneyValue.vue';
 
 const props = defineProps<{
   transactions?: TransactionDto[];
+  loading?: boolean;
+  error?: string | null;
+}>();
+
+const emit = defineEmits<{
+  retry: [];
 }>();
 
 const router = useRouter();
 const transactionStore = useTransactionStore();
+
+const isLoadingState = computed(() => props.loading || transactionStore.loading);
+const errorState = computed(() => props.error || transactionStore.error);
 
 const recentTransactions = computed(() => {
   const source = props.transactions ?? transactionStore.transactions;
@@ -50,25 +59,43 @@ const formattedDate = (dateString: string) => {
       </div>
     </div>
 
-    <ul v-if="recentTransactions.length > 0" class="lg-rows">
-      <li v-for="t in recentTransactions" :key="t.id" class="lg-row">
-        <div class="lg-row-main">
-          <div class="lg-row-title">{{ t.description || 'Lançamento sem descrição' }}</div>
-          <div class="lg-row-meta">
-            <span>{{ formattedDate(t.date) }}</span>
-            <span>{{ t.entryType === 'credit' ? 'Entrada' : 'Saída' }}</span>
-          </div>
-        </div>
-
-        <div class="recent-row-amount" :class="t.entryType === 'credit' ? 'is-income' : 'is-expense'">
-          <MoneyValue :value="t.entryType === 'credit' ? t.amount : -t.amount" signed />
-        </div>
-      </li>
-    </ul>
-
-    <div v-else class="lg-empty">
-      Nenhuma movimentação registrada recentemente.
+    <div v-if="isLoadingState" class="lg-empty">
+      Carregando lançamentos recentes...
     </div>
+
+    <div v-else-if="errorState" class="lg-empty">
+      <p class="lg-error">{{ errorState }}</p>
+      <button
+        type="button"
+        class="lg-btn lg-btn--quiet"
+        style="margin-top: 8px;"
+        @click="emit('retry')"
+      >
+        Tentar carregar lançamentos novamente
+      </button>
+    </div>
+
+    <template v-else>
+      <ul v-if="recentTransactions.length > 0" class="lg-rows">
+        <li v-for="t in recentTransactions" :key="t.id" class="lg-row">
+          <div class="lg-row-main">
+            <div class="lg-row-title">{{ t.description || 'Lançamento sem descrição' }}</div>
+            <div class="lg-row-meta">
+              <span>{{ formattedDate(t.date) }}</span>
+              <span>{{ t.entryType === 'credit' ? 'Entrada' : 'Saída' }}</span>
+            </div>
+          </div>
+
+          <div class="recent-row-amount" :class="t.entryType === 'credit' ? 'is-income' : 'is-expense'">
+            <MoneyValue :value="t.entryType === 'credit' ? t.amount : -t.amount" signed />
+          </div>
+        </li>
+      </ul>
+
+      <div v-else class="lg-empty">
+        Nenhuma movimentação registrada recentemente.
+      </div>
+    </template>
   </section>
 </template>
 

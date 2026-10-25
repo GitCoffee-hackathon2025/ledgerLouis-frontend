@@ -8,10 +8,19 @@ import { useChartTheme, brl, brlExact } from '@/utils/chartTheme';
 
 const props = defineProps<{
   transactions?: TransactionDto[];
+  loading?: boolean;
+  error?: string | null;
+}>();
+
+const emit = defineEmits<{
+  retry: [];
 }>();
 
 const tagStore = useTagStore();
 const theme = useChartTheme();
+
+const isLoadingState = computed(() => props.loading || tagStore.loading);
+const errorState = computed(() => props.error || tagStore.error);
 
 interface TagExpenseItem {
   id: string;
@@ -119,64 +128,84 @@ const chartOptions = computed<ApexOptions>(() => {
         <p class="lg-note">Despesas por etiqueta (valores com sobreposição quando há mais de uma tag por lançamento)</p>
       </div>
 
-      <div class="lg-legend" aria-label="Legenda de despesas categorizadas">
+      <div v-if="!isLoadingState && !errorState" class="lg-legend" aria-label="Legenda de despesas categorizadas">
         <span class="is-expense">Despesas categorizadas: <MoneyValue :value="totalCategorizedExpense" /></span>
       </div>
     </div>
 
-    <!-- Gráfico Horizontal -->
-    <div v-if="tagExpenses.length > 0" class="lg-chart">
-      <apexchart
-        type="bar"
-        height="280"
-        :options="chartOptions"
-        :series="series"
-      />
+    <!-- Loading -->
+    <div v-if="isLoadingState" class="lg-empty">
+      Carregando tags e despesas associadas...
     </div>
 
-    <div v-else class="lg-empty">
-      Nenhuma despesa associada a etiquetas no período.
+    <!-- Erro -->
+    <div v-else-if="errorState" class="lg-empty">
+      <p class="lg-error">{{ errorState }}</p>
+      <button
+        type="button"
+        class="lg-btn lg-btn--quiet"
+        style="margin-top: 8px;"
+        @click="emit('retry')"
+      >
+        Tentar carregar etiquetas novamente
+      </button>
     </div>
 
-    <!-- Resumo textual -->
-    <p v-if="topTag" class="lg-note" aria-live="polite">
-      A etiqueta com maior montante vinculado foi <strong>{{ topTag.name }}</strong>, com
-      <MoneyValue :value="topTag.total" /> em {{ topTag.count }} lançamentos.
-    </p>
+    <template v-else>
+      <!-- Gráfico Horizontal -->
+      <div v-if="tagExpenses.length > 0" class="lg-chart">
+        <apexchart
+          type="bar"
+          height="280"
+          :options="chartOptions"
+          :series="series"
+        />
+      </div>
 
-    <!-- Tabela Acessível -->
-    <details v-if="tagExpenses.length > 0" class="lg-details">
-      <summary>Ver lista completa de etiquetas em tabela</summary>
-      <table class="lg-table">
-        <caption class="sr-only">Despesas associadas a cada etiqueta</caption>
-        <thead>
-          <tr>
-            <th scope="col">Etiqueta</th>
-            <th scope="col">Lançamentos vinculados</th>
-            <th scope="col" class="lg-num">Valor associado</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="tag in tagExpenses" :key="tag.id">
-            <td>
-              <button
-                type="button"
-                class="tag-table-filter-btn"
-                :class="{ 'is-active': tagStore.activeTagId === tag.id }"
-                :aria-pressed="tagStore.activeTagId === tag.id"
-                @click="tagStore.setActiveTag(tagStore.activeTagId === tag.id ? null : tag.id)"
-              >
-                {{ tag.name }}
-              </button>
-            </td>
-            <td>{{ tag.count }}</td>
-            <td class="lg-num is-expense">
-              <MoneyValue :value="tag.total" />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </details>
+      <div v-else class="lg-empty">
+        Nenhuma despesa associada a etiquetas no período.
+      </div>
+
+      <!-- Resumo textual -->
+      <p v-if="topTag" class="lg-note" aria-live="polite">
+        A etiqueta com maior montante vinculado foi <strong>{{ topTag.name }}</strong>, com
+        <MoneyValue :value="topTag.total" /> em {{ topTag.count }} lançamentos.
+      </p>
+
+      <!-- Tabela Acessível -->
+      <details v-if="tagExpenses.length > 0" class="lg-details">
+        <summary>Ver lista completa de etiquetas em tabela</summary>
+        <table class="lg-table">
+          <caption class="sr-only">Despesas associadas a cada etiqueta</caption>
+          <thead>
+            <tr>
+              <th scope="col">Etiqueta</th>
+              <th scope="col">Lançamentos vinculados</th>
+              <th scope="col" class="lg-num">Valor associado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="tag in tagExpenses" :key="tag.id">
+              <td>
+                <button
+                  type="button"
+                  class="tag-table-filter-btn"
+                  :class="{ 'is-active': tagStore.activeTagId === tag.id }"
+                  :aria-pressed="tagStore.activeTagId === tag.id"
+                  @click="tagStore.setActiveTag(tagStore.activeTagId === tag.id ? null : tag.id)"
+                >
+                  {{ tag.name }}
+                </button>
+              </td>
+              <td>{{ tag.count }}</td>
+              <td class="lg-num is-expense">
+                <MoneyValue :value="tag.total" />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </template>
   </section>
 </template>
 
