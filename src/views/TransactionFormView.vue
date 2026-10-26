@@ -11,6 +11,7 @@ import TagPicker from '@/components/forms/TagPicker.vue';
 import TransactionFormEffect from '@/components/transaction/TransactionFormEffect.vue';
 import MoneyValue from '@/components/ui/MoneyValue.vue';
 import { formatDateBr } from '@/utils/dateUtils';
+import { todayISO } from '@/utils/recurrence';
 
 const route = useRoute();
 const router = useRouter();
@@ -97,9 +98,9 @@ const toggleRecurring = (val: boolean) => {
 const formData = reactive({
   amount: '',
   description: '',
-  date: new Date().toISOString().split('T')[0] as string,
+  date: todayISO(),
   frequency: 'monthly' as RecurringFrequency,
-  startDate: new Date().toISOString().split('T')[0] as string,
+  startDate: todayISO(),
   endDate: '',
 });
 
@@ -179,8 +180,8 @@ const resetFormForNewTransaction = () => {
   formData.description = '';
   formData.amount = '';
   formData.endDate = '';
-  formData.date = new Date().toISOString().split('T')[0] as string;
-  formData.startDate = new Date().toISOString().split('T')[0] as string;
+  formData.date = todayISO();
+  formData.startDate = todayISO();
   selectedTagIds.value = [];
   createdTransactionId.value = null;
   pendingTagIds.value = [];
