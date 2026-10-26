@@ -224,20 +224,20 @@ const chartOptions = computed<ApexOptions>(() => {
     </div>
 
     <!-- Estado de Carregamento -->
-    <div v-if="loading" class="lg-empty">
+    <div v-if="loading" class="lg-inset lg-empty">
       Carregando fluxo financeiro...
     </div>
 
     <!-- Estado de Erro -->
-    <div v-else-if="error" class="lg-empty">
+    <div v-else-if="error" class="lg-inset" style="margin-top: 12px;">
       <p class="lg-error">{{ error }}</p>
       <button
         type="button"
-        class="lg-btn lg-btn--quiet"
+        class="lg-btn"
         style="margin-top: 8px;"
         @click="emit('retry')"
       >
-        Tentar carregar fluxo novamente
+        Tentar novamente
       </button>
     </div>
 
@@ -252,7 +252,7 @@ const chartOptions = computed<ApexOptions>(() => {
         />
       </div>
 
-      <div v-else class="lg-empty">
+      <div v-else class="lg-inset lg-empty">
         Nenhuma movimentação registrada para {{ periodLabel || 'o período selecionado' }}.
       </div>
 

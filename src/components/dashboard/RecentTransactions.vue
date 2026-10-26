@@ -59,19 +59,19 @@ const formattedDate = (dateString: string) => {
       </div>
     </div>
 
-    <div v-if="isLoadingState" class="lg-empty">
+    <div v-if="isLoadingState" class="lg-inset lg-empty">
       Carregando lançamentos recentes...
     </div>
 
-    <div v-else-if="errorState" class="lg-empty">
+    <div v-else-if="errorState" class="lg-inset" style="margin-top: 12px;">
       <p class="lg-error">{{ errorState }}</p>
       <button
         type="button"
-        class="lg-btn lg-btn--quiet"
+        class="lg-btn"
         style="margin-top: 8px;"
         @click="emit('retry')"
       >
-        Tentar carregar lançamentos novamente
+        Tentar novamente
       </button>
     </div>
 
@@ -92,7 +92,7 @@ const formattedDate = (dateString: string) => {
         </li>
       </ul>
 
-      <div v-else class="lg-empty">
+      <div v-else class="lg-inset lg-empty">
         Nenhuma movimentação registrada recentemente.
       </div>
     </template>

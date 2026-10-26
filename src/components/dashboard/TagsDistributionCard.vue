@@ -134,20 +134,20 @@ const chartOptions = computed<ApexOptions>(() => {
     </div>
 
     <!-- Loading -->
-    <div v-if="isLoadingState" class="lg-empty">
+    <div v-if="isLoadingState" class="lg-inset lg-empty">
       Carregando tags e despesas associadas...
     </div>
 
     <!-- Erro -->
-    <div v-else-if="errorState" class="lg-empty">
+    <div v-else-if="errorState" class="lg-inset" style="margin-top: 12px;">
       <p class="lg-error">{{ errorState }}</p>
       <button
         type="button"
-        class="lg-btn lg-btn--quiet"
+        class="lg-btn"
         style="margin-top: 8px;"
         @click="emit('retry')"
       >
-        Tentar carregar etiquetas novamente
+        Tentar novamente
       </button>
     </div>
 
@@ -162,7 +162,7 @@ const chartOptions = computed<ApexOptions>(() => {
         />
       </div>
 
-      <div v-else class="lg-empty">
+      <div v-else class="lg-inset lg-empty">
         Nenhuma despesa associada a etiquetas no período.
       </div>
 

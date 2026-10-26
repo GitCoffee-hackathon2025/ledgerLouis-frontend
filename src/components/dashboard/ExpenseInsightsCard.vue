@@ -129,20 +129,20 @@ const chartOptions = computed<ApexOptions>(() => {
     </div>
 
     <!-- Loading -->
-    <div v-if="analyticsStore.loading" class="lg-empty">
+    <div v-if="analyticsStore.loading" class="lg-inset lg-empty">
       Carregando estimativas e previsão histórica...
     </div>
 
     <!-- Erro -->
-    <div v-else-if="analyticsStore.error" class="lg-empty">
+    <div v-else-if="analyticsStore.error" class="lg-inset" style="margin-top: 12px;">
       <p class="lg-error">{{ analyticsStore.error }}</p>
       <button
         type="button"
-        class="lg-btn lg-btn--quiet"
+        class="lg-btn"
         style="margin-top: 8px;"
         @click="analyticsStore.fetchOverallStats()"
       >
-        Tentar carregar previsão novamente
+        Tentar novamente
       </button>
     </div>
 
@@ -157,7 +157,7 @@ const chartOptions = computed<ApexOptions>(() => {
         />
       </div>
 
-      <div v-else class="lg-empty">
+      <div v-else class="lg-inset lg-empty">
         Dados históricos insuficientes para calcular previsão (são necessários ao menos 2 meses com lançamentos).
       </div>
 

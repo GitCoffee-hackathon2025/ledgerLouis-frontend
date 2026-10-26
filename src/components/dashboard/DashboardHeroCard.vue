@@ -165,17 +165,16 @@ const maxBalance = computed(() =>
         <span class="lg-figure-label">Saldo total da conta</span>
         <div class="lg-figure-value lg-figure-value--hero">
           <span v-if="accountValueLoading" class="is-muted">—</span>
-          <span v-else-if="accountValueError" class="is-muted" style="font-size: 1rem;">
-            Indisponível
+          <div v-else-if="accountValueError" class="hero-balance-unavailable">
+            <span class="is-muted">Indisponível</span>
             <button
               type="button"
-              class="lg-btn lg-btn--quiet"
-              style="margin-left: 8px; font-size: 0.75rem; padding: 2px 6px; min-height: 28px;"
+              class="lg-btn"
               @click="emit('retry-balance')"
             >
               Tentar novamente
             </button>
-          </span>
+          </div>
           <MoneyValue v-else-if="accountValue != null" :value="accountValue" />
           <span v-else class="is-muted">—</span>
         </div>
@@ -206,20 +205,20 @@ const maxBalance = computed(() =>
     </div>
 
     <!-- Estado de Loading da série de movimentações -->
-    <div v-if="loading" class="lg-empty">
+    <div v-if="loading" class="lg-inset lg-empty">
       Carregando evolução do saldo e movimentações...
     </div>
 
     <!-- Estado de Erro da série de movimentações -->
-    <div v-else-if="error" class="lg-empty">
+    <div v-else-if="error" class="lg-inset" style="margin-top: 12px;">
       <p class="lg-error">{{ error }}</p>
       <button
         type="button"
-        class="lg-btn lg-btn--quiet"
+        class="lg-btn"
         style="margin-top: 8px;"
         @click="emit('retry')"
       >
-        Tentar carregar movimentações novamente
+        Tentar novamente
       </button>
     </div>
 
@@ -234,7 +233,7 @@ const maxBalance = computed(() =>
         />
       </div>
 
-      <div v-else class="lg-empty">
+      <div v-else class="lg-inset lg-empty">
         Nenhuma movimentação registrada no período selecionado.
       </div>
 
@@ -278,6 +277,14 @@ const maxBalance = computed(() =>
 <style scoped>
 .hero-section {
   overflow: hidden;
+}
+
+.hero-balance-unavailable {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 1.125rem;
 }
 
 .hero-summary-text {

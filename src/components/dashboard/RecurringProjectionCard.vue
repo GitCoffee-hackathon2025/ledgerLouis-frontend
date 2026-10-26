@@ -82,20 +82,20 @@ const chartOptions = computed<ApexOptions>(() => {
     </div>
 
     <!-- Loading -->
-    <div v-if="recurringStore.loading" class="lg-empty">
+    <div v-if="recurringStore.loading" class="lg-inset lg-empty">
       Carregando compromissos recorrentes...
     </div>
 
     <!-- Erro -->
-    <div v-else-if="recurringStore.error" class="lg-empty">
+    <div v-else-if="recurringStore.error" class="lg-inset" style="margin-top: 12px;">
       <p class="lg-error">{{ recurringStore.error }}</p>
       <button
         type="button"
-        class="lg-btn lg-btn--quiet"
+        class="lg-btn"
         style="margin-top: 8px;"
         @click="recurringStore.fetchRecurringTransactions()"
       >
-        Tentar carregar compromissos novamente
+        Tentar novamente
       </button>
     </div>
 
@@ -110,7 +110,7 @@ const chartOptions = computed<ApexOptions>(() => {
         />
       </div>
 
-      <div v-else class="lg-empty">
+      <div v-else class="lg-inset lg-empty">
         Nenhum compromisso recorrente ativo cadastrado no momento.
       </div>
 

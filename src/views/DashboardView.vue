@@ -48,8 +48,18 @@ const retryTransactions = async () => {
   await transactionStore.fetchTransactions();
 };
 
-const retryTags = async () => {
-  await tagStore.fetchTags();
+const retryRanking = async () => {
+  const tasks: Promise<unknown>[] = [];
+  if (transactionStore.error) {
+    tasks.push(transactionStore.fetchTransactions());
+  }
+  if (tagStore.error || tagStore.tags.length === 0) {
+    tasks.push(tagStore.fetchTags());
+  }
+  if (tasks.length === 0) {
+    tasks.push(transactionStore.fetchTransactions(), tagStore.fetchTags());
+  }
+  await Promise.allSettled(tasks);
 };
 
 const loadData = async () => {
@@ -172,7 +182,7 @@ const handleExport = (format: 'csv' | 'pdf') => {
           :transactions="periodTransactions"
           :loading="transactionStore.loading || tagStore.loading"
           :error="transactionStore.error || tagStore.error"
-          @retry="retryTags"
+          @retry="retryRanking"
         />
       </div>
     </div>
